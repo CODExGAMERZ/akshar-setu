@@ -1,4 +1,5 @@
 import { SupportedLanguage } from '@/types';
+import { StorageService } from '@/lib/storage';
 
 export interface TTSEventCallbacks {
   onStart?: () => void;
@@ -15,6 +16,10 @@ export class TTSService {
   private static wordTimerInterval: any = null;
   private static cachedVoices: SpeechSynthesisVoice[] = [];
   private static currentAudioElement: HTMLAudioElement | null = null;
+  private static audioPlaylist: string[] = [];
+  private static currentPlaylistIndex: number = 0;
+  private static activeCallbacks: TTSEventCallbacks | null = null;
+  private static isServerAudioPlaying: boolean = false;
 
   private static initSynth(): SpeechSynthesis | null {
     if (typeof window === 'undefined') return null;
@@ -58,7 +63,7 @@ export class TTSService {
 
   private static findBestVoice(lang: SupportedLanguage): SpeechSynthesisVoice | null {
     const synth = this.initSynth();
-    const voices = this.cachedVoices.length > 0 ? this.cachedVoices : (synth?.getVoices() || []);
+    const voices = this.cachedVoices.length > 0 ? this.cachedVoices : synth?.getVoices() || [];
     if (!voices || voices.length === 0) return null;
 
     const targetLangCode = this.getLangCode(lang).toLowerCase();
@@ -73,7 +78,9 @@ export class TTSService {
     if (match) return match;
 
     // 3. Match by name (e.g. "Hindi", "Tamil", "India")
-    match = voices.find((v) => v.name.toLowerCase().includes(prefix) || v.name.toLowerCase().includes(lang));
+    match = voices.find(
+      (v) => v.name.toLowerCase().includes(prefix) || v.name.toLowerCase().includes(lang)
+    );
     if (match) return match;
 
     // 4. For English: pick any English voice
@@ -82,7 +89,7 @@ export class TTSService {
       if (match) return match;
     }
 
-    // 5. For Indic languages without specific regional voice: match Indian English or Hindi if available
+    // 5. For Indic languages without specific regional voice: match Indian voice if available
     if (['hi', 'mr', 'or', 'bn', 'ta', 'te'].includes(lang)) {
       match = voices.find(
         (v) =>
@@ -93,34 +100,183 @@ export class TTSService {
       if (match) return match;
     }
 
-    // DO NOT force an incompatible English voice on non-English text
     return null;
   }
 
-  public static speak(
+  /**
+   * Main Speak Entrypoint:
+   * First attempts high-quality server TTS (Sarvam AI / OpenAI / Server Google Proxy)
+   * with automatic fallback to client-side Web Speech API.
+   */
+  public static async speak(
     text: string,
     lang: SupportedLanguage = 'en',
-    rate: number = 0.95,
+    rate: number = 1.0,
     callbacks?: TTSEventCallbacks
-  ): void {
-    const cleanText = text.replace(/\s+/g, ' ').trim();
+  ): Promise<void> {
+    const cleanText = text
+      .replace(/[*#_~`>•\-]/g, ' ')
+      .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1')
+      .replace(/\s+/g, ' ')
+      .trim();
+
     if (!cleanText) {
       callbacks?.onEnd?.();
       return;
     }
 
-    const synth = this.initSynth();
+    this.stop();
+    this.activeCallbacks = callbacks || null;
 
-    // Check if SpeechSynthesis is supported
-    if (!synth) {
-      this.speakWithAudioStream(cleanText, lang, rate, callbacks);
+    // Retrieve active API config (BYOK or server default)
+    const apiConfig = StorageService.getApiConfig();
+    let apiKey = '';
+    let provider = apiConfig.provider;
+
+    if (apiConfig.useCustomKey) {
+      if (apiConfig.provider === 'gemini') apiKey = apiConfig.geminiKey || '';
+      else if (apiConfig.provider === 'openai') apiKey = apiConfig.openaiKey || '';
+      else if (apiConfig.provider === 'groq') apiKey = apiConfig.groqKey || '';
+      else if (apiConfig.provider === 'sarvam') apiKey = apiConfig.sarvamKey || '';
+    }
+
+    // Attempt Server-Side High Fidelity TTS (Sarvam / OpenAI / Google Proxy)
+    try {
+      const response = await fetch('/api/tts/synthesize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: cleanText,
+          lang,
+          rate,
+          apiKey: apiKey || undefined,
+          provider: apiConfig.useCustomKey ? provider : 'server-default',
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.audioData && data.status === 'success') {
+          const playlist = data.allAudios && data.allAudios.length > 0 ? data.allAudios : [data.audioData];
+          this.playAudioPlaylist(playlist, cleanText, rate, callbacks);
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn('Server TTS synthesis call failed, switching to client Web Speech API:', err);
+    }
+
+    // Fallback to client browser SpeechSynthesis
+    this.speakWithWebSpeech(cleanText, lang, rate, callbacks);
+  }
+
+  /**
+   * Plays audio data streams with synced karaoke word tracking
+   */
+  private static playAudioPlaylist(
+    playlist: string[],
+    fullText: string,
+    rate: number,
+    callbacks?: TTSEventCallbacks
+  ): void {
+    if (!playlist || playlist.length === 0) {
+      callbacks?.onEnd?.();
       return;
     }
 
-    this.stop();
+    this.audioPlaylist = playlist;
+    this.currentPlaylistIndex = 0;
+    this.isServerAudioPlaying = true;
+    this.isPausedState = false;
+
+    const words = fullText.split(/\s+/).filter(Boolean);
+    const totalWords = words.length;
+    let wordIndex = 0;
+
+    const playNextTrack = (trackIndex: number) => {
+      if (trackIndex >= this.audioPlaylist.length) {
+        this.cleanUp();
+        callbacks?.onEnd?.();
+        return;
+      }
+
+      const audio = new Audio(this.audioPlaylist[trackIndex]);
+      audio.playbackRate = Math.max(0.6, Math.min(1.6, rate));
+      this.currentAudioElement = audio;
+
+      audio.onplay = () => {
+        this.isPausedState = false;
+        if (trackIndex === 0) {
+          callbacks?.onStart?.();
+          callbacks?.onWord?.(0, 0);
+          wordIndex = 1;
+        }
+
+        this.clearWordTimer();
+        // Dynamic time-based tracking
+        this.wordTimerInterval = setInterval(() => {
+          if (this.isPausedState || !audio.duration || isNaN(audio.duration)) return;
+
+          const progress = audio.currentTime / audio.duration;
+          const chunkWordCount = Math.ceil(totalWords / this.audioPlaylist.length);
+          const baseIndex = trackIndex * chunkWordCount;
+          const currentTrackWord = Math.floor(progress * chunkWordCount);
+          const calculatedIndex = Math.min(totalWords - 1, baseIndex + currentTrackWord);
+
+          if (calculatedIndex >= 0 && calculatedIndex < totalWords) {
+            callbacks?.onWord?.(calculatedIndex, 0);
+          }
+        }, 120);
+      };
+
+      audio.onended = () => {
+        this.clearWordTimer();
+        this.currentPlaylistIndex++;
+        if (this.currentPlaylistIndex < this.audioPlaylist.length) {
+          playNextTrack(this.currentPlaylistIndex);
+        } else {
+          this.cleanUp();
+          callbacks?.onEnd?.();
+        }
+      };
+
+      audio.onerror = (e) => {
+        console.warn('Audio playback error on track:', e);
+        this.cleanUp();
+        // If first track fails, try client Web Speech API fallback
+        if (trackIndex === 0) {
+          this.speakWithWebSpeech(fullText, 'en', rate, callbacks);
+        } else {
+          callbacks?.onEnd?.();
+        }
+      };
+
+      audio.play().catch((err) => {
+        console.warn('Audio play invocation prevented:', err);
+        this.speakWithWebSpeech(fullText, 'en', rate, callbacks);
+      });
+    };
+
+    playNextTrack(0);
+  }
+
+  /**
+   * Client-side Web Speech API implementation with utterance slicing
+   * to bypass browser 15s freeze bug and maintain synchronized word highlights.
+   */
+  private static speakWithWebSpeech(
+    text: string,
+    lang: SupportedLanguage,
+    rate: number,
+    callbacks?: TTSEventCallbacks
+  ): void {
+    const synth = this.initSynth();
+    if (!synth) {
+      callbacks?.onEnd?.();
+      return;
+    }
 
     try {
-      // Force cancel and resume any hung browser states
       synth.cancel();
       if (synth.paused) {
         synth.resume();
@@ -129,7 +285,12 @@ export class TTSService {
       const langCode = this.getLangCode(lang);
       const voice = this.findBestVoice(lang);
 
-      const utterance = new SpeechSynthesisUtterance(cleanText);
+      const words = text.split(/\s+/).filter(Boolean);
+      const totalWords = words.length;
+      let wordIndex = 0;
+      let boundaryFired = false;
+
+      const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = voice ? voice.lang : langCode;
       utterance.rate = Math.max(0.6, Math.min(1.8, rate));
       utterance.pitch = 1.0;
@@ -139,15 +300,9 @@ export class TTSService {
         utterance.voice = voice;
       }
 
-      const words = cleanText.split(/\s+/).filter(Boolean);
-      const totalWords = words.length;
-      let wordIndex = 0;
-      let boundaryFired = false;
-
-      // Word timer for synchronous karaoke tracking
       const startWordTimer = () => {
         this.clearWordTimer();
-        const msPerWord = Math.max(140, Math.round(330 / utterance.rate));
+        const msPerWord = Math.max(120, Math.round(320 / utterance.rate));
         this.wordTimerInterval = setInterval(() => {
           if (this.isPausedState) return;
           if (!boundaryFired && wordIndex < totalWords) {
@@ -166,14 +321,14 @@ export class TTSService {
         wordIndex = 1;
         startWordTimer();
 
-        // Chrome keep-alive pulse
+        // Browser keep-alive pulse
         this.clearKeepAlive();
         this.keepAliveInterval = setInterval(() => {
           if (synth && synth.speaking && !synth.paused) {
             synth.pause();
             synth.resume();
           }
-        }, 8000);
+        }, 6000);
       };
 
       utterance.onboundary = (event) => {
@@ -191,83 +346,24 @@ export class TTSService {
 
       utterance.onerror = (err) => {
         if (err.error !== 'canceled' && err.error !== 'interrupted') {
-          console.warn('SpeechSynthesis browser notice, attempting fallback audio:', err);
-          this.speakWithAudioStream(cleanText, lang, rate, callbacks);
-          return;
+          console.warn('SpeechSynthesis browser event notice:', err);
         }
         this.cleanUp();
         callbacks?.onEnd?.();
       };
 
       this.currentUtterance = utterance;
-
-      // Direct synchronous execution
       synth.speak(utterance);
     } catch (e) {
-      console.error('Error invoking SpeechSynthesis, trying audio fallback', e);
-      this.speakWithAudioStream(cleanText, lang, rate, callbacks);
-    }
-  }
-
-  private static speakWithAudioStream(
-    text: string,
-    lang: SupportedLanguage,
-    rate: number,
-    callbacks?: TTSEventCallbacks
-  ): void {
-    try {
-      this.stop();
-      const encodedText = encodeURIComponent(text.slice(0, 200));
-      const audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${lang}&client=tw-ob&q=${encodedText}`;
-
-      const audio = new Audio(audioUrl);
-      audio.playbackRate = Math.max(0.7, Math.min(1.5, rate));
-      this.currentAudioElement = audio;
-
-      const words = text.split(/\s+/).filter(Boolean);
-      let wordIndex = 0;
-
-      audio.onplay = () => {
-        this.isPausedState = false;
-        callbacks?.onStart?.();
-        callbacks?.onWord?.(0, 0);
-        wordIndex = 1;
-
-        const msPerWord = Math.max(140, Math.round(330 / audio.playbackRate));
-        this.wordTimerInterval = setInterval(() => {
-          if (this.isPausedState) return;
-          if (wordIndex < words.length) {
-            callbacks?.onWord?.(wordIndex, 0);
-            wordIndex++;
-          } else {
-            this.clearWordTimer();
-          }
-        }, msPerWord);
-      };
-
-      audio.onended = () => {
-        this.cleanUp();
-        callbacks?.onEnd?.();
-      };
-
-      audio.onerror = (e) => {
-        console.warn('Audio streaming notice:', e);
-        this.cleanUp();
-        callbacks?.onEnd?.();
-      };
-
-      audio.play().catch((err) => {
-        console.warn('Audio play error:', err);
-        callbacks?.onError?.(err);
-      });
-    } catch (err) {
-      callbacks?.onError?.(err);
+      console.error('Error with Web Speech API:', e);
+      this.cleanUp();
+      callbacks?.onEnd?.();
     }
   }
 
   public static pause(): void {
     const synth = this.initSynth();
-    if (synth && !this.isPausedState && synth.speaking) {
+    if (synth && synth.speaking && !this.isPausedState) {
       synth.pause();
       this.isPausedState = true;
     }
@@ -315,7 +411,8 @@ export class TTSService {
   public static isSpeaking(): boolean {
     const synth = this.initSynth();
     const synthSpeaking = !!synth && (synth.speaking || this.isPausedState);
-    const audioSpeaking = !!this.currentAudioElement && (!this.currentAudioElement.paused || this.isPausedState);
+    const audioSpeaking =
+      !!this.currentAudioElement && (!this.currentAudioElement.paused || this.isPausedState);
     return synthSpeaking || audioSpeaking;
   }
 
@@ -336,8 +433,11 @@ export class TTSService {
   private static cleanUp(): void {
     this.currentUtterance = null;
     this.isPausedState = false;
+    this.isServerAudioPlaying = false;
     this.clearWordTimer();
     this.clearKeepAlive();
+    this.audioPlaylist = [];
+    this.currentPlaylistIndex = 0;
     if (this.currentAudioElement) {
       this.currentAudioElement = null;
     }
