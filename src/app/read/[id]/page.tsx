@@ -49,6 +49,38 @@ export default function ReadingViewPage() {
     }
   }, [params?.id, currentDocument]);
 
+  // Auto-follow audio voice: smoothly glide Reading Focus Ruler and auto-scroll viewport with speech
+  useEffect(() => {
+    if (!isPlayingAudio || activeWordIndex < 0) return;
+
+    const rafId = requestAnimationFrame(() => {
+      const activeEl = document.querySelector('.karaoke-active-word') as HTMLElement;
+      if (!activeEl || !containerRef.current) return;
+
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const wordRect = activeEl.getBoundingClientRect();
+      const rulerHeight = profile.readingRulerHeight || 44;
+      const relativeY = wordRect.top - containerRect.top + (wordRect.height / 2) - (rulerHeight / 2);
+
+      // Smoothly update ruler position over current spoken line
+      if (profile.readingRulerEnabled) {
+        setReadingRulerY(Math.max(10, Math.min(relativeY, containerRect.height - rulerHeight - 10)));
+      }
+
+      // Auto-scroll screen so currently spoken word is always kept in comfortable view
+      const viewportHeight = window.innerHeight;
+      const wordTop = wordRect.top;
+      if (wordTop < 120 || wordTop > viewportHeight - 140) {
+        activeEl.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+        });
+      }
+    });
+
+    return () => cancelAnimationFrame(rafId);
+  }, [activeWordIndex, isPlayingAudio, profile.readingRulerEnabled, profile.readingRulerHeight, setReadingRulerY]);
+
   const doc = currentDocument || documents[0];
   const currentLangObj = SUPPORTED_LANGUAGES.find((l) => l.code === activeLanguage);
 
