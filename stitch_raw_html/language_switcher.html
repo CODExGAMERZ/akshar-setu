@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AksharSetu - Language Settings</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed-dim": "#ffb781",
+                        "tertiary": "#6d3700",
+                        "background": "#fbf9f8",
+                        "surface-container-high": "#eae8e7",
+                        "surface": "#fbf9f8",
+                        "secondary-fixed": "#ffdead",
+                        "surface-tint": "#2f5cad",
+                        "tertiary-fixed": "#ffdcc4",
+                        "on-secondary": "#ffffff",
+                        "surface-container-highest": "#e4e2e1",
+                        "surface-container-low": "#f6f3f2",
+                        "on-surface": "#1b1c1c",
+                        "on-background": "#1b1c1c",
+                        "on-primary-fixed-variant": "#0a4394",
+                        "on-tertiary-container": "#ffcba7",
+                        "surface-dim": "#dcd9d9",
+                        "outline": "#737783",
+                        "error-container": "#ffdad6",
+                        "on-secondary-container": "#724d00",
+                        "inverse-on-surface": "#f3f0f0",
+                        "on-tertiary-fixed-variant": "#703800",
+                        "outline-variant": "#c3c6d3",
+                        "primary-container": "#2d5aab",
+                        "inverse-primary": "#afc6ff",
+                        "on-secondary-fixed": "#281900",
+                        "error": "#ba1a1a",
+                        "on-primary-fixed": "#001a43",
+                        "on-error": "#ffffff",
+                        "on-primary-container": "#c6d5ff",
+                        "tertiary-container": "#904a00",
+                        "secondary-container": "#fdbe54",
+                        "primary-fixed-dim": "#afc6ff",
+                        "on-tertiary-fixed": "#2f1400",
+                        "secondary-fixed-dim": "#fabc51",
+                        "on-surface-variant": "#434751",
+                        "surface-variant": "#e4e2e1",
+                        "primary-fixed": "#d8e2ff",
+                        "surface-container-lowest": "#ffffff",
+                        "primary": "#064192",
+                        "on-tertiary": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "surface-bright": "#fbf9f8",
+                        "inverse-surface": "#303030",
+                        "surface-container": "#f0eded",
+                        "secondary": "#7f5700",
+                        "on-primary": "#ffffff",
+                        "on-secondary-fixed-variant": "#604100"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-desktop": "4rem",
+                        "touch-target": "3rem",
+                        "stack-gap": "2rem",
+                        "margin-mobile": "1.25rem",
+                        "gutter": "1.5rem"
+                    },
+                    "fontFamily": {
+                        "headline-lg-mobile": ["Open Sans"],
+                        "headline-lg": ["Open Sans"],
+                        "label-md": ["Open Sans"],
+                        "headline-md": ["Open Sans"],
+                        "body-lg": ["Open Sans"],
+                        "body-md": ["Open Sans"]
+                    },
+                    "fontSize": {
+                        "headline-lg-mobile": ["24px", { "lineHeight": "36px", "fontWeight": "700" }],
+                        "headline-lg": ["30px", { "lineHeight": "45px", "letterSpacing": "0.03em", "fontWeight": "700" }],
+                        "label-md": ["14px", { "lineHeight": "21px", "letterSpacing": "0.05em", "fontWeight": "700" }],
+                        "headline-md": ["24px", { "lineHeight": "36px", "letterSpacing": "0.02em", "fontWeight": "700" }],
+                        "body-lg": ["18px", { "lineHeight": "32px", "letterSpacing": "0.03em", "fontWeight": "400" }],
+                        "body-md": ["16px", { "lineHeight": "28px", "letterSpacing": "0.03em", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Open Sans', sans-serif; }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex flex-col md:flex-row">
+<!-- Desktop Side Nav -->
+<nav class="hidden lg:flex flex-col fixed left-0 top-0 h-full py-8 px-4 bg-surface-container-low border-r-2 border-surface-container-highest w-64 z-40">
+<div class="mb-8 px-4">
+<h1 class="text-headline-md font-headline-md font-bold text-primary">AksharSetu</h1>
+<p class="text-body-md font-body-md text-on-surface-variant">Reading Assistant</p>
+</div>
+<ul class="flex flex-col gap-2 flex-grow">
+<li>
+<a class="flex items-center gap-3 text-on-surface-variant px-4 py-3 hover:bg-surface-container-high transition-colors rounded-lg min-h-touch-target" href="#">
+<span class="material-symbols-outlined" data-icon="upload_file">upload_file</span>
+<span class="text-label-md font-label-md">Upload</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 text-on-surface-variant px-4 py-3 hover:bg-surface-container-high transition-colors rounded-lg min-h-touch-target" href="#">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+<span class="text-label-md font-label-md">History</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 text-on-surface-variant px-4 py-3 hover:bg-surface-container-high transition-colors rounded-lg min-h-touch-target" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="text-label-md font-label-md">Settings</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 bg-secondary-container text-on-secondary-container rounded-lg px-4 py-3 font-bold translate-x-1 min-h-touch-target" href="#">
+<span class="material-symbols-outlined" data-icon="language">language</span>
+<span class="text-label-md font-label-md">Language</span>
+</a>
+</li>
+</ul>
+</nav>
+<!-- Top App Bar (Tablet/Desktop) -->
+<header class="hidden md:flex lg:hidden justify-between items-center px-margin-desktop w-full h-touch-target bg-background border-b-2 border-surface-container-highest fixed top-0 z-40">
+<div class="text-headline-md font-headline-md font-bold text-primary">AksharSetu</div>
+<div class="flex items-center gap-4">
+<button class="text-primary hover:bg-surface-container-low transition-colors duration-200 p-2 rounded-full flex items-center justify-center min-h-touch-target min-w-touch-target opacity-80 scale-95 border-b-2 border-primary">
+<span class="material-symbols-outlined" data-icon="language">language</span>
+</button>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-grow w-full max-w-4xl mx-auto px-margin-mobile md:px-margin-desktop pt-8 pb-32 lg:ml-64 lg:pt-16">
+<div class="mb-stack-gap">
+<h2 class="text-headline-lg-mobile md:text-headline-lg font-headline-lg-mobile md:font-headline-lg text-primary mb-2">Select Language</h2>
+<p class="text-body-md font-body-md text-on-surface-variant">Switching language keeps all personalization settings and history intact, and switches Read Aloud to a matching voice automatically.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+<!-- Language Option: English -->
+<button class="w-full text-left bg-surface-container-lowest border-2 border-primary rounded-xl p-6 hover:bg-surface-container-low transition-colors min-h-touch-target flex items-center justify-between group">
+<div>
+<p class="text-headline-md font-headline-md text-on-surface mb-1">English</p>
+<p class="text-body-md font-body-md text-on-surface-variant">English</p>
+</div>
+<span class="material-symbols-outlined text-primary text-3xl opacity-100 group-hover:scale-110 transition-transform" data-icon="check_circle" data-weight="fill" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</button>
+<!-- Language Option: Hindi -->
+<button class="w-full text-left bg-surface-container-lowest border border-outline-variant rounded-xl p-6 hover:bg-surface-container-low hover:border-outline transition-colors min-h-touch-target flex items-center justify-between group">
+<div>
+<p class="text-headline-md font-headline-md text-on-surface mb-1">हिन्दी</p>
+<p class="text-body-md font-body-md text-on-surface-variant">Hindi</p>
+</div>
+</button>
+<!-- Language Option: Odia -->
+<button class="w-full text-left bg-surface-container-lowest border border-outline-variant rounded-xl p-6 hover:bg-surface-container-low hover:border-outline transition-colors min-h-touch-target flex items-center justify-between group">
+<div>
+<p class="text-headline-md font-headline-md text-on-surface mb-1">ଓଡ଼ିଆ</p>
+<p class="text-body-md font-body-md text-on-surface-variant">Odia</p>
+</div>
+</button>
+<!-- Language Option: Bengali -->
+<button class="w-full text-left bg-surface-container-lowest border border-outline-variant rounded-xl p-6 hover:bg-surface-container-low hover:border-outline transition-colors min-h-touch-target flex items-center justify-between group">
+<div>
+<p class="text-headline-md font-headline-md text-on-surface mb-1">বাংলা</p>
+<p class="text-body-md font-body-md text-on-surface-variant">Bengali</p>
+</div>
+</button>
+<!-- Language Option: Tamil -->
+<button class="w-full text-left bg-surface-container-lowest border border-outline-variant rounded-xl p-6 hover:bg-surface-container-low hover:border-outline transition-colors min-h-touch-target flex items-center justify-between group">
+<div>
+<p class="text-headline-md font-headline-md text-on-surface mb-1">தமிழ்</p>
+<p class="text-body-md font-body-md text-on-surface-variant">Tamil</p>
+</div>
+</button>
+<!-- Language Option: Telugu -->
+<button class="w-full text-left bg-surface-container-lowest border border-outline-variant rounded-xl p-6 hover:bg-surface-container-low hover:border-outline transition-colors min-h-touch-target flex items-center justify-between group">
+<div>
+<p class="text-headline-md font-headline-md text-on-surface mb-1">తెలుగు</p>
+<p class="text-body-md font-body-md text-on-surface-variant">Telugu</p>
+</div>
+</button>
+<!-- Language Option: Marathi -->
+<button class="w-full text-left bg-surface-container-lowest border border-outline-variant rounded-xl p-6 hover:bg-surface-container-low hover:border-outline transition-colors min-h-touch-target flex items-center justify-between group">
+<div>
+<p class="text-headline-md font-headline-md text-on-surface mb-1">मराठी</p>
+<p class="text-body-md font-body-md text-on-surface-variant">Marathi</p>
+</div>
+</button>
+</div>
+</main>
+<!-- Mobile Bottom Nav Bar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-margin-mobile py-2 md:hidden bg-background border-t-2 border-surface-container-highest">
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2 min-h-touch-target min-w-touch-target" href="#">
+<span class="material-symbols-outlined" data-icon="upload_file">upload_file</span>
+<span class="text-label-md font-label-md mt-1">Upload</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2 min-h-touch-target min-w-touch-target" href="#">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+<span class="text-label-md font-label-md mt-1">History</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2 min-h-touch-target min-w-touch-target" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="text-label-md font-label-md mt-1">Settings</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-xl p-2 scale-95 transition-transform duration-150 min-h-touch-target min-w-touch-target" href="#">
+<span class="material-symbols-outlined" data-icon="language">language</span>
+<span class="text-label-md font-label-md mt-1">Language</span>
+</a>
+</nav>
+</body></html>

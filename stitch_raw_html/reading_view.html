@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AksharSetu - Reading Screen</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "tertiary-fixed-dim": "#ffb781",
+                      "tertiary": "#6d3700",
+                      "background": "#fbf9f8",
+                      "surface-container-high": "#eae8e7",
+                      "surface": "#fbf9f8",
+                      "secondary-fixed": "#ffdead",
+                      "surface-tint": "#2f5cad",
+                      "tertiary-fixed": "#ffdcc4",
+                      "on-secondary": "#ffffff",
+                      "surface-container-highest": "#e4e2e1",
+                      "surface-container-low": "#f6f3f2",
+                      "on-surface": "#1b1c1c",
+                      "on-background": "#1b1c1c",
+                      "on-primary-fixed-variant": "#0a4394",
+                      "on-tertiary-container": "#ffcba7",
+                      "surface-dim": "#dcd9d9",
+                      "outline": "#737783",
+                      "error-container": "#ffdad6",
+                      "on-secondary-container": "#724d00",
+                      "inverse-on-surface": "#f3f0f0",
+                      "on-tertiary-fixed-variant": "#703800",
+                      "outline-variant": "#c3c6d3",
+                      "primary-container": "#2d5aab",
+                      "inverse-primary": "#afc6ff",
+                      "on-secondary-fixed": "#281900",
+                      "error": "#ba1a1a",
+                      "on-primary-fixed": "#001a43",
+                      "on-error": "#ffffff",
+                      "on-primary-container": "#c6d5ff",
+                      "tertiary-container": "#904a00",
+                      "secondary-container": "#fdbe54",
+                      "primary-fixed-dim": "#afc6ff",
+                      "on-tertiary-fixed": "#2f1400",
+                      "secondary-fixed-dim": "#fabc51",
+                      "on-surface-variant": "#434751",
+                      "surface-variant": "#e4e2e1",
+                      "primary-fixed": "#d8e2ff",
+                      "surface-container-lowest": "#ffffff",
+                      "primary": "#064192",
+                      "on-tertiary": "#ffffff",
+                      "on-error-container": "#93000a",
+                      "surface-bright": "#fbf9f8",
+                      "inverse-surface": "#303030",
+                      "surface-container": "#f0eded",
+                      "secondary": "#7f5700",
+                      "on-primary": "#ffffff",
+                      "on-secondary-fixed-variant": "#604100"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "margin-desktop": "4rem",
+                      "touch-target": "3rem",
+                      "stack-gap": "2rem",
+                      "margin-mobile": "1.25rem",
+                      "gutter": "1.5rem"
+              },
+              "fontFamily": {
+                      "headline-lg-mobile": [
+                              "Open Sans"
+                      ],
+                      "headline-lg": [
+                              "Open Sans"
+                      ],
+                      "label-md": [
+                              "Open Sans"
+                      ],
+                      "headline-md": [
+                              "Open Sans"
+                      ],
+                      "body-lg": [
+                              "Open Sans"
+                      ],
+                      "body-md": [
+                              "Open Sans"
+                      ]
+              },
+              "fontSize": {
+                      "headline-lg-mobile": [
+                              "24px",
+                              {
+                                      "lineHeight": "36px",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-lg": [
+                              "30px",
+                              {
+                                      "lineHeight": "45px",
+                                      "letterSpacing": "0.03em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "label-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "21px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "36px",
+                                      "letterSpacing": "0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "32px",
+                                      "letterSpacing": "0.03em",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "28px",
+                                      "letterSpacing": "0.03em",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+<style>
+        .reading-focus-highlight {
+            background-color: theme('colors.secondary-fixed');
+            border-radius: theme('borderRadius.DEFAULT');
+            padding: 0.125rem 0.25rem;
+        }
+        .reading-focus-dim {
+            opacity: 0.4;
+        }
+        .reading-content {
+            max-width: 65ch;
+            margin-left: auto;
+            margin-right: auto;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background antialiased selection:bg-secondary-container selection:text-on-secondary-container min-h-screen flex flex-col md:flex-row">
+<!-- SideNavBar (Desktop) -->
+<nav class="hidden lg:flex flex-col fixed left-0 top-0 h-full py-8 px-4 bg-surface-container-low border-r-2 border-surface-container-highest w-64 z-40">
+<div class="mb-8 px-4">
+<h1 class="text-headline-md font-headline-md font-bold text-primary">AksharSetu</h1>
+<p class="text-on-surface-variant text-label-md font-label-md mt-1">Reading Assistant</p>
+</div>
+<ul class="flex flex-col gap-2">
+<li>
+<a class="flex items-center gap-3 text-on-surface-variant px-4 py-3 hover:bg-surface-container-high transition-colors rounded-lg text-label-md font-label-md h-touch-target" href="#">
+<span aria-hidden="true" class="material-symbols-outlined" data-icon="upload_file">upload_file</span>
+                    Upload
+                </a>
+</li>
+<li>
+<a class="flex items-center gap-3 text-on-surface-variant px-4 py-3 hover:bg-surface-container-high transition-colors rounded-lg text-label-md font-label-md h-touch-target" href="#">
+<span aria-hidden="true" class="material-symbols-outlined" data-icon="history">history</span>
+                    History
+                </a>
+</li>
+<li>
+<a class="flex items-center gap-3 text-on-surface-variant px-4 py-3 hover:bg-surface-container-high transition-colors rounded-lg text-label-md font-label-md h-touch-target" href="#">
+<span aria-hidden="true" class="material-symbols-outlined" data-icon="settings">settings</span>
+                    Settings
+                </a>
+</li>
+<li>
+<a class="flex items-center gap-3 text-on-surface-variant px-4 py-3 hover:bg-surface-container-high transition-colors rounded-lg text-label-md font-label-md h-touch-target" href="#">
+<span aria-hidden="true" class="material-symbols-outlined" data-icon="language">language</span>
+                    Language
+                </a>
+</li>
+</ul>
+</nav>
+<!-- TopAppBar (Mobile/Tablet) -->
+<header class="hidden md:flex lg:hidden justify-between items-center px-margin-desktop w-full h-touch-target bg-background text-primary border-b-2 border-surface-container-highest fixed top-0 z-40">
+<h1 class="text-headline-md font-headline-md font-bold text-primary">AksharSetu</h1>
+<div class="flex gap-4">
+<button class="text-on-surface-variant font-medium hover:bg-surface-container-low transition-colors duration-200 p-2 rounded-full flex items-center justify-center">
+<span aria-hidden="true" class="material-symbols-outlined" data-icon="language">language</span>
+</button>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 w-full lg:ml-64 pb-[100px] md:pb-0 md:pt-touch-target lg:pt-0">
+<!-- Top Control Bar (Document Level) -->
+<div class="sticky top-0 bg-background/95 backdrop-blur-sm z-30 border-b-2 border-surface-container-highest px-margin-mobile md:px-margin-desktop py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+<div class="flex items-center bg-surface-container-low rounded-full p-1 border-2 border-surface-container-highest">
+<button class="px-6 py-2 rounded-full bg-secondary-container text-on-secondary-container text-label-md font-label-md font-bold shadow-sm transition-transform active:scale-95 flex items-center gap-2 h-touch-target">
+<span aria-hidden="true" class="material-symbols-outlined" data-icon="tune">tune</span>
+                    Personalized
+                </button>
+<button class="px-6 py-2 rounded-full text-on-surface-variant text-label-md font-label-md hover:bg-surface-container-high transition-colors h-touch-target">
+                    Original
+                </button>
+</div>
+<button class="flex items-center gap-2 bg-primary text-on-primary px-6 py-3 rounded-full text-label-md font-label-md font-bold hover:bg-primary-container hover:text-on-primary-container transition-colors active:scale-95 h-touch-target shadow-sm">
+<span aria-hidden="true" class="material-symbols-outlined" data-icon="auto_awesome">auto_awesome</span>
+                Simplify text
+            </button>
+</div>
+<!-- Reading Canvas -->
+<div class="px-margin-mobile md:px-margin-desktop py-stack-gap">
+<article class="reading-content text-body-lg font-body-lg text-on-surface leading-loose tracking-wide">
+<h1 class="text-headline-lg-mobile md:text-headline-lg font-headline-lg-mobile md:font-headline-lg text-primary mb-8 font-bold">The Great Banyan Tree</h1>
+<p class="mb-stack-gap reading-focus-dim">
+                    In the heart of the bustling city, tucked away behind a sprawling market, lay a garden untouched by time. The air here smelled of damp earth and crushed jasmine, a stark contrast to the exhaust fumes just walls away.
+                </p>
+<p class="mb-stack-gap">
+<span class="reading-focus-highlight font-bold text-on-surface">At the center of this sanctuary stood the Great Banyan tree.</span>
+<span class="reading-focus-dim">Its roots, thick as pillars, descended from the sprawling branches to anchor deeply into the soil, creating a natural pavilion. For generations, the tree had been a silent witness to the city's changing face.</span>
+</p>
+<p class="mb-stack-gap reading-focus-dim">
+                    Children played hide and seek among its labyrinthine roots, their laughter echoing against the thick bark. Old men gathered on woven mats beneath its canopy, trading stories of a time when the city was nothing more than a collection of dusty roads and mud houses.
+                </p>
+<p class="mb-stack-gap reading-focus-dim">
+                    The tree offered shade, but more importantly, it offered a sense of continuity. No matter how fast the world outside spun, beneath the Banyan, time seemed to slow to a gentle, manageable rhythm.
+                </p>
+</article>
+</div>
+</main>
+<!-- Floating Control Bar (Reading Actions) -->
+<div class="fixed bottom-touch-target md:bottom-margin-mobile left-1/2 -translate-x-1/2 z-50 bg-surface-container-highest rounded-full shadow-lg border-2 border-outline-variant p-2 flex items-center gap-2 max-w-[95vw] overflow-x-auto">
+<!-- Focus Mode Toggle -->
+<button class="flex flex-col items-center justify-center p-2 rounded-xl bg-secondary-container text-on-secondary-container min-w-[80px] h-touch-target active:scale-95 transition-transform">
+<span aria-hidden="true" class="material-symbols-outlined" data-icon="center_focus_strong" data-weight="fill" style="font-variation-settings: 'FILL' 1;">center_focus_strong</span>
+<span class="text-label-md font-label-md mt-1 text-[10px]">Focus mode</span>
+</button>
+<div class="w-px h-8 bg-outline-variant mx-1"></div>
+<!-- Read Aloud Controls -->
+<div class="flex items-center gap-1">
+<button class="flex flex-col items-center justify-center p-2 rounded-xl text-on-surface-variant hover:bg-surface-container-high min-w-[64px] h-touch-target active:scale-95 transition-transform">
+<span aria-hidden="true" class="material-symbols-outlined" data-icon="fast_rewind">fast_rewind</span>
+</button>
+<button class="flex flex-col items-center justify-center p-3 rounded-full bg-primary text-on-primary min-w-[56px] min-h-[56px] hover:bg-primary-container hover:text-on-primary-container active:scale-95 transition-transform shadow-md">
+<span aria-hidden="true" class="material-symbols-outlined text-2xl" data-icon="play_arrow" data-weight="fill" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+</button>
+<button class="flex flex-col items-center justify-center p-2 rounded-xl text-on-surface-variant hover:bg-surface-container-high min-w-[64px] h-touch-target active:scale-95 transition-transform">
+<span aria-hidden="true" class="material-symbols-outlined" data-icon="fast_forward">fast_forward</span>
+</button>
+<!-- Speed Control -->
+<button class="flex items-center justify-center px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container-high h-touch-target border-2 border-transparent hover:border-outline-variant transition-all ml-1">
+<span class="text-label-md font-label-md font-bold">1.0x</span>
+</button>
+</div>
+<div class="w-px h-8 bg-outline-variant mx-1"></div>
+<!-- Language Settings -->
+<button class="flex flex-col items-center justify-center p-2 rounded-xl text-on-surface-variant hover:bg-surface-container-high min-w-[80px] h-touch-target active:scale-95 transition-transform">
+<span aria-hidden="true" class="material-symbols-outlined" data-icon="language">language</span>
+<span class="text-label-md font-label-md mt-1 text-[10px]">English</span>
+</button>
+</div>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-margin-mobile py-2 md:hidden bg-background text-primary border-t-2 border-surface-container-highest h-[72px]">
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2 active:bg-surface-container-high rounded-xl h-full min-w-[64px]" href="#">
+<span aria-hidden="true" class="material-symbols-outlined" data-icon="upload_file">upload_file</span>
+<span class="text-label-md font-label-md mt-1 text-[11px]">Upload</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2 active:bg-surface-container-high rounded-xl h-full min-w-[64px]" href="#">
+<span aria-hidden="true" class="material-symbols-outlined" data-icon="history">history</span>
+<span class="text-label-md font-label-md mt-1 text-[11px]">History</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2 active:bg-surface-container-high rounded-xl h-full min-w-[64px]" href="#">
+<span aria-hidden="true" class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="text-label-md font-label-md mt-1 text-[11px]">Settings</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2 active:bg-surface-container-high rounded-xl h-full min-w-[64px]" href="#">
+<span aria-hidden="true" class="material-symbols-outlined" data-icon="language">language</span>
+<span class="text-label-md font-label-md mt-1 text-[11px]">Language</span>
+</a>
+</nav>
+</body></html>
