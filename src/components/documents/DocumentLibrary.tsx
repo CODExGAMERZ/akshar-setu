@@ -35,6 +35,21 @@ export const DocumentLibrary: React.FC = () => {
 
         <div className="flex items-center gap-3">
           <Button
+            variant="outline"
+            size="md"
+            onClick={() => {
+              if (confirm('Reset library to default educational lessons? Any custom uploads will be cleared.')) {
+                if (typeof window !== 'undefined') {
+                  localStorage.removeItem('aksharsetu_documents_v1');
+                  window.location.reload();
+                }
+              }
+            }}
+          >
+            Reset Library
+          </Button>
+
+          <Button
             variant="accent"
             size="md"
             icon={<UploadCloud className="w-4 h-4" />}
@@ -44,6 +59,7 @@ export const DocumentLibrary: React.FC = () => {
           </Button>
         </div>
       </div>
+
 
       {/* Search & Category Filter Bar */}
       <div className="flex flex-wrap items-center justify-between gap-4">

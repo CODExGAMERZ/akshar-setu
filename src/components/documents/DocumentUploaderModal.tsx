@@ -105,27 +105,9 @@ export const DocumentUploaderModal: React.FC = () => {
               </div>
             </label>
 
-            {/* Quick sample preload button for convenience */}
-            <div className="p-3.5 bg-[#FAF3E0] border border-[#E7DFCA] rounded-xl flex items-center justify-between gap-3">
-              <div className="text-xs">
-                <p className="font-semibold text-[#26231E]">Want to test with sample educational material?</p>
-                <p className="text-[#706655]">Click to simulate digitizing a science biology chapter.</p>
-              </div>
-              <Button
-                variant="secondary"
-                size="sm"
-                icon={<Sparkles className="w-3.5 h-3.5 text-[#D97706]" />}
-                onClick={() => {
-                  const blob = new Blob(["Sample Biology Document"], { type: "text/plain" });
-                  const file = new File([blob], "Biology_Cellular_Pollination.pdf", { type: "application/pdf" });
-                  handleFileChange(file);
-                }}
-              >
-                Sample PDF
-              </Button>
-            </div>
           </div>
         )}
+
 
         {(uploadStep === 'uploading' || uploadStep === 'processing' || uploadStep === 'extracting' || uploadStep === 'formatting') && (
           <div className="py-8 space-y-6 text-center">
