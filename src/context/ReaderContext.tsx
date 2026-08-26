@@ -23,6 +23,8 @@ interface ReaderContextType {
   setSimplifyLevel: (level: 'off' | 'light' | 'medium' | 'heavy') => Promise<void>;
   activeLanguage: SupportedLanguage;
   setLanguage: (lang: SupportedLanguage) => Promise<void>;
+  isTranslating: boolean;
+  isSimplifying: boolean;
   // TTS & Karaoke
   isPlayingAudio: boolean;
   activeWordIndex: number;
@@ -46,6 +48,8 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [viewMode, setViewMode] = useState<'personalized' | 'original'>('personalized');
   const [simplifyLevel, setSimplifyLevelState] = useState<'off' | 'light' | 'medium' | 'heavy'>('off');
   const [activeLanguage, setActiveLanguage] = useState<SupportedLanguage>('en');
+  const [isTranslating, setIsTranslating] = useState<boolean>(false);
+  const [isSimplifying, setIsSimplifying] = useState<boolean>(false);
 
   // TTS State
   const [isPlayingAudio, setIsPlayingAudio] = useState<boolean>(false);
@@ -86,13 +90,12 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const setCurrentDocumentId = (id: string) => {
     const doc = documents.find((d) => d.id === id) || null;
-    setCurrentDocument(doc);
     if (doc) {
-      StorageService.setCurrentDocId(id);
+      setCurrentDocument(doc);
       setActiveLanguage(doc.language || 'en');
-      setSimplifyLevelState('off');
+      StorageService.setCurrentDocId(id);
+      stopReadAloud();
     }
-    stopReadAloud();
   };
 
   const addDocument = (
@@ -123,6 +126,7 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const setLanguage = async (lang: SupportedLanguage) => {
+    if (lang === activeLanguage && currentDocument?.language === lang) return;
     setActiveLanguage(lang);
     setViewMode('personalized');
     setSimplifyLevelState('off');
@@ -130,6 +134,7 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     if (!currentDocument) return;
 
+    setIsTranslating(true);
     try {
       const translated = await TranslationService.translateText(
         currentDocument.originalText,
@@ -150,6 +155,8 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       );
     } catch (err) {
       console.error('Failed to change language:', err);
+    } finally {
+      setIsTranslating(false);
     }
   };
 
@@ -162,27 +169,33 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     if (level === 'off') {
       // Restore translation or original text
-      const baseText =
-        activeLanguage === 'en'
-          ? currentDocument.originalText
-          : await TranslationService.translateText(
-              currentDocument.originalText,
-              activeLanguage,
-              currentDocument.title
-            );
+      setIsSimplifying(true);
+      try {
+        const baseText =
+          activeLanguage === 'en'
+            ? currentDocument.originalText
+            : await TranslationService.translateText(
+                currentDocument.originalText,
+                activeLanguage,
+                currentDocument.title
+              );
 
-      const updatedDoc = {
-        ...currentDocument,
-        processedText: baseText,
-      };
-      setCurrentDocument(updatedDoc);
-      StorageService.saveDocument(updatedDoc);
-      setDocuments((prevDocs) =>
-        prevDocs.map((d) => (d.id === updatedDoc.id ? updatedDoc : d))
-      );
+        const updatedDoc = {
+          ...currentDocument,
+          processedText: baseText,
+        };
+        setCurrentDocument(updatedDoc);
+        StorageService.saveDocument(updatedDoc);
+        setDocuments((prevDocs) =>
+          prevDocs.map((d) => (d.id === updatedDoc.id ? updatedDoc : d))
+        );
+      } finally {
+        setIsSimplifying(false);
+      }
       return;
     }
 
+    setIsSimplifying(true);
     try {
       const sourceText =
         activeLanguage === 'en'
@@ -207,6 +220,8 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       );
     } catch (err) {
       console.error('Failed to simplify text:', err);
+    } finally {
+      setIsSimplifying(false);
     }
   };
 
@@ -271,6 +286,8 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setSimplifyLevel,
         activeLanguage,
         setLanguage,
+        isTranslating,
+        isSimplifying,
         isPlayingAudio,
         activeWordIndex,
         speechRate,

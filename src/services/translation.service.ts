@@ -1,6 +1,9 @@
 import { SupportedLanguage } from '@/types';
 import { StorageService } from '@/lib/storage';
 
+// Client-side in-memory translation cache
+const translationCache = new Map<string, string>();
+
 export class TranslationService {
   public static async translateText(
     text: string,
@@ -10,8 +13,13 @@ export class TranslationService {
     if (!text) return '';
 
     // If English to English, return early
-    if (targetLang === 'en' && /^[a-zA-Z0-9\s.,!?'"()-]+$/.test(text.slice(0, 100))) {
+    if (targetLang === 'en') {
       return text;
+    }
+
+    const cacheKey = `${targetLang}_${text.length}_${text.slice(0, 40)}`;
+    if (translationCache.has(cacheKey)) {
+      return translationCache.get(cacheKey)!;
     }
 
     // Check user BYOK API configuration from Storage
@@ -42,6 +50,7 @@ export class TranslationService {
       if (response.ok) {
         const data = await response.json();
         if (data.translatedText && data.translatedText.trim().length > 0) {
+          translationCache.set(cacheKey, data.translatedText);
           return data.translatedText;
         }
       }

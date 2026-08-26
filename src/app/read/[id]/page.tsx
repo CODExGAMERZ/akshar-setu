@@ -21,6 +21,8 @@ export default function ReadingViewPage() {
     setSimplifyLevel,
     activeLanguage,
     setLanguage,
+    isTranslating,
+    isSimplifying,
     isPlayingAudio,
     activeWordIndex,
     speechRate,
@@ -304,6 +306,14 @@ export default function ReadingViewPage() {
         </div>
       </div>
 
+      {/* Status banner when translating or simplifying */}
+      {(isTranslating || isSimplifying) && (
+        <div className="sticky top-[69px] z-20 w-full bg-secondary-container/90 backdrop-blur-sm border-b border-primary/20 px-4 py-2 text-center text-xs font-bold text-on-secondary-container flex items-center justify-center gap-2 animate-in fade-in">
+          <span className="material-symbols-outlined text-sm animate-spin text-primary">progress_activity</span>
+          <span>{isTranslating ? `Translating document into ${currentLangObj?.nativeName || 'selected language'}...` : 'Simplifying document with AI...'}</span>
+        </div>
+      )}
+
       {/* Main Reading Canvas */}
       <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 md:px-8 py-6 sm:py-8 md:py-12">
         <div
@@ -311,7 +321,9 @@ export default function ReadingViewPage() {
           onMouseMove={handleMouseMove}
           onTouchMove={handleTouchMove}
           onTouchStart={handleTouchMove}
-          className="relative w-full p-6 sm:p-8 md:p-10 select-text rounded-2xl shadow-sm border border-surface-container-highest transition-colors duration-200"
+          className={`relative w-full p-6 sm:p-8 md:p-10 select-text rounded-2xl shadow-sm border border-surface-container-highest transition-colors duration-200 ${
+            isTranslating || isSimplifying ? 'opacity-60 pointer-events-none' : ''
+          }`}
           style={{
             backgroundColor: viewMode === 'personalized' ? profile.backgroundColor : '#ffffff',
             color: viewMode === 'personalized' ? profile.textColor : '#111111',

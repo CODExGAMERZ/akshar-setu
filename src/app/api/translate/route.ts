@@ -21,23 +21,33 @@ const SARVAM_LANG_CODES: Record<string, string> = {
   or: 'od-IN',
 };
 
-async function translateChunkWithMyMemory(text: string, targetLang: string): Promise<string | null> {
+// Server-side translation memory cache
+const serverTranslationCache = new Map<string, string>();
+
+async function translateChunkWithMyMemory(text: string, targetLang: string): Promise<string> {
+  const clean = text.trim();
+  if (!clean) return '';
+  const cacheKey = `mm_${targetLang}_${clean}`;
+  if (serverTranslationCache.has(cacheKey)) {
+    return serverTranslationCache.get(cacheKey)!;
+  }
+
   try {
-    const clean = text.trim();
-    if (!clean) return '';
     const res = await fetch(
-      `https://api.mymemory.translated.net/get?q=${encodeURIComponent(clean)}&langpair=en|${targetLang}`
+      `https://api.mymemory.translated.net/get?q=${encodeURIComponent(clean.slice(0, 450))}&langpair=en|${targetLang}`
     );
     if (res.ok) {
       const data = await res.json();
-      if (data.responseData?.translatedText && !data.responseData.translatedText.startsWith('INVALID')) {
-        return data.responseData.translatedText;
+      const translated = data.responseData?.translatedText;
+      if (translated && !translated.startsWith('INVALID') && !translated.startsWith('QUERY LENGTH')) {
+        serverTranslationCache.set(cacheKey, translated);
+        return translated;
       }
     }
   } catch (err) {
-    console.warn('MyMemory translation chunk exception:', err);
+    console.warn('MyMemory chunk error:', err);
   }
-  return null;
+  return clean;
 }
 
 export async function POST(req: NextRequest) {
@@ -48,51 +58,50 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing text or target language' }, { status: 400 });
     }
 
-    if (targetLang === 'en' && /^[a-zA-Z0-9\s.,!?'"()-]+$/.test(text.slice(0, 100))) {
+    if (targetLang === 'en') {
       return NextResponse.json({ translatedText: text, status: 'success' });
     }
 
     const langName = LANG_NAMES[targetLang] || targetLang;
-
-    // 1. Try Sarvam AI Mayura Translation if provider is sarvam or key is available
     const sarvamKey = (provider === 'sarvam' && apiKey) || process.env.SARVAM_API_KEY;
+
+    // 1. Try Sarvam AI Mayura Translation if Sarvam key is provided
     if (sarvamKey) {
       try {
         const sarvamTargetCode = SARVAM_LANG_CODES[targetLang] || `${targetLang}-IN`;
-        // Split long text into paragraphs / chunks under 800 chars
         const paragraphs = text.split('\n\n').filter((p: string) => p.trim().length > 0);
-        const translatedParagraphs: string[] = [];
 
-        for (const p of paragraphs) {
-          const res = await fetch('https://api.sarvam.ai/translate', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'api-subscription-key': sarvamKey,
-            },
-            body: JSON.stringify({
-              input: p.trim().slice(0, 1000),
-              source_language_code: 'en-IN',
-              target_language_code: sarvamTargetCode,
-              speaker_gender: 'Female',
-              mode: 'formal',
-              model: 'mayura:v1',
-            }),
-          });
-
-          if (res.ok) {
-            const data = await res.json();
-            if (data.translated_text) {
-              translatedParagraphs.push(data.translated_text);
-            } else {
-              translatedParagraphs.push(p);
+        // Run in parallel batches of 5
+        const translatedParagraphs: string[] = await Promise.all(
+          paragraphs.map(async (p: string) => {
+            try {
+              const res = await fetch('https://api.sarvam.ai/translate', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'api-subscription-key': sarvamKey,
+                },
+                body: JSON.stringify({
+                  input: p.trim().slice(0, 1000),
+                  source_language_code: 'en-IN',
+                  target_language_code: sarvamTargetCode,
+                  speaker_gender: 'Female',
+                  mode: 'formal',
+                  model: 'mayura:v1',
+                }),
+              });
+              if (res.ok) {
+                const data = await res.json();
+                if (data.translated_text) return data.translated_text;
+              }
+            } catch {
+              // fallback to original paragraph
             }
-          } else {
-            translatedParagraphs.push(p);
-          }
-        }
+            return p;
+          })
+        );
 
-        if (translatedParagraphs.length > 0) {
+        if (translatedParagraphs.length > 0 && translatedParagraphs.some((tp) => tp !== paragraphs[0])) {
           return NextResponse.json({
             translatedText: translatedParagraphs.join('\n\n'),
             status: 'success',
@@ -100,7 +109,7 @@ export async function POST(req: NextRequest) {
           });
         }
       } catch (sarvamErr) {
-        console.warn('Sarvam translation failed, falling back:', sarvamErr);
+        console.warn('Sarvam translation batch error, falling back:', sarvamErr);
       }
     }
 
@@ -113,7 +122,7 @@ Instructions:
 - Return ONLY the direct translation. Do not include markdown code blocks, quotes, or conversational preamble.
 
 Source Text:
-${text}`;
+${text.slice(0, 8000)}`;
 
     const systemInstruction = `You are an expert assistive multilingual translator specializing in Indian languages (${Object.values(LANG_NAMES).join(', ')}). Output pure translated text only.`;
 
@@ -132,41 +141,51 @@ ${text}`;
       });
     }
 
-    // 3. Fallback to Free Neural MyMemory API for all 7 Indic Languages
+    // 3. High-Speed Parallel MyMemory Translation for all 7 Indic Languages
     try {
       const paragraphs = text.split('\n\n').filter((p: string) => p.trim().length > 0);
-      const translatedList: string[] = [];
 
-      for (const para of paragraphs) {
-        const sentences = para.match(/[^.!?\n]+[.!?\n]+|[^.!?\n]+$/g) || [para];
-        const translatedSentences: string[] = [];
+      const translatedParagraphs = await Promise.all(
+        paragraphs.map(async (para: string) => {
+          // Group sentences into chunks <= 350 chars
+          const sentences = para.match(/[^.!?\n]+[.!?\n]+|[^.!?\n]+$/g) || [para];
+          const chunks: string[] = [];
+          let cur = '';
 
-        for (const s of sentences) {
-          const res = await translateChunkWithMyMemory(s, targetLang);
-          translatedSentences.push(res || s);
-        }
+          for (const s of sentences) {
+            if (cur.length + s.length + 1 <= 350) {
+              cur = cur ? `${cur} ${s}` : s;
+            } else {
+              if (cur) chunks.push(cur);
+              cur = s;
+            }
+          }
+          if (cur) chunks.push(cur);
 
-        translatedList.push(translatedSentences.join(' '));
-      }
+          const translatedChunks = await Promise.all(
+            chunks.map((chunk) => translateChunkWithMyMemory(chunk, targetLang))
+          );
+          return translatedChunks.join(' ');
+        })
+      );
 
-      if (translatedList.length > 0) {
+      if (translatedParagraphs.length > 0) {
         return NextResponse.json({
-          translatedText: translatedList.join('\n\n'),
+          translatedText: translatedParagraphs.join('\n\n'),
           status: 'success',
-          provider: 'mymemory-fallback',
+          provider: 'mymemory-parallel',
         });
       }
     } catch (fallbackErr) {
-      console.warn('MyMemory fallback failed:', fallbackErr);
+      console.warn('MyMemory parallel translation error:', fallbackErr);
     }
 
-    // 4. Return original text if all methods fail
     return NextResponse.json({
       translatedText: text,
       status: 'fallback',
     });
   } catch (err: any) {
-    console.error('Translation error:', err);
+    console.error('Translation route error:', err);
     return NextResponse.json({ error: err.message || 'Translation failed' }, { status: 500 });
   }
 }

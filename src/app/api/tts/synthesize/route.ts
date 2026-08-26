@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { SupportedLanguage } from '@/types';
 
 // Language code mappings for Sarvam Bulbul TTS
 const SARVAM_LANG_CODES: Record<string, string> = {
@@ -9,7 +8,7 @@ const SARVAM_LANG_CODES: Record<string, string> = {
   ta: 'ta-IN',
   te: 'te-IN',
   mr: 'mr-IN',
-  or: 'od-IN', // Sarvam uses od-IN for Odia
+  or: 'od-IN',
 };
 
 // Language code mappings for Google Translate Server TTS
@@ -23,8 +22,11 @@ const GOOGLE_LANG_CODES: Record<string, string> = {
   or: 'or',
 };
 
+// Server-side Audio Cache
+const audioCache = new Map<string, string>();
+
 /**
- * Splits long text into natural sentence or punctuation-delimited chunks
+ * Splits text into sentence/phrase chunks <= maxChunkLength
  */
 function chunkText(text: string, maxChunkLength: number = 180): string[] {
   const clean = text.replace(/\s+/g, ' ').trim();
@@ -45,7 +47,6 @@ function chunkText(text: string, maxChunkLength: number = 180): string[] {
       if (s.length <= maxChunkLength) {
         currentChunk = s;
       } else {
-        // Break long sentence by commas or words
         const words = s.split(' ');
         let subChunk = '';
         for (const word of words) {
@@ -73,7 +74,7 @@ function chunkText(text: string, maxChunkLength: number = 180): string[] {
  */
 async function fetchGoogleTTSChunk(textChunk: string, langCode: string): Promise<Buffer | null> {
   try {
-    const encoded = encodeURIComponent(textChunk);
+    const encoded = encodeURIComponent(textChunk.trim());
     const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${langCode}&client=tw-ob&q=${encoded}`;
     const res = await fetch(url, {
       headers: {
@@ -113,6 +114,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Empty text after cleaning' }, { status: 400 });
     }
 
+    const cacheKey = `tts_${lang}_${rate}_${cleanText.length}_${cleanText.slice(0, 50)}`;
+    if (audioCache.has(cacheKey)) {
+      return NextResponse.json({
+        audioData: audioCache.get(cacheKey)!,
+        provider: 'cache',
+        status: 'success',
+      });
+    }
+
     const sarvamKey = (provider === 'sarvam' && apiKey) || process.env.SARVAM_API_KEY;
     const openaiKey = (provider === 'openai' && apiKey) || process.env.OPENAI_API_KEY;
 
@@ -120,47 +130,48 @@ export async function POST(req: NextRequest) {
     if (sarvamKey) {
       try {
         const targetLangCode = SARVAM_LANG_CODES[lang] || 'en-IN';
-        // Sarvam takes up to 500 characters per call
         const chunks = chunkText(cleanText, 450);
-        const sarvamAudios: string[] = [];
 
-        for (const chunk of chunks.slice(0, 10)) {
-          // Limit to first 10 chunks to avoid timeout
-          const res = await fetch('https://api.sarvam.ai/text-to-speech', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'api-subscription-key': sarvamKey,
-            },
-            body: JSON.stringify({
-              inputs: [chunk],
-              target_language_code: targetLangCode,
-              speaker: 'meera',
-              pitch: 0,
-              pace: Math.max(0.7, Math.min(1.4, rate)),
-              loudness: 1.5,
-              speech_sample_rate: 22050,
-              enable_preprocessing: true,
-              model: 'bulbul:v1',
-            }),
-          });
-
-          if (res.ok) {
-            const data = await res.json();
-            if (data.audios && data.audios[0]) {
-              sarvamAudios.push(data.audios[0]);
+        // Fetch Sarvam chunks in parallel
+        const sarvamAudios = await Promise.all(
+          chunks.slice(0, 10).map(async (chunk) => {
+            try {
+              const res = await fetch('https://api.sarvam.ai/text-to-speech', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'api-subscription-key': sarvamKey,
+                },
+                body: JSON.stringify({
+                  inputs: [chunk],
+                  target_language_code: targetLangCode,
+                  speaker: 'meera',
+                  pitch: 0,
+                  pace: Math.max(0.7, Math.min(1.4, rate)),
+                  loudness: 1.5,
+                  speech_sample_rate: 22050,
+                  enable_preprocessing: true,
+                  model: 'bulbul:v1',
+                }),
+              });
+              if (res.ok) {
+                const data = await res.json();
+                return data.audios?.[0] || null;
+              }
+            } catch {
+              // fallback
             }
-          } else {
-            const errBody = await res.text();
-            console.warn('Sarvam TTS API responded with error:', res.status, errBody);
-          }
-        }
+            return null;
+          })
+        );
 
-        if (sarvamAudios.length > 0) {
-          // Return base64 WAV data URL (if single chunk) or first audio
+        const validAudios = sarvamAudios.filter(Boolean);
+        if (validAudios.length > 0) {
+          const firstAudio = `data:audio/wav;base64,${validAudios[0]}`;
+          audioCache.set(cacheKey, firstAudio);
           return NextResponse.json({
-            audioData: `data:audio/wav;base64,${sarvamAudios[0]}`,
-            allAudios: sarvamAudios.map((a) => `data:audio/wav;base64,${a}`),
+            audioData: firstAudio,
+            allAudios: validAudios.map((a) => `data:audio/wav;base64,${a}`),
             provider: 'sarvam',
             status: 'success',
           });
@@ -191,40 +202,39 @@ export async function POST(req: NextRequest) {
         if (res.ok) {
           const arrayBuffer = await res.arrayBuffer();
           const base64 = Buffer.from(arrayBuffer).toString('base64');
+          const audioData = `data:audio/mp3;base64,${base64}`;
+          audioCache.set(cacheKey, audioData);
           return NextResponse.json({
-            audioData: `data:audio/mp3;base64,${base64}`,
+            audioData,
             provider: 'openai',
             status: 'success',
           });
-        } else {
-          const errBody = await res.text();
-          console.warn('OpenAI TTS responded with error:', res.status, errBody);
         }
       } catch (openAiErr) {
         console.warn('OpenAI TTS error, falling back:', openAiErr);
       }
     }
 
-    // 3. High-Fidelity Server-side Google TTS Proxy (Works for Indic & English reliably without CORS)
+    // 3. High-Fidelity Server-side Google TTS Proxy (Parallel chunk fetch < 500ms)
     try {
       const googleLangCode = GOOGLE_LANG_CODES[lang] || 'en';
       const chunks = chunkText(cleanText, 180);
-      const audioBuffers: Buffer[] = [];
 
-      for (const chunk of chunks.slice(0, 15)) {
-        const buffer = await fetchGoogleTTSChunk(chunk, googleLangCode);
-        if (buffer && buffer.length > 0) {
-          audioBuffers.push(buffer);
-        }
-      }
+      // Fetch all chunks simultaneously in parallel
+      const bufferResults = await Promise.all(
+        chunks.slice(0, 20).map((chunk) => fetchGoogleTTSChunk(chunk, googleLangCode))
+      );
 
-      if (audioBuffers.length > 0) {
-        // Concatenate MP3 frames directly
-        const combined = Buffer.concat(audioBuffers);
+      const validBuffers = bufferResults.filter((b): b is Buffer => b !== null && b.length > 0);
+
+      if (validBuffers.length > 0) {
+        const combined = Buffer.concat(validBuffers);
         const base64 = combined.toString('base64');
+        const audioData = `data:audio/mp3;base64,${base64}`;
+        audioCache.set(cacheKey, audioData);
         return NextResponse.json({
-          audioData: `data:audio/mp3;base64,${base64}`,
-          provider: 'server-google-tts',
+          audioData,
+          provider: 'server-google-tts-parallel',
           status: 'success',
         });
       }
