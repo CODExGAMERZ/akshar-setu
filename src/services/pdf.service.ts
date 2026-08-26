@@ -2,25 +2,30 @@ import { SupportedLanguage } from '@/types';
 
 export class PDFService {
   /**
-   * Transforms raw, unformatted, vertically-split, or glued PDF text into pristine, structured,
-   * dyslexia-optimized reading material with clear headings, bulleted lists, and clean typography.
+   * Universal PDF Text Cleaner & Reflow Engine:
+   * Transforms raw, messy, vertically-split, or glued text extracted from ANY PDF
+   * (academic papers, textbooks, government reports, resumes, articles, storybooks)
+   * into clean, dyslexia-optimized reading material with proper headings, lists, and spacing.
    */
   public static cleanPDFText(rawText: string): string {
-    if (!rawText) return '';
+    if (!rawText || typeof rawText !== 'string') return '';
 
     let text = rawText
       .replace(/\r\n/g, '\n')
       .replace(/\r/g, '\n');
 
-    // 1. Remove Page Headers / Footers artifacts
+    // 1. Remove Page Numbers, Running Headers, and Footer Artifacts
     text = text
-      .replace(/AksharSetu\s*[—–-]\s*Concept\s*Brief\s*Page(?:\s*\d+\s*(?:of\s*\d+)?)?/gi, '')
-      .replace(/^[ \t]*(?:page\s+\d+(?:\s+of\s+\d+)?|\d+)[ \t]*$/gim, '')
+      .replace(/^[ \t]*(?:page\s+\d+(?:\s+of\s+\d+)?|\d+\s*\/\s*\d+|\d+)[ \t]*$/gim, '')
       .replace(/^[ \t]*[-–—]+\s*\d+\s*[-–—]+[ \t]*$/gim, '')
-      .replace(/^[ \t]*(?:copyright|all rights reserved|confidential).*$/gim, '');
+      .replace(/^[ \t]*(?:copyright|all rights reserved|confidential|draft|internal use).*$/gim, '')
+      .replace(/AksharSetu\s*[—–-]\s*Concept\s*Brief\s*Page(?:\s*\d+\s*(?:of\s*\d+)?)?/gi, '');
 
-    // 2. Recombine Multi-Line Vertical Headings into Clean Markdown Headings
-    const verticalHeadings: [RegExp, string][] = [
+    // 2. Fix End-of-Line Hyphenation (e.g. "experi-\nment" -> "experiment", "infor-\nmation" -> "information")
+    text = text.replace(/([a-zA-Z\u0900-\u0D7F]+)-\s*\n\s*([a-zA-Z\u0900-\u0D7F]+)/g, '$1$2');
+
+    // 3. Recombine Multi-Line Vertically-Split Headings
+    const commonSplitHeadings: [RegExp, string][] = [
       [/(?:^|\n)\s*Concept\s*\n\s*&\s*\n\s*Planning\s*\n\s*Brief\s*(?:\n|$)/gi, '\n\n### Concept & Planning Brief\n\n'],
       [/(?:^|\n)\s*Table\s*\n\s*of\s*\n\s*Contents\s*(?:\n|$)/gi, '\n\n### Table of Contents\n\n'],
       [/(?:^|\n)\s*The\s*\n\s*Problem\s*(?:\n|$)/gi, '\n\n### The Problem\n\n'],
@@ -38,16 +43,20 @@ export class PDFService {
       [/(?:^|\n)\s*References\s*(?:\n|$)/gi, '\n\n### References\n\n'],
     ];
 
-    for (const [regex, replacement] of verticalHeadings) {
+    for (const [regex, replacement] of commonSplitHeadings) {
       text = text.replace(regex, replacement);
     }
 
-    // 3. Reformat Table of Contents entries (e.g. 01.TheProblem -> • 01. The Problem)
-    text = text.replace(/(?:^|\n)\s*(\d{1,2})\.\s*([A-Za-z]+)\s*(?:\n|$)/g, '\n• $1. $2\n');
-    text = text.replace(/(?:^|\n)\s*(\d{1,2})\s*\n+\s*([A-Za-z]+)\s*(?:\n|$)/g, '\n• $1. $2\n');
-
-    // 4. Unglue Numbered Feature Sub-Sections
-    text = text.replace(/(?:^|\n|\.\s*)(\d{1,2})\.\s*([A-Za-z\s/—–-]+(?:Engine|View|Support|Mode|Read-Along|Simplification|Memory|Analysis|Structure|Brief))/g, '\n\n### $1. $2\n\n');
+    // 4. Generalized Headings Detector:
+    // Formats standalone numbered sections (e.g., "1. Introduction", "Chapter 3: Thermodynamics", "Section 4.1 Data Analysis")
+    text = text.replace(
+      /(?:^|\n{2,})\s*((?:Chapter|Section|Module|Unit|Part)\s+\d+[:\s—–-]+[^\n]{3,80})\s*(?:\n{2,}|$)/gi,
+      '\n\n### $1\n\n'
+    );
+    text = text.replace(
+      /(?:^|\n{2,})\s*(\d{1,2}(?:\.\d{1,2})*\s+[A-Z][A-Za-z0-9\s/—–-]{3,60})\s*(?:\n{2,}|$)/g,
+      '\n\n### $1\n\n'
+    );
 
     // 5. Structure Key-Value Lists & Parameters
     const parameterReplacements: [RegExp, string][] = [
@@ -81,139 +90,10 @@ export class PDFService {
       text = text.replace(regex, replacement);
     }
 
-    // 6. Glued phrases & words dictionary
-    const phraseDictionary: [RegExp, string][] = [
-      [/\bAksharSetuworkingtitle\b/gi, 'AksharSetu working title'],
-      [/\bswapfreely\b/gi, 'swap freely'],
-      [/\bothernameideas:\s*/gi, 'other name ideas: '],
-      [/\bLexi·FlexiRead·Sugam\b/gi, 'Lexi · FlexiRead · Sugam '],
-      [/\bBridgingeverymindtothewrittenword\b/gi, 'Bridging every mind to the written word'],
-      [/\bApersonalized,multilingualreadingcompanionforpeoplewithdyslexia\b/gi, 'A personalized, multilingual reading companion for people with dyslexia'],
-      [/\bCONCEPT&PLANNINGSTAGE—SMARTINDIAHACKATHON2026\b/gi, 'CONCEPT & PLANNING STAGE — SMART INDIA HACKATHON 2026'],
-      [/\bReadingdifficultyisn[’']trare\b/gi, 'Reading difficulty isn’t rare'],
-      [/\banditisn[’']tone-size-fits-all\b/gi, 'and it isn’t one-size-fits-all'],
-      [/\bEstimatesvarybystudy\b/gi, 'Estimates vary by study'],
-      [/\bbutdyslexiaaffectsameaningfulshare\b/gi, 'but dyslexia affects a meaningful share'],
-      [/\bofIndianschoolchildren\b/gi, 'of Indian schoolchildren'],
-      [/\ba\s*20\s*[•●·]\s*22\b/gi, 'a 2022'],
-      [/\bsystematicreviewandmeta-analysis\b/gi, 'systematic review and meta-analysis'],
-      [/\bofIndianstudiesputpooleddyslexiaprevalence\b/gi, 'of Indian studies put pooled dyslexia prevalence'],
-      [/\batroughly6\.2%\b/gi, 'at roughly 6.2%'],
-      [/\bwiththewidercategoryofspecificlearningdisabilities\b/gi, 'with the wider category of specific learning disabilities'],
-      [/\bcloserto10\.7%\b/gi, 'closer to 10.7%'],
-      [/\bTheDyslexiaAssociationofIndia\b/gi, 'The Dyslexia Association of India'],
-      [/\bcitesahigher,morecommonlyquotedfigure\b/gi, 'cites a higher, more commonly quoted figure'],
-      [/\bof10[–-]15%\b/gi, 'of 10–15%'],
-      [/\bEitherway,that[’']stensofmillionsofstudents\b/gi, 'Either way, that’s tens of millions of students'],
-      [/\bSincetheRightsofPersonswithDisabilitiesAct\b/gi, 'Since the Rights of Persons with Disabilities Act'],
-      [/\bdyslexiahasbeenlegallyrecognisedinIndia\b/gi, 'dyslexia has been legally recognised in India'],
-      [/\basaSpecificLearningDisability\b/gi, 'as a Specific Learning Disability'],
-      [/\bentitlingstudentstoeducationalaccommodations\b/gi, 'entitling students to educational accommodations'],
-      [/\bLegalrecognition,though\b/gi, 'Legal recognition, though'],
-      [/\bhasn[’']tautomaticallytranslatedintoclassroomtools\b/gi, 'hasn’t automatically translated into classroom tools'],
-      [/\bstudentscanactuallyuse\b/gi, 'students can actually use'],
-      [/\bandNEP2020[’']spushforinclusive\b/gi, 'and NEP 2020’s push for inclusive'],
-      [/\btech-enablededucationstillneedssomething\b/gi, 'tech-enabled education still needs something'],
-      [/\btoactuallyplugin\b/gi, 'to actually plug in'],
-      [/\bMost[“"]dyslexia-friendly[”"]toolsalsoassume\b/gi, 'Most “dyslexia-friendly” tools also assume'],
-      [/\bonefixworksforeveryone\b/gi, 'one fix works for everyone'],
-      [/\bsomereadersevendidslightlyworse\b/gi, 'some readers even did slightly worse'],
-      [/\bandmostdidn[’']tpreferthemanyway\b/gi, 'and most didn’t prefer them anyway'],
-      [/\bWhatactuallyhelpsvariesfromreadertoreader\b/gi, 'What actually helps varies from reader to reader'],
-      [/\bspacing,size,colour,andlayoutmatter\b/gi, 'spacing, size, colour, and layout matter'],
-      [/\basmuchasfont,ifnotmore\b/gi, 'as much as font, if not more'],
-      [/\bAndalmostnoneofthesetoolsworknatively\b/gi, 'And almost none of these tools work natively'],
-      [/\borthedozensofotherlanguages\b/gi, 'or the dozens of other languages'],
-      [/\bIndianstudentsactuallyreadin\b/gi, 'Indian students actually read in'],
-      [/\bTherealgapisn[’']t[“"]adyslexiafont\b/gi, 'The real gap isn’t “a dyslexia font'],
-      [/\b[”"]It[’']satoolthatfindsout\b/gi, '” It’s a tool that finds out'],
-      [/\bwhatactuallyworksforthisreader\b/gi, 'what actually works for this reader'],
-      [/\bintheirlanguage\b/gi, 'in their language'],
-      [/\bScopenote:AksharSetuisareading-accessibilitytool\b/gi, 'Scope note: AksharSetu is a reading-accessibility tool'],
-      [/\bnotadiagnosticone\b/gi, 'not a diagnostic one'],
-      [/\bidentifyingdyslexiastayswithqualifiedprofessionals\b/gi, 'identifying dyslexia stays with qualified professionals'],
-      [/\bTheIdeaAksharSetuopenswithadifferentquestion\b/gi, 'The Idea\n\nAksharSetu opens with a different question'],
-      [/\bthaneveryothertool\b/gi, 'than every other tool'],
-      [/\bNot[“"]here[’']sadyslexiafont,useit\b/gi, 'Not “here’s a dyslexia font, use it'],
-      [/\bwhichoftheseisactuallyeasierforyoutoread\b/gi, 'which of these is actually easier for you to read'],
-      [/\bAshort,eye-test-stylecalibrationbuildsapersonalreadingprofile\b/gi, 'A short, eye-test-style calibration builds a personal reading profile'],
-      [/\bfont,spacing,colour,width,everything\b/gi, 'font, spacing, colour, width, everything'],
-      [/\bThatprofileisthenappliedautomatically\b/gi, 'That profile is then applied automatically'],
-      [/\btoanytextorPDFtheuserbringsin\b/gi, 'to any text or PDF the user brings in'],
-      [/\binwhicheverIndianlanguagetheyread\b/gi, 'in whichever Indian language they read'],
-      [/\bwithread-aloudsupportbuiltinthroughout\b/gi, 'with read-aloud support built-in throughout'],
-      [/\bOneprofile\.Everydocument\b/gi, 'One profile. Every document'],
-      [/\bformattedthewaythatreader[’']sbrainactuallyprefersit\b/gi, 'formatted the way that reader’s brain actually prefers it'],
-      [/\bCoreFeaturesAnotetofuture-us\b/gi, 'Core Features\n\nA note to future-us'],
-      [/\btheapp[’']sowninterfaceneedstoholditselftoWCAG2\.1AA\b/gi, 'the app’s own interface needs to hold itself to WCAG 2.1 AA'],
-      [/\badyslexiatoolwithahard-to-readsettingspage\b/gi, 'a dyslexia tool with a hard-to-read settings page'],
-      [/\bwouldbeabadlook\b/gi, 'would be a bad look'],
-      [/\bOnboardingworkslikeaneyetest,butforreadingcomfort\b/gi, 'Onboarding works like an eye test, but for reading comfort'],
-      [/\bTheusersees8[–-]12shortpairedtextsamples\b/gi, 'The user sees 8–12 short paired text samples'],
-      [/\beachisolatingonevariableatatime\b/gi, 'each isolating one variable at a time'],
-      [/\bandsimplypickswhicheverfeelseasier\b/gi, 'and simply picks whichever feels easier'],
-      [/\bTheirchoicesconvergeintoapersonalreadingprofile\b/gi, 'Their choices converge into a personal reading profile'],
-      [/\bnomanualsettings-fiddlingrequired\b/gi, 'no manual settings-fiddling required'],
-      [/\bOnetapswapsbetweenthesourcedocumentandthepersonalizedversion\b/gi, 'One tap swaps between the source document and the personalized version'],
-      [/\busefulforcomparing,orforsharingthe[“"]real[”"]formattingwithateacher\b/gi, 'useful for comparing, or for sharing the “real” formatting with a teacher'],
-      [/\bSwitchthedisplaylanguage,andreadingsettingscarryoverautomatically\b/gi, 'Switch the display language, and reading settings carry over automatically'],
-      [/\bnore-calibratingperlanguage\b/gi, 'no re-calibrating per language'],
-      [/\bText-to-speechisavailableinwhicheverlanguageiscurrentlyonscreen\b/gi, 'Text-to-speech is available in whichever language is currently on screen'],
-      [/\bSwitchbacktotheoriginallanguageanytime\b/gi, 'Switch back to the original language anytime'],
-      [/\bformattingandprofilepersistinbothdirections\b/gi, 'formatting and profile persist in both directions'],
-      [/\breverseswitchingincluded\b/gi, 'reverse switching included'],
-      [/\bAdigitalreadingruler:thecurrentlineishighlighted\b/gi, 'A digital reading ruler: the current line is highlighted'],
-      [/\bwhilesurroundinglinesaregentlyde-emphasized\b/gi, 'while surrounding lines are gently de-emphasized'],
-      [/\bcuttingdownthevisualcrowdingthatmakesiteasytoloseyourplace\b/gi, 'cutting down the visual crowding that makes it easy to lose your place'],
-      [/\bWord-levelhighlightingsyncedtonarration\b/gi, 'Word-level highlighting synced to narration'],
-      [/\bkaraoke-style\b/gi, 'karaoke-style'],
-      [/\badjustablespeed,availableintheoriginalortranslatedtext\b/gi, 'adjustable speed, available in the original or translated text'],
-      [/\bRewritesdensesentencesandvocabularyintosimplerphrasingwithoutchangingthemeaning\b/gi, 'Rewrites dense sentences and vocabulary into simpler phrasing without changing the meaning'],
-      [/\bpoweredbyalanguagemodelprompted\b/gi, 'powered by a language model prompted'],
-      [/\bspecificallytopreservemeaningratherthanjustshortentext\b/gi, 'specifically to preserve meaning rather than just shorten text'],
-      [/\bThecalibrationprofileissaved\b/gi, 'The calibration profile is saved'],
-      [/\bsoreturninguserslandstraightintotheir\b/gi, 'so returning users land straight into their'],
-      [/\bpersonalizedview—norecalibratingeverysession\b/gi, 'personalized view — no recalibrating every session'],
-      [/\bTrackreadingspeed\b/gi, 'Track reading speed'],
-      [/\bre-read\/scroll-backpatterns\b/gi, 're-read / scroll-back patterns'],
-      [/\bandwhichmanualoverridesausermakes\b/gi, 'and which manual overrides a user makes'],
-      [/\bmostoften—thenquietlyfeedthatbackintorefiningtheirprofileovertime\b/gi, 'most often — then quietly feed that back into refining their profile over time'],
-      [/\bThecalibrationtestbecomesastartingpoint,notafixedone-timeanswer\b/gi, 'The calibration test becomes a starting point, not a fixed one-time answer'],
-      [/\bCalibrate—newusercomparesshorttextsamples,pickswhat[’']seasier\b/gi, 'Calibrate — new user compares short text samples, picks what’s easier'],
-      [/\bProfilecreated—font,spacing,colour,andwidthpreferencessaved\b/gi, 'Profile created — font, spacing, colour, and width preferences saved'],
-      [/\bSavedfornextvisit—returningusersskipstraighttotheirprofile\b/gi, 'Saved for next visit — returning users skip straight to their profile'],
-      [/\bBringatext—pastetext,oruploadaPDF\b/gi, 'Bring a text — paste text, or upload a PDF'],
-      [/\bAuto-personalize—theformattingenginere-rendersitusingthesavedprofile\b/gi, 'Auto-personalize — the formatting engine re-renders it using the saved profile'],
-      [/\bRead,yourway—toggleoriginal\/personalized,switchlanguage,turnonfocusmodeorread-along\b/gi, 'Read, your way — toggle original / personalized, switch language, turn on focus mode or read-along'],
-      [/\bFasttoprototype,component-driven,easytothemeperprofile\b/gi, 'Fast to prototype, component-driven, easy to theme per profile'],
-      [/\bPullstextoutofaPDFsoitcanbereformatted,notjustviewed\b/gi, 'Pulls text out of a PDF so it can be reformatted, not just viewed'],
-      [/\bLightweightAPIlayerforprofiles\+thirdpartyservicecalls\b/gi, 'Lightweight API layer for profiles + third party service calls'],
-      [/\bFlexibleschemaforaper-userformattingprofile\b/gi, 'Flexible schema for a per-user formatting profile'],
-      [/\bPurpose-builtforIndianspeechratherthanabolted-onmultilingualmodel\b/gi, 'Purpose-built for Indian speech rather than a bolted-on multilingual model'],
-      [/\bOnevendorforbothtranslationandTTSkeepsthelanguagepipelinesimple\b/gi, 'One vendor for both translation and TTS keeps the language pipeline simple'],
-      [/\bMayuraspecificallyhandlesHinglish-stylemixingwell\b/gi, 'Mayura specifically handles Hinglish-style mixing well'],
-      [/\bUsingSarvam[’']sLLMheretookeepsthewholelanguagepipeline\b/gi, 'Using Sarvam’s LLM here too keeps the whole language pipeline'],
-      [/\btranslate,simplify,speak—ononeAPIandoneIndian-language-nativemodelfamily\b/gi, 'translate, simplify, speak — on one API and one Indian-language-native model family'],
-      [/\bCalibratesfontandspacingandcolourandwidthtogether,peruser,insteadofassumingafontfixesit\b/gi, 'Calibrates font, spacing, colour, and width together, per user, instead of assuming a font fixes it'],
-      [/\bStandalone—worksonanythingauseruploads,plusacalibrationstepinsteadofonefixedpreset\b/gi, 'Standalone — works on anything a user uploads, plus a calibration step instead of one fixed preset'],
-      [/\bPairsTTSwithvisual-formattingpersonalization\+nativeIndianlanguagesupportinoneworkflow\b/gi, 'Pairs TTS with visual-formatting personalization + native Indian language support in one workflow'],
-      [/\bNopersonalization,nomemory,nodyslexia-specificdesignatall—AksharSetuaddsallthree\b/gi, 'No personalization, no memory, no dyslexia-specific design at all — AksharSetu adds all three'],
-      [/\bPrimaryusers:Schoolandcollegestudentswithdyslexia\b/gi, 'Primary users: School and college students with dyslexia'],
-      [/\bespeciallyinregional-languagemediumschools\b/gi, 'especially in regional-language medium schools'],
-      [/\bwhicharethemostunderservedbyexisting,largelyEnglish-firsttools\b/gi, 'which are the most underserved by existing, largely English-first tools'],
-      [/\bSecondaryusers:Teachersandparents\b/gi, 'Secondary users: Teachers and parents'],
-      [/\bwhocanshareorexportapersonalizedversionofstudymaterial\b/gi, 'who can share or export a personalized version of study material'],
-      [/\bwithoutneedingtounderstandformattingtheorythemselves\b/gi, 'without needing to understand formatting theory themselves'],
-      [/\bAdoptiontailwind:RPwDAct2016recognition\+NEP2020[’']sinclusive-educationpush\b/gi, 'Adoption tailwind: RPwD Act 2016 recognition + NEP 2020’s inclusive-education push'],
-      [/\bbothgiveschoolsapolicyreasontoadoptatoollikethis,notjustagoodwillone\b/gi, 'both give schools a policy reason to adopt a tool like this, not just a goodwill one'],
-    ];
-
-    for (const [regex, replacement] of phraseDictionary) {
-      text = text.replace(regex, replacement);
-    }
-
-    // 7. Universal Word Separation & Punctuation Cleanup
+    // 6. Universal Glued-Word & Casing Normalization
+    // Fixes camelCase / PascalCase gluing produced by tightly tracked PDF fonts
     text = text
+      .replace(/\b([a-z]{2,})([A-Z][a-z]{2,})\b/g, '$1 $2')
       .replace(/([a-zA-Z0-9]),([a-zA-Z])/g, '$1, $2')
       .replace(/([a-z0-9])\.([A-Z])/g, '$1. $2')
       .replace(/([a-z0-9])\?([A-Z“"'])/g, '$1? $2')
@@ -225,13 +105,13 @@ export class PDFService {
       .replace(/([a-zA-Z])([—–])([a-zA-Z])/g, '$1 — $3')
       .replace(/([a-zA-Z])·([a-zA-Z])/g, '$1 · $2')
       .replace(/([a-zA-Z])↳([a-zA-Z])/g, '$1 ↳ $2')
+      .replace(/([a-zA-Z])•([a-zA-Z])/g, '$1 • $2')
       .replace(/\btens\s*[•●■*·]\s*f\b/gi, 'tens of')
       .replace(/AI\s*[•●■*·]\s*4\b/gi, 'AI4Bharat')
       .replace(/AI\s*[•●■*·]\s*4\.\s*Bharat/gi, 'AI4Bharat')
-      .replace(/([a-zA-Z\u0900-\u0D7F]+)-\n([a-zA-Z\u0900-\u0D7F]+)/g, '$1$2')
       .replace(/\bmeta-?\s*analysis\b/gi, 'meta-analysis');
 
-    // 8. Fix broken numbers / decimals / versions / URLs
+    // 7. Fix broken decimal numbers, percentages, and web domains
     text = text
       .replace(/(\d+)\.\s*\n*\s*(\d+)%/g, '$1.$2%')
       .replace(/(\d+)\.\s+(\d+)\s*(AA|%|[a-zA-Z])/g, '$1.$2 $3')
@@ -246,7 +126,11 @@ export class PDFService {
       .replace(/link\.\s*springer\.\s*com/gi, 'link.springer.com')
       .replace(/journals\.\s*lww\.\s*com/gi, 'journals.lww.com');
 
-    // 9. Parse and clean paragraphs into structured blocks
+    // 8. Reformat Table of Contents and Numbered List items
+    text = text.replace(/(?:^|\n)\s*(\d{1,2})\.\s*([A-Za-z]+)\s*(?:\n|$)/g, '\n• $1. $2\n');
+    text = text.replace(/(?:^|\n)\s*(\d{1,2})\s*\n+\s*([A-Za-z]+)\s*(?:\n|$)/g, '\n• $1. $2\n');
+
+    // 9. Intelligent Paragraph Segmentation & Reflow
     const rawBlocks = text.split(/\n{2,}/);
     const formattedBlocks: string[] = [];
 
@@ -260,7 +144,7 @@ export class PDFService {
         continue;
       }
 
-      // Preserve bullet lists
+      // Preserve bullet lists and structured lists
       if (trimmed.startsWith('•') || trimmed.startsWith('-') || /^\d+\./.test(trimmed)) {
         const bulletLines = trimmed
           .split('\n')
@@ -271,14 +155,14 @@ export class PDFService {
         continue;
       }
 
-      // Clean single line breaks within prose
+      // Join single line-breaks inside continuous prose into fluid paragraphs
       const cleanParagraph = trimmed
         .replace(/\n+/g, ' ')
         .replace(/[ \t]{2,}/g, ' ')
         .trim();
 
-      // Break dense multi-sentence blocks (>300 chars or >3 sentences) into readable micro-paragraphs
-      const sentences = cleanParagraph.match(/[^.!?]+[.!?]+["']?|\S+$/g);
+      // Break dense multi-sentence text walls (>300 chars or >3 sentences) into readable 2-to-3 sentence micro-paragraphs
+      const sentences = cleanParagraph.match(/[^.!?।\n]+[.!?।\n]+["']?|\S+$/g);
       if (sentences && sentences.length > 3) {
         let chunk = '';
         let count = 0;
