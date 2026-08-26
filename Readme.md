@@ -153,11 +153,11 @@ A huge thank you to the 6-member team building inclusive, accessible educational
 | # | Name / Contributor | Role & Domain | GitHub Profile |
 | :-: | :--- | :--- | :--- |
 | 1 | **Chiraag Agarwal** (Team Lead) | Project Lead & System Design | [@chiraagagarwal](https://github.com/chiraagagarwal) |
-| 2 | **Core Contributor** | Full-Stack Architecture, Next.js 14 & AI Integrations | [@CODExGAMERZ](https://github.com/CODExGAMERZ) |
-| 3 | **Core Contributor** | Multilingual Indic NLP, Translation & Simplification | [@username](https://github.com) |
-| 4 | **Core Contributor** | Speech Synthesis, Audio Streaming & Karaoke Engine | [@username](https://github.com) |
-| 5 | **Core Contributor** | Frontend Engineering, Accessibility & UI Components | [@username](https://github.com) |
-| 6 | **Core Contributor** | UI/UX Design, Document Parsing Engine & QA | [@username](https://github.com) |
+| 2 | **Core Contributor** | AI Integration, Multilingual Indic NLP & Speech Systems | [@CODExGAMERZ](https://github.com/CODExGAMERZ) |
+| 3 | **Core Contributor** | Full-Stack Architecture & Next.js 14 App Platform | [@username](https://github.com) |
+| 4 | **Core Contributor** | Frontend Engineering, Accessibility & UI Components | [@username](https://github.com) |
+| 5 | **Core Contributor** | UI/UX Design, WCAG 2.1 AA Compliance & Visual Calibration | [@username](https://github.com) |
+| 6 | **Core Contributor** | Document Parsing Engine, Cloud Infrastructure & QA | [@username](https://github.com) |
 
 > *To update names, roles, or GitHub links, simply edit this table or share the details!*
 
