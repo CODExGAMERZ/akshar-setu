@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { ConfusablePair, DocumentItem, HighlightMode, ReadingProfile, SupportedLanguage } from '@/types';
 import { DEFAULT_READING_PROFILE } from '@/lib/constants';
 import { StorageService } from '@/lib/storage';
@@ -20,6 +20,8 @@ interface ReaderContextType {
   currentDocument: DocumentItem | null;
   setCurrentDocumentId: (id: string) => void;
   addDocument: (doc: Omit<DocumentItem, 'id' | 'createdAt' | 'lastOpened' | 'progressPercent'>) => DocumentItem;
+  registerDocument: (doc: DocumentItem) => void;
+  refreshDocuments: () => void;
   deleteDocument: (id: string) => void;
   renameDocument: (id: string, newTitle: string) => void;
   viewMode: 'personalized' | 'original';
@@ -81,11 +83,16 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [confusablePairs, setConfusablePairs] = useState<ConfusablePair[]>(['bd', 'pq', 'mw']);
   const [highlightMode, setHighlightModeState] = useState<HighlightMode>('word');
 
+  // Helper to refresh documents from persistent storage
+  const refreshDocuments = useCallback(() => {
+    const freshDocs = DocumentService.getDocuments();
+    setDocuments(freshDocs);
+    return freshDocs;
+  }, []);
+
   // Load initial data on mount
   useEffect(() => {
-    const loadedDocs = DocumentService.getDocuments();
-    setDocuments(loadedDocs);
-
+    const loadedDocs = refreshDocuments();
     const activeDocId = StorageService.getCurrentDocId();
     const doc = loadedDocs.find((d) => d.id === activeDocId) || loadedDocs[0] || null;
     setCurrentDocument(doc);
@@ -101,7 +108,7 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     if (doc) {
       setActiveLanguage(doc.language || 'en');
     }
-  }, []);
+  }, [refreshDocuments]);
 
   const updateProfile = (updates: Partial<ReadingProfile>) => {
     setProfileState((prev) => {
@@ -125,8 +132,16 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setProfileState(def);
   };
 
-  const setCurrentDocumentId = (id: string) => {
-    const doc = documents.find((d) => d.id === id) || null;
+  const setCurrentDocumentId = useCallback((id: string) => {
+    let freshList = documents;
+    let doc = freshList.find((d) => d.id === id) || null;
+
+    if (!doc) {
+      freshList = DocumentService.getDocuments();
+      setDocuments(freshList);
+      doc = freshList.find((d) => d.id === id) || null;
+    }
+
     if (doc) {
       setCurrentDocument(doc);
       setActiveLanguage(doc.language || 'en');
@@ -141,6 +156,15 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setConfusablePairs(effective.confusablePairs || ['bd', 'pq', 'mw']);
       setHighlightModeState(effective.highlightMode || 'word');
     }
+  }, [documents]);
+
+  const registerDocument = (doc: DocumentItem) => {
+    DocumentService.saveDocument(doc);
+    const updatedList = DocumentService.getDocuments();
+    setDocuments(updatedList);
+    setCurrentDocument(doc);
+    setActiveLanguage(doc.language || 'en');
+    StorageService.setCurrentDocId(doc.id);
   };
 
   const addDocument = (
@@ -153,11 +177,7 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       lastOpened: 'Just now',
       progressPercent: 0,
     };
-    DocumentService.saveDocument(newDoc);
-    const updatedList = DocumentService.getDocuments();
-    setDocuments(updatedList);
-    setCurrentDocument(newDoc);
-    StorageService.setCurrentDocId(newDoc.id);
+    registerDocument(newDoc);
     return newDoc;
   };
 
@@ -342,7 +362,6 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setSpeechRateState(rate);
     updateProfile({ ttsSpeed: rate });
     if (isPlayingAudio) {
-      // Re-trigger with new rate seamlessly from current word
       const currentIdx = Math.max(0, activeWordIndex);
       startReadAloud(currentIdx);
     }
@@ -383,6 +402,8 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         currentDocument,
         setCurrentDocumentId,
         addDocument,
+        registerDocument,
+        refreshDocuments,
         deleteDocument,
         renameDocument,
         viewMode,

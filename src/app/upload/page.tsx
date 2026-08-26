@@ -8,7 +8,7 @@ import { DocumentService } from '@/services/document.service';
 
 export default function UploadPage() {
   const router = useRouter();
-  const { addDocument } = useReader();
+  const { addDocument, registerDocument, setCurrentDocumentId } = useReader();
 
   const [pastedText, setPastedText] = useState<string>('');
   const [docTitle, setDocTitle] = useState<string>('');
@@ -71,6 +71,10 @@ export default function UploadPage() {
         onProgress: (pct) => setProcessingPercent(pct),
       });
 
+      // Synchronize directly with ReaderContext
+      registerDocument(digitised);
+      setCurrentDocumentId(digitised.id);
+
       setIsProcessing(false);
       router.push(`/read/${digitised.id}`);
     } catch (err) {
@@ -98,148 +102,165 @@ export default function UploadPage() {
       {errorMsg && (
         <div className="mb-6 p-4 rounded-xl bg-error/10 border border-error/30 text-error font-medium text-xs sm:text-sm flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-lg">error</span>
+            <span className="material-symbols-outlined text-base">error</span>
             <span>{errorMsg}</span>
           </div>
           <button
             type="button"
             onClick={() => setErrorMsg(null)}
-            className="text-xs font-bold underline"
+            className="p-1 hover:bg-error/20 rounded-full"
           >
-            Dismiss
+            <span className="material-symbols-outlined text-sm">close</span>
           </button>
         </div>
       )}
 
-      {/* Multistep Processing Modal Overlay */}
+      {/* Multi-step Processing Modal Overlay */}
       {isProcessing && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-surface-bright rounded-3xl p-8 max-w-md w-full border-2 border-surface-container-highest shadow-2xl flex flex-col items-center text-center animate-in fade-in zoom-in-95">
-            <div className="w-16 h-16 rounded-full bg-secondary-container text-primary flex items-center justify-center mb-4">
-              <span className="material-symbols-outlined text-3xl animate-spin">progress_activity</span>
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-surface-container-lowest border-2 border-primary/20 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-5 text-center animate-in zoom-in-95 duration-200">
+            <div className="w-16 h-16 rounded-full bg-secondary-container text-primary flex items-center justify-center mx-auto animate-pulse">
+              <span className="material-symbols-outlined text-3xl">document_scanner</span>
             </div>
-            <h3 className="text-lg font-bold text-on-surface mb-1">Digitising Document</h3>
-            <p className="text-xs text-on-surface-variant mb-6">{processingStage}</p>
+
+            <div>
+              <h2 className="text-lg sm:text-xl font-bold text-on-surface mb-1">
+                Digitising & Reflowing
+              </h2>
+              <p className="text-xs sm:text-sm text-on-surface-variant">
+                {processingStage}
+              </p>
+            </div>
 
             {/* Progress Bar */}
-            <div className="w-full bg-surface-container-highest rounded-full h-2 overflow-hidden mb-2">
-              <div
-                className="bg-primary h-2 rounded-full transition-all duration-300 ease-out"
-                style={{ width: `${processingPercent}%` }}
-              />
+            <div className="space-y-1.5">
+              <div className="w-full bg-surface-container-highest rounded-full h-3 overflow-hidden p-0.5 border border-outline-variant">
+                <div
+                  className="bg-primary h-full rounded-full transition-all duration-300 ease-out"
+                  style={{ width: `${processingPercent}%` }}
+                />
+              </div>
+              <div className="flex justify-between text-[11px] font-bold text-on-surface-variant">
+                <span>Reflow Pipeline</span>
+                <span>{processingPercent}%</span>
+              </div>
             </div>
-            <span className="text-[11px] font-bold text-primary">{processingPercent}%</span>
+
+            {/* Steps indicator */}
+            <div className="grid grid-cols-4 gap-2 pt-2 border-t border-surface-container-highest text-[10px] font-bold text-on-surface-variant">
+              <span className={processingPercent >= 20 ? 'text-primary' : ''}>Upload</span>
+              <span className={processingPercent >= 40 ? 'text-primary' : ''}>Process</span>
+              <span className={processingPercent >= 70 ? 'text-primary' : ''}>Extract</span>
+              <span className={processingPercent >= 90 ? 'text-primary' : ''}>Format</span>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Bento Grid for Upload Options */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
-        {/* Option 1: PDF & Image Upload */}
-        <section className="flex flex-col bg-surface-bright rounded-2xl border-2 border-surface-container-highest overflow-hidden focus-within:border-primary transition-colors shadow-sm">
-          <div className="p-5 sm:p-6 border-b-2 border-surface-container-highest bg-surface-container-lowest">
-            <h2 className="text-lg font-bold text-on-surface">
-              Upload PDF or Image
-            </h2>
-            <p className="text-xs text-on-surface-variant mt-1">
-              Supports PDF, PNG, JPG, JPEG with automated structure formatting.
-            </p>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+        {/* Left: Drag & Drop File Upload */}
+        <section
+          onDragOver={(e) => {
+            e.preventDefault();
+            setIsDragging(true);
+          }}
+          onDragLeave={() => setIsDragging(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setIsDragging(false);
+            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+              handleFileUpload(e.dataTransfer.files[0]);
+            }
+          }}
+          className={`flex flex-col items-center justify-center p-6 sm:p-10 rounded-3xl border-3 border-dashed transition-all duration-200 text-center ${
+            isDragging
+              ? 'border-primary bg-secondary-container/30 scale-[1.01]'
+              : 'border-outline-variant bg-surface-container-lowest hover:border-primary/50'
+          }`}
+        >
+          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-surface-container flex items-center justify-center text-primary mb-4 shadow-sm">
+            <span className="material-symbols-outlined text-3xl sm:text-4xl">cloud_upload</span>
           </div>
-          <div
-            onDragOver={(e) => {
-              e.preventDefault();
-              setIsDragging(true);
-            }}
-            onDragLeave={() => setIsDragging(false)}
-            onDrop={(e) => {
-              e.preventDefault();
-              setIsDragging(false);
-              if (e.dataTransfer.files?.[0]) {
-                handleFileUpload(e.dataTransfer.files[0]);
-              }
-            }}
-            className={`p-6 flex-grow flex flex-col items-center justify-center gap-4 min-h-[260px] sm:min-h-[300px] border-2 border-dashed rounded-xl m-4 sm:m-6 transition-colors cursor-pointer relative group ${
-              isDragging
-                ? 'border-primary bg-secondary-container'
-                : 'border-outline-variant bg-surface-container-lowest hover:bg-surface-container-low'
-            }`}
-          >
+
+          <h2 className="text-base sm:text-lg font-bold text-on-surface mb-1">
+            Drop PDF, Image, or Text File
+          </h2>
+          <p className="text-xs sm:text-sm text-on-surface-variant max-w-xs mb-6">
+            Supports PDF documents, textbook photos, scanned pages, or notes up to 25MB.
+          </p>
+
+          <label className="cursor-pointer inline-flex items-center gap-2 px-6 py-3 rounded-full bg-primary text-on-primary font-bold text-xs sm:text-sm shadow-md hover:bg-on-primary-fixed-variant transition-colors touch-target">
+            <span className="material-symbols-outlined text-lg">folder_open</span>
+            <span>Browse Files</span>
             <input
               type="file"
-              accept=".pdf,.png,.jpg,.jpeg,.txt"
-              aria-label="Upload document file"
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+              accept=".pdf,.txt,.md,.png,.jpg,.jpeg"
               onChange={(e) => {
-                if (e.target.files?.[0]) {
+                if (e.target.files && e.target.files[0]) {
                   handleFileUpload(e.target.files[0]);
                 }
               }}
+              className="hidden"
             />
-            <div className="w-16 h-16 rounded-full bg-secondary-container text-primary flex items-center justify-center group-hover:scale-105 transition-transform">
-              <span className="material-symbols-outlined text-3xl">upload_file</span>
-            </div>
-            <div className="text-center">
-              <p className="text-sm font-bold text-on-surface">
-                Drag and drop your file here
-              </p>
-              <p className="text-xs text-on-surface-variant mt-1">
-                or tap to browse (PDF, PNG, JPG, TXT)
-              </p>
-            </div>
-            <div className="mt-2 inline-flex items-center justify-center px-6 py-2.5 bg-surface-container border border-surface-container-highest rounded-full text-xs font-bold text-on-surface group-hover:bg-surface-container-high transition-colors touch-target">
-              Choose file
-            </div>
-          </div>
+          </label>
         </section>
 
-        {/* Option 2: Paste Text */}
-        <section className="flex flex-col bg-surface-bright rounded-2xl border-2 border-surface-container-highest overflow-hidden focus-within:border-primary transition-colors shadow-sm">
-          <div className="p-5 sm:p-6 border-b-2 border-surface-container-highest bg-surface-container-lowest">
-            <div className="flex justify-between items-center">
-              <h2 className="text-lg font-bold text-on-surface">
-                Paste Text / Notes
+        {/* Right: Quick Text Paste & Editor */}
+        <section className="bg-surface-container-lowest rounded-3xl border-2 border-surface-container-highest p-5 sm:p-7 flex flex-col justify-between shadow-xs">
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-base sm:text-lg font-bold text-on-surface flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary text-xl">edit_note</span>
+                Paste or Write Text
               </h2>
               <button
                 type="button"
                 onClick={handlePasteClipboard}
-                className="text-xs font-bold text-primary hover:bg-surface-container p-2 rounded-lg transition-colors flex items-center gap-1.5"
+                className="px-3 py-1.5 rounded-full bg-surface-container text-primary font-bold text-xs hover:bg-surface-container-high transition-colors flex items-center gap-1 touch-target border border-surface-container-highest"
               >
                 <span className="material-symbols-outlined text-sm">content_paste</span>
-                Paste from clipboard
+                Paste Clipboard
               </button>
             </div>
-            <p className="text-xs text-on-surface-variant mt-1">
-              Auto-formats articles, chapters, emails, or study notes.
-            </p>
-          </div>
-          <div className="p-5 sm:p-6 flex-grow flex flex-col gap-3">
-            <input
-              type="text"
-              placeholder="Optional title (e.g. Science Chapter 4)"
-              value={docTitle}
-              onChange={(e) => setDocTitle(e.target.value)}
-              className="w-full p-3 bg-surface-container-lowest border-2 border-surface-container-highest rounded-xl text-sm font-medium text-on-background focus:ring-0 focus:border-primary"
-            />
-            <textarea
-              id="text-input"
-              value={pastedText}
-              onChange={(e) => setPastedText(e.target.value)}
-              placeholder="Type or paste your text here..."
-              className="w-full h-full min-h-[160px] sm:min-h-[200px] p-4 bg-surface-container-lowest border-2 border-surface-container-highest rounded-xl text-sm font-body-lg text-on-background focus:ring-0 focus:border-primary resize-none"
-            />
-            <div className="mt-1 flex flex-col sm:flex-row justify-between items-center gap-3">
-              <span className="text-xs text-on-surface-variant self-start sm:self-center">
-                {pastedText.trim() ? `${pastedText.trim().split(/\s+/).length} words` : '0 words'}
-              </span>
-              <button
-                type="button"
-                onClick={handleStartReadingPasted}
-                className="w-full sm:w-auto inline-flex items-center justify-center px-8 py-3 bg-primary text-on-primary rounded-full text-xs sm:text-sm font-bold hover:bg-on-primary-fixed-variant transition-colors min-h-[3rem] shadow-sm active:scale-95 touch-target"
-              >
-                Start reading
-              </button>
+
+            <div className="space-y-3 mb-4">
+              <div>
+                <label className="block text-[11px] font-bold text-on-surface-variant mb-1">
+                  Document Title (Optional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Chapter 4: Photosynthesis Notes"
+                  value={docTitle}
+                  onChange={(e) => setDocTitle(e.target.value)}
+                  className="w-full p-2.5 bg-surface-container-low border border-surface-container-highest rounded-xl text-xs sm:text-sm font-semibold text-on-surface focus:outline-none focus:border-primary"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-on-surface-variant mb-1">
+                  Text Content
+                </label>
+                <textarea
+                  rows={7}
+                  placeholder="Paste textbook excerpts, homework problems, articles, or notes here..."
+                  value={pastedText}
+                  onChange={(e) => setPastedText(e.target.value)}
+                  className="w-full p-3 bg-surface-container-low border border-surface-container-highest rounded-xl text-xs sm:text-sm text-on-surface leading-relaxed focus:outline-none focus:border-primary resize-none"
+                />
+              </div>
             </div>
           </div>
+
+          <button
+            type="button"
+            onClick={handleStartReadingPasted}
+            disabled={!pastedText.trim()}
+            className="w-full py-3 px-6 rounded-full bg-primary text-on-primary font-bold text-xs sm:text-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-on-primary-fixed-variant transition-colors flex items-center justify-center gap-2 shadow-md touch-target"
+          >
+            <span className="material-symbols-outlined text-lg">auto_stories</span>
+            <span>Start Reading in Accessible Mode</span>
+          </button>
         </section>
       </div>
     </div>

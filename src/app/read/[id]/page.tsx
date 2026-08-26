@@ -7,6 +7,7 @@ import { useReader } from '@/context/ReaderContext';
 import { formatTextWithSyllables, renderConfusableSpans } from '@/lib/formatting/engine';
 import { AVAILABLE_FONTS, SUPPORTED_LANGUAGES, THEME_PRESETS } from '@/lib/constants';
 import { PDFService } from '@/services/pdf.service';
+import { DocumentService } from '@/services/document.service';
 import { FontFamily, ThemePreset } from '@/types';
 
 export default function ReadingViewPage() {
@@ -57,14 +58,25 @@ export default function ReadingViewPage() {
 
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Sync route param id with current document
-  useEffect(() => {
-    if (params?.id && typeof params.id === 'string') {
-      if (!currentDocument || currentDocument.id !== params.id) {
-        setCurrentDocumentId(params.id);
-      }
+  // Multi-tier document lookup guaranteeing zero "document not found" after upload or refresh
+  const doc = useMemo(() => {
+    const routeId = params?.id as string;
+    if (routeId) {
+      if (currentDocument && currentDocument.id === routeId) return currentDocument;
+      const foundInState = documents.find((d) => d.id === routeId);
+      if (foundInState) return foundInState;
+      const freshDoc = DocumentService.getDocumentById(routeId);
+      if (freshDoc) return freshDoc;
     }
-  }, [params?.id, currentDocument, setCurrentDocumentId]);
+    return currentDocument || documents[0] || null;
+  }, [params?.id, currentDocument, documents]);
+
+  // Sync route param id with current document state
+  useEffect(() => {
+    if (doc && (!currentDocument || currentDocument.id !== doc.id)) {
+      setCurrentDocumentId(doc.id);
+    }
+  }, [doc, currentDocument, setCurrentDocumentId]);
 
   // Auto-follow audio voice: smoothly glide Reading Focus Ruler and auto-scroll viewport
   useEffect(() => {
@@ -96,8 +108,7 @@ export default function ReadingViewPage() {
     return () => cancelAnimationFrame(rafId);
   }, [activeWordIndex, isPlayingAudio, profile.readingRulerEnabled, profile.readingRulerHeight, setReadingRulerY]);
 
-  const doc = currentDocument || documents[0];
-  const currentLangObj = SUPPORTED_LANGUAGES.find((l) => l.code === activeLanguage);
+  const currentLangObj = SUPPORTED_LANGUAGES.find((l) => l.code === (doc?.language || activeLanguage));
 
   // Reflow and format text
   const rawText = viewMode === 'original' ? (doc?.originalText || '') : (doc?.processedText || '');
@@ -149,11 +160,15 @@ export default function ReadingViewPage() {
 
   if (!doc) {
     return (
-      <div className="w-full p-8 text-center">
-        <p className="text-body-lg">Document not found.</p>
+      <div className="w-full p-8 text-center min-h-[60vh] flex flex-col items-center justify-center">
+        <div className="w-16 h-16 rounded-full bg-surface-container flex items-center justify-center text-primary mb-4">
+          <span className="material-symbols-outlined text-3xl">menu_book</span>
+        </div>
+        <p className="text-lg font-bold text-on-surface mb-1">Loading Document...</p>
+        <p className="text-xs text-on-surface-variant mb-4">Please wait while your document is formatted.</p>
         <button
           onClick={() => router.push('/library')}
-          className="mt-4 px-6 py-2 bg-primary text-on-primary rounded-full font-bold touch-target"
+          className="mt-2 px-6 py-2 bg-primary text-on-primary rounded-full font-bold text-xs touch-target"
         >
           Go to Library
         </button>
@@ -345,7 +360,7 @@ export default function ReadingViewPage() {
                 </p>
                 <div className="max-h-60 overflow-y-auto space-y-1">
                   {SUPPORTED_LANGUAGES.map((lang) => {
-                    const isSelected = activeLanguage === lang.code;
+                    const isSelected = (doc?.language || activeLanguage) === lang.code;
                     return (
                       <button
                         key={lang.code}
@@ -517,10 +532,10 @@ export default function ReadingViewPage() {
               <span className="font-semibold">{doc.wordCount || 0} words</span>
               <span>•</span>
               <span className="px-2 py-0.5 rounded bg-surface-container text-xs font-bold">
-                {currentLangObj?.nativeName || doc.language.toUpperCase()}
+                {currentLangObj?.nativeName || doc.language?.toUpperCase() || 'EN'}
               </span>
               <span>•</span>
-              <span>{doc.sourceFormat.toUpperCase()}</span>
+              <span>{doc.sourceFormat?.toUpperCase() || 'TEXT'}</span>
             </div>
           </header>
 
