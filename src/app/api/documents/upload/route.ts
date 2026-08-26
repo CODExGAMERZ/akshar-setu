@@ -11,34 +11,41 @@ export async function POST(req: NextRequest) {
     }
 
     const title = file.name.replace(/\.[^/.]+$/, '');
-    let extractedText = '';
+    let rawText = '';
 
     if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
       const buffer = Buffer.from(await file.arrayBuffer());
       try {
         const pdfParse = require('pdf-parse');
         const data = await pdfParse(buffer);
-        extractedText = PDFService.cleanPDFText(data.text);
+        rawText = data.text || '';
       } catch (pdfErr) {
-        console.warn('pdf-parse encountered an issue, falling back to buffer string decode:', pdfErr);
-        extractedText = buffer.toString('utf-8');
+        console.warn('pdf-parse fallback to buffer decode:', pdfErr);
+        rawText = buffer.toString('utf-8');
       }
     } else {
-      // Text / Markdown / Doc format
-      extractedText = await file.text();
+      // Plain text, Markdown, or doc text
+      rawText = await file.text();
     }
 
-    if (!extractedText.trim()) {
-      extractedText = 'Sample reading passage extracted from ' + title + '.\n\nAksharSetu enables personalized, comfortable reading for every mind.';
+    // Clean, un-hyphenate, de-noise, and reflow into beautiful paragraphs
+    let formattedText = PDFService.cleanPDFText(rawText);
+
+    if (!formattedText || formattedText.trim().length === 0) {
+      formattedText = `Sample reading passage extracted from ${title}.\n\nAksharSetu enables personalized, comfortable reading for every mind.`;
     }
+
+    // Auto-detect document language
+    const detectedLang = PDFService.detectLanguage(formattedText);
 
     return NextResponse.json({
       title,
-      text: extractedText,
-      language: 'en',
+      text: formattedText,
+      language: detectedLang,
+      status: 'success',
     });
   } catch (err: any) {
     console.error('Document upload API error:', err);
-    return NextResponse.json({ error: err.message || 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: err.message || 'Failed to extract document' }, { status: 500 });
   }
 }

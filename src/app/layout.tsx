@@ -3,11 +3,23 @@ import '../styles/globals.css';
 import { ReaderProvider } from '@/context/ReaderContext';
 import { AuthProvider } from '@/context/AuthContext';
 import { AppShell } from '@/components/layout/AppShell';
+import { PwaInstaller } from '@/components/pwa/PwaInstaller';
 
 export const metadata: Metadata = {
   title: 'AksharSetu — Reading, calibrated for you',
   description: 'A personalized, multilingual reading companion for people with dyslexia.',
   applicationName: 'AksharSetu',
+  manifest: '/manifest.webmanifest',
+  icons: {
+    icon: [
+      { url: '/icons/icon.svg', type: 'image/svg+xml' },
+      { url: '/icons/icon-192x192.svg', sizes: '192x192', type: 'image/svg+xml' },
+      { url: '/icons/icon-512x512.svg', sizes: '512x512', type: 'image/svg+xml' },
+    ],
+    apple: [
+      { url: '/icons/icon-192x192.svg', sizes: '192x192', type: 'image/svg+xml' },
+    ],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
@@ -23,7 +35,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 5,
   userScalable: true,
-  themeColor: '#fbf9f8',
+  themeColor: '#064192',
   viewportFit: 'cover',
 };
 
@@ -50,6 +62,7 @@ export default function RootLayout({
         <AuthProvider>
           <ReaderProvider>
             <AppShell>{children}</AppShell>
+            <PwaInstaller />
           </ReaderProvider>
         </AuthProvider>
       </body>

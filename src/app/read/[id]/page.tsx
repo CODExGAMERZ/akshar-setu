@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useReader } from '@/context/ReaderContext';
 import { formatTextWithSyllables } from '@/lib/formatting/engine';
 import { SUPPORTED_LANGUAGES } from '@/lib/constants';
+import { PDFService } from '@/services/pdf.service';
 
 export default function ReadingViewPage() {
   const params = useParams();
@@ -63,8 +64,10 @@ export default function ReadingViewPage() {
     );
   }
 
+  // Reflow and format text on the fly
   const rawText = viewMode === 'original' ? doc.originalText : doc.processedText;
-  const paragraphs = rawText.split('\n\n').filter((p) => p.trim().length > 0);
+  const formattedText = PDFService.cleanPDFText(rawText);
+  const paragraphs = formattedText.split('\n\n').filter((p) => p.trim().length > 0);
 
   // Split text into words for live audio karaoke highlighting
   let globalWordCounter = 0;
@@ -88,9 +91,34 @@ export default function ReadingViewPage() {
     }
   };
 
+  // Helper to render individual karaoke-enabled words
+  const renderWord = (w: string) => {
+    const currentWordGlobalIndex = globalWordCounter++;
+    const isCurrentKaraokeWord = isPlayingAudio && activeWordIndex === currentWordGlobalIndex;
+
+    const isBold = w.startsWith('**') && w.endsWith('**');
+    const cleanWord = w.replace(/\*\*/g, '');
+
+    const displayText =
+      profile.syllableHighlighting && viewMode === 'personalized'
+        ? formatTextWithSyllables(cleanWord)
+        : cleanWord;
+
+    return (
+      <span
+        key={currentWordGlobalIndex}
+        className={`inline-block transition-all duration-100 mr-1 ${
+          isBold ? 'font-bold text-primary' : ''
+        } ${isCurrentKaraokeWord ? 'karaoke-active-word scale-105' : ''}`}
+      >
+        {displayText}
+      </span>
+    );
+  };
+
   return (
     <div className="w-full pb-12 min-h-dvh">
-      {/* Top Document Control Bar (Responsive on Mobile, Tablet & Desktop) */}
+      {/* Top Document Control Bar */}
       <div className="sticky top-0 bg-background/95 backdrop-blur-md z-30 border-b-2 border-surface-container-highest px-4 sm:px-6 md:px-8 py-3.5 flex flex-wrap items-center justify-between gap-3 shadow-xs">
         {/* Toggle Personalized vs Original */}
         <div className="flex items-center bg-surface-container-low rounded-full p-1 border-2 border-surface-container-highest shrink-0">
@@ -141,7 +169,7 @@ export default function ReadingViewPage() {
             <span>Ruler</span>
           </button>
 
-          {/* Language Selector Bar (Right next to Ruler) */}
+          {/* Language Selector Bar */}
           <div className="relative">
             <button
               type="button"
@@ -276,7 +304,7 @@ export default function ReadingViewPage() {
         </div>
       </div>
 
-      {/* Main Reading Canvas (Fluid and centered on all screens) */}
+      {/* Main Reading Canvas */}
       <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 md:px-8 py-6 sm:py-8 md:py-12">
         <div
           ref={containerRef}
@@ -333,14 +361,60 @@ export default function ReadingViewPage() {
             </div>
           </header>
 
-          {/* Formatted Paragraphs with Karaoke Word Highlighting */}
+          {/* Formatted Semantic Paragraphs, Headings, and Lists with Karaoke */}
           <div
-            className="space-y-6 reading-content w-full"
+            className="reading-content w-full"
             style={{
               maxWidth: viewMode === 'personalized' ? `${profile.maxCharactersPerLine}ch` : '70ch',
             }}
           >
             {paragraphs.map((pText, pIdx) => {
+              const isHeading = pText.startsWith('###') || pText.startsWith('##') || pText.startsWith('#');
+              const isBullet = pText.startsWith('•') || pText.startsWith('-');
+
+              if (isHeading) {
+                const headingText = pText.replace(/^#+\s*/, '');
+                const headingWords = headingText.trim().split(/\s+/);
+
+                return (
+                  <h2
+                    key={pIdx}
+                    className="text-xl sm:text-2xl font-bold text-primary mt-8 mb-4 pt-3 border-b border-surface-container-highest flex items-center gap-2"
+                    style={{
+                      fontFamily: viewMode === 'personalized' ? profile.fontFamily : 'inherit',
+                    }}
+                  >
+                    <span className="material-symbols-outlined text-primary text-xl">bookmark</span>
+                    {headingWords.map((w) => renderWord(w))}
+                  </h2>
+                );
+              }
+
+              if (isBullet) {
+                const bulletItems = pText.split('\n').filter(Boolean);
+                return (
+                  <div key={pIdx} className="space-y-2 my-4 pl-2">
+                    {bulletItems.map((bItem, bIdx) => {
+                      const cleanItem = bItem.replace(/^[•\-\*]\s*/, '');
+                      const itemWords = cleanItem.split(/\s+/);
+                      return (
+                        <div key={bIdx} className="flex items-start gap-2.5">
+                          <span className="text-primary font-bold text-base select-none mt-0.5">•</span>
+                          <p
+                            className="flex-1"
+                            style={{
+                              lineHeight: viewMode === 'personalized' ? profile.lineHeight : 1.6,
+                            }}
+                          >
+                            {itemWords.map((w) => renderWord(w))}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              }
+
               const wordsInParagraph = pText.trim().split(/\s+/);
               return (
                 <p
@@ -349,28 +423,7 @@ export default function ReadingViewPage() {
                     marginBottom: viewMode === 'personalized' ? `${profile.paragraphSpacing}px` : '24px',
                   }}
                 >
-                  {wordsInParagraph.map((w, wIdx) => {
-                    const currentWordGlobalIndex = globalWordCounter++;
-                    const isCurrentKaraokeWord =
-                      isPlayingAudio && activeWordIndex === currentWordGlobalIndex;
-
-                    const displayText =
-                      profile.syllableHighlighting && viewMode === 'personalized'
-                        ? formatTextWithSyllables(w)
-                        : w;
-
-                    return (
-                      <React.Fragment key={wIdx}>
-                        <span
-                          className={`inline-block transition-all duration-100 ${
-                            isCurrentKaraokeWord ? 'karaoke-active-word scale-105' : ''
-                          }`}
-                        >
-                          {displayText}
-                        </span>{' '}
-                      </React.Fragment>
-                    );
-                  })}
+                  {wordsInParagraph.map((w) => renderWord(w))}
                 </p>
               );
             })}

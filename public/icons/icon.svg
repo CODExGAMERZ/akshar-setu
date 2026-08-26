@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b57d0" />
+      <stop offset="100%" stop-color="#042e6f" />
+    </linearGradient>
+    <linearGradient id="accent-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fdbe54" />
+      <stop offset="100%" stop-color="#ea8600" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Rounded App Tile Background -->
+  <rect width="512" height="512" rx="112" fill="url(#bg-grad)" />
+  
+  <!-- Glow Bridge Arc -->
+  <path d="M 96 350 C 180 200, 332 200, 416 350" fill="none" stroke="url(#accent-grad)" stroke-width="28" stroke-linecap="round" />
+  
+  <!-- Open Book Symbol -->
+  <g fill="#ffffff" transform="translate(136, 170) scale(10)">
+    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" opacity="0"/>
+    <!-- Book Left Page -->
+    <path d="M 4 5 C 7 4, 11 5, 11 18 C 8 17, 4 17, 2 18 L 2 6 C 2 5.5, 3 5, 4 5 Z" fill="#ffffff"/>
+    <!-- Book Right Page -->
+    <path d="M 20 5 C 17 4, 13 5, 13 18 C 16 17, 20 17, 22 18 L 22 6 C 22 5.5, 21 5, 20 5 Z" fill="#ffffff"/>
+    <!-- Center Spine & Bookmark Ribbon -->
+    <rect x="11.2" y="4.5" width="1.6" height="14" fill="url(#accent-grad)" rx="0.8"/>
+  </g>
+
+  <!-- Indic Akshar Letter 'अ' stylized subtle crest -->
+  <circle cx="256" cy="130" r="18" fill="url(#accent-grad)" />
+</svg>

@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useReader } from '@/context/ReaderContext';
+import { PDFService } from '@/services/pdf.service';
 
 export default function UploadPage() {
   const router = useRouter();
@@ -21,13 +22,16 @@ export default function UploadPage() {
     }
     setErrorMsg(null);
     const title = docTitle.trim() || pastedText.slice(0, 30).trim() + '...';
+    const formatted = PDFService.cleanPDFText(pastedText);
+    const detectedLang = PDFService.detectLanguage(formatted);
+
     const newDoc = addDocument({
       title,
-      originalText: pastedText,
-      processedText: pastedText,
-      language: 'en',
+      originalText: formatted,
+      processedText: formatted,
+      language: detectedLang,
       sourceFormat: 'text',
-      wordCount: pastedText.trim().split(/\s+/).length,
+      wordCount: formatted.trim().split(/\s+/).length,
     });
     router.push(`/read/${newDoc.id}`);
   };
@@ -35,7 +39,8 @@ export default function UploadPage() {
   const handlePasteClipboard = async () => {
     try {
       const text = await navigator.clipboard.readText();
-      setPastedText(text);
+      const formatted = PDFService.cleanPDFText(text);
+      setPastedText(formatted);
       if (!docTitle) {
         setDocTitle('Pasted Clip ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
       }
@@ -74,17 +79,20 @@ export default function UploadPage() {
       setIsProcessing(false);
       router.push(`/read/${newDoc.id}`);
     } catch {
-      // Fallback: Read as text
+      // Fallback: Read as text with client-side formatting
       const reader = new FileReader();
       reader.onload = (e) => {
-        const content = (e.target?.result as string) || 'Sample document content extracted from ' + file.name;
+        const rawContent = (e.target?.result as string) || 'Sample document content extracted from ' + file.name;
+        const cleanContent = PDFService.cleanPDFText(rawContent);
+        const detectedLang = PDFService.detectLanguage(cleanContent);
+
         const newDoc = addDocument({
           title: file.name.replace(/\.[^/.]+$/, ''),
-          originalText: content,
-          processedText: content,
-          language: 'en',
+          originalText: cleanContent,
+          processedText: cleanContent,
+          language: detectedLang,
           sourceFormat: 'pdf',
-          wordCount: content.trim().split(/\s+/).length,
+          wordCount: cleanContent.trim().split(/\s+/).length,
         });
         setIsProcessing(false);
         router.push(`/read/${newDoc.id}`);
@@ -103,7 +111,7 @@ export default function UploadPage() {
         <div className="flex items-start gap-3 bg-surface-container-low p-4 rounded-xl border-2 border-surface-container-highest">
           <span className="material-symbols-outlined text-secondary shrink-0 mt-0.5">info</span>
           <p className="text-sm sm:text-body-md font-body-md text-on-surface-variant">
-            Your personalized settings are ready — anything you bring in will use them automatically.
+            Your personalized settings are ready — anything you bring in will be automatically reflowed and formatted for comfortable reading.
           </p>
         </div>
       </header>
@@ -115,7 +123,7 @@ export default function UploadPage() {
         </div>
       )}
 
-      {/* Bento Grid for Upload Options (Adaptive on All Screens) */}
+      {/* Bento Grid for Upload Options */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
         {/* Option 1: PDF Upload */}
         <section className="flex flex-col bg-surface-bright rounded-xl border-2 border-surface-container-highest overflow-hidden focus-within:border-primary transition-colors shadow-sm">
@@ -124,7 +132,7 @@ export default function UploadPage() {
               Upload a PDF
             </h3>
             <p className="text-xs sm:text-body-md font-body-md text-on-surface-variant mt-1 sm:mt-2">
-              Best for structured documents, worksheets, or scanned books.
+              Automatically cleans headers, un-hyphenates line splits, and reflows into comfortable paragraphs.
             </p>
           </div>
           <div
@@ -164,10 +172,10 @@ export default function UploadPage() {
             </div>
             <div className="text-center">
               <p className="text-sm sm:text-body-lg font-body-lg font-bold text-on-background">
-                {isProcessing ? 'Processing document...' : 'Drag and drop your file here'}
+                {isProcessing ? 'Extracting & reflowing document...' : 'Drag and drop your file here'}
               </p>
               <p className="text-xs sm:text-body-md font-body-md text-on-surface-variant mt-1">
-                or tap to browse from your device
+                or tap to browse from your device (PDF, TXT, DOCX)
               </p>
             </div>
             <div className="mt-2 sm:mt-4 inline-flex items-center justify-center px-6 py-2.5 sm:py-3 bg-surface-container border-2 border-surface-container-highest rounded-full text-xs sm:text-label-md font-label-md text-on-surface-variant group-hover:bg-surface-container-high transition-colors font-bold touch-target">
@@ -189,17 +197,17 @@ export default function UploadPage() {
                 className="text-xs sm:text-label-md font-label-md text-primary hover:bg-surface-container p-2 rounded-lg transition-colors flex items-center gap-1.5 font-bold"
               >
                 <span className="material-symbols-outlined text-sm">content_paste</span>
-                Paste
+                Paste from clipboard
               </button>
             </div>
             <p className="text-xs sm:text-body-md font-body-md text-on-surface-variant mt-1 sm:mt-2">
-              Quickly read articles, emails, or short notes.
+              Auto-formats articles, chapters, emails, or class notes.
             </p>
           </div>
           <div className="p-5 sm:p-6 flex-grow flex flex-col gap-3 sm:gap-4">
             <input
               type="text"
-              placeholder="Optional title (e.g. Chapter 3 Summary)"
+              placeholder="Optional title (e.g. Science Chapter 4)"
               value={docTitle}
               onChange={(e) => setDocTitle(e.target.value)}
               className="w-full p-3 bg-surface-container-lowest border-2 border-surface-container-highest rounded-xl text-sm sm:text-body-md font-medium text-on-background focus:ring-0 focus:border-primary focus:outline-none"

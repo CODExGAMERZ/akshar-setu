@@ -14,6 +14,7 @@ export class TTSService {
   private static keepAliveInterval: any = null;
   private static wordTimerInterval: any = null;
   private static cachedVoices: SpeechSynthesisVoice[] = [];
+  private static currentAudioElement: HTMLAudioElement | null = null;
 
   private static initSynth(): SpeechSynthesis | null {
     if (typeof window === 'undefined') return null;
@@ -31,14 +32,18 @@ export class TTSService {
 
   private static loadVoices(): SpeechSynthesisVoice[] {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) return [];
-    const voices = window.speechSynthesis.getVoices();
-    if (voices && voices.length > 0) {
-      this.cachedVoices = voices;
+    try {
+      const voices = window.speechSynthesis.getVoices();
+      if (voices && voices.length > 0) {
+        this.cachedVoices = voices;
+      }
+    } catch {
+      // Ignored
     }
     return this.cachedVoices;
   }
 
-  private static getLangCode(lang: SupportedLanguage): string {
+  public static getLangCode(lang: SupportedLanguage): string {
     const map: Record<SupportedLanguage, string> = {
       en: 'en-IN',
       hi: 'hi-IN',
@@ -51,35 +56,45 @@ export class TTSService {
     return map[lang] || 'en-IN';
   }
 
-  private static findBestVoice(lang: SupportedLanguage): { voice: SpeechSynthesisVoice | null; langCode: string } {
+  private static findBestVoice(lang: SupportedLanguage): SpeechSynthesisVoice | null {
     const synth = this.initSynth();
     const voices = this.cachedVoices.length > 0 ? this.cachedVoices : (synth?.getVoices() || []);
-    const targetLangCode = this.getLangCode(lang);
+    if (!voices || voices.length === 0) return null;
+
+    const targetLangCode = this.getLangCode(lang).toLowerCase();
     const prefix = targetLangCode.split('-')[0];
 
-    // 1. Exact match (e.g. "hi-IN", "ta-IN")
-    let voice = voices.find((v) => v.lang.toLowerCase() === targetLangCode.toLowerCase());
-    if (voice) return { voice, langCode: voice.lang };
+    // 1. Exact match (e.g. "hi-IN", "ta-IN", "en-IN")
+    let match = voices.find((v) => v.lang.toLowerCase() === targetLangCode);
+    if (match) return match;
 
-    // 2. Prefix match (e.g. "hi_IN", "hi")
-    voice = voices.find((v) => v.lang.toLowerCase().startsWith(prefix.toLowerCase()));
-    if (voice) return { voice, langCode: voice.lang };
+    // 2. Prefix match (e.g. "hi", "ta", "en")
+    match = voices.find((v) => v.lang.toLowerCase().startsWith(prefix));
+    if (match) return match;
 
-    // 3. For Indian scripts without specific OS voice (e.g., Odia, Marathi), fallback to Hindi or Indian English voice
-    if (['or', 'mr', 'te', 'ta', 'bn'].includes(lang)) {
-      const indianVoice = voices.find(
+    // 3. Match by name (e.g. "Hindi", "Tamil", "India")
+    match = voices.find((v) => v.name.toLowerCase().includes(prefix) || v.name.toLowerCase().includes(lang));
+    if (match) return match;
+
+    // 4. For English: pick any English voice
+    if (lang === 'en') {
+      match = voices.find((v) => v.lang.toLowerCase().startsWith('en'));
+      if (match) return match;
+    }
+
+    // 5. For Indic languages without specific regional voice: match Indian English or Hindi if available
+    if (['hi', 'mr', 'or', 'bn', 'ta', 'te'].includes(lang)) {
+      match = voices.find(
         (v) =>
           v.lang.toLowerCase().startsWith('hi') ||
           v.lang.toLowerCase().includes('in') ||
-          v.name.toLowerCase().includes('india') ||
-          v.name.toLowerCase().includes('hindi')
+          v.name.toLowerCase().includes('india')
       );
-      if (indianVoice) return { voice: indianVoice, langCode: indianVoice.lang };
+      if (match) return match;
     }
 
-    // 4. Default voice or first available
-    const defaultVoice = voices.find((v) => v.default) || voices[0] || null;
-    return { voice: defaultVoice, langCode: defaultVoice ? defaultVoice.lang : targetLangCode };
+    // DO NOT force an incompatible English voice on non-English text
+    return null;
   }
 
   public static speak(
@@ -88,112 +103,176 @@ export class TTSService {
     rate: number = 0.95,
     callbacks?: TTSEventCallbacks
   ): void {
-    const synth = this.initSynth();
-    if (!synth) {
-      callbacks?.onError?.('SpeechSynthesis not supported on this device');
-      return;
-    }
-
-    // Clear any previous execution and timers
-    this.stop();
-
     const cleanText = text.replace(/\s+/g, ' ').trim();
     if (!cleanText) {
       callbacks?.onEnd?.();
       return;
     }
 
-    const { voice, langCode } = this.findBestVoice(lang);
-    const utterance = new SpeechSynthesisUtterance(cleanText);
-    utterance.lang = langCode || this.getLangCode(lang);
-    utterance.rate = Math.max(0.5, Math.min(2.0, rate));
-    utterance.pitch = 1.0;
+    const synth = this.initSynth();
 
-    if (voice) {
-      utterance.voice = voice;
+    // Check if SpeechSynthesis is supported
+    if (!synth) {
+      this.speakWithAudioStream(cleanText, lang, rate, callbacks);
+      return;
     }
 
-    const words = cleanText.split(/\s+/).filter(Boolean);
-    const totalWords = words.length;
-    let wordIndex = 0;
-    let boundaryFired = false;
+    this.stop();
 
-    // Fallback word highlighting timer if browser TTS doesn't trigger onboundary events
-    const startWordTimer = () => {
-      this.clearWordTimer();
-      // Estimate average milliseconds per word based on speech rate
-      const msPerWord = Math.max(150, Math.round(340 / utterance.rate));
-      this.wordTimerInterval = setInterval(() => {
-        if (this.isPausedState) return;
-        if (!boundaryFired && wordIndex < totalWords) {
-          callbacks?.onWord?.(wordIndex, 0);
-          wordIndex++;
-        } else if (wordIndex >= totalWords) {
-          this.clearWordTimer();
-        }
-      }, msPerWord);
-    };
+    try {
+      // Force cancel and resume any hung browser states
+      synth.cancel();
+      if (synth.paused) {
+        synth.resume();
+      }
 
-    utterance.onstart = () => {
-      this.isPausedState = false;
-      callbacks?.onStart?.();
-      callbacks?.onWord?.(0, 0);
-      wordIndex = 1;
-      startWordTimer();
+      const langCode = this.getLangCode(lang);
+      const voice = this.findBestVoice(lang);
 
-      // Chrome keep-alive bug fix: periodically pulse pause/resume to prevent 15-second cutoff
-      this.clearKeepAlive();
-      this.keepAliveInterval = setInterval(() => {
-        if (synth && synth.speaking && !synth.paused) {
-          synth.pause();
-          synth.resume();
-        }
-      }, 10000);
-    };
+      const utterance = new SpeechSynthesisUtterance(cleanText);
+      utterance.lang = voice ? voice.lang : langCode;
+      utterance.rate = Math.max(0.6, Math.min(1.8, rate));
+      utterance.pitch = 1.0;
+      utterance.volume = 1.0;
 
-    utterance.onboundary = (event) => {
-      if (event.name === 'word' || event.name === '') {
-        boundaryFired = true;
+      if (voice) {
+        utterance.voice = voice;
+      }
+
+      const words = cleanText.split(/\s+/).filter(Boolean);
+      const totalWords = words.length;
+      let wordIndex = 0;
+      let boundaryFired = false;
+
+      // Word timer for synchronous karaoke tracking
+      const startWordTimer = () => {
         this.clearWordTimer();
-        callbacks?.onWord?.(wordIndex++, event.charIndex);
-      }
-    };
+        const msPerWord = Math.max(140, Math.round(330 / utterance.rate));
+        this.wordTimerInterval = setInterval(() => {
+          if (this.isPausedState) return;
+          if (!boundaryFired && wordIndex < totalWords) {
+            callbacks?.onWord?.(wordIndex, 0);
+            wordIndex++;
+          } else if (wordIndex >= totalWords) {
+            this.clearWordTimer();
+          }
+        }, msPerWord);
+      };
 
-    utterance.onend = () => {
-      this.cleanUp();
-      callbacks?.onEnd?.();
-    };
+      utterance.onstart = () => {
+        this.isPausedState = false;
+        callbacks?.onStart?.();
+        callbacks?.onWord?.(0, 0);
+        wordIndex = 1;
+        startWordTimer();
 
-    utterance.onerror = (err) => {
-      // Ignore errors caused by manual cancel
-      if (err.error !== 'canceled' && err.error !== 'interrupted') {
-        console.warn('TTS Synthesis notification:', err);
-      }
-      this.cleanUp();
-      callbacks?.onEnd?.();
-    };
+        // Chrome keep-alive pulse
+        this.clearKeepAlive();
+        this.keepAliveInterval = setInterval(() => {
+          if (synth && synth.speaking && !synth.paused) {
+            synth.pause();
+            synth.resume();
+          }
+        }, 8000);
+      };
 
-    this.currentUtterance = utterance;
-
-    // Small timeout ensures Chrome processes synth.cancel() before queueing new utterance
-    setTimeout(() => {
-      try {
-        synth.speak(utterance);
-        // If Chrome is stuck in a paused state, force resume
-        if (synth.paused) {
-          synth.resume();
+      utterance.onboundary = (event) => {
+        if (event.name === 'word' || event.name === '') {
+          boundaryFired = true;
+          this.clearWordTimer();
+          callbacks?.onWord?.(wordIndex++, event.charIndex);
         }
-      } catch (err) {
-        console.error('Failed to trigger speech synthesis', err);
+      };
+
+      utterance.onend = () => {
+        this.cleanUp();
+        callbacks?.onEnd?.();
+      };
+
+      utterance.onerror = (err) => {
+        if (err.error !== 'canceled' && err.error !== 'interrupted') {
+          console.warn('SpeechSynthesis browser notice, attempting fallback audio:', err);
+          this.speakWithAudioStream(cleanText, lang, rate, callbacks);
+          return;
+        }
+        this.cleanUp();
+        callbacks?.onEnd?.();
+      };
+
+      this.currentUtterance = utterance;
+
+      // Direct synchronous execution
+      synth.speak(utterance);
+    } catch (e) {
+      console.error('Error invoking SpeechSynthesis, trying audio fallback', e);
+      this.speakWithAudioStream(cleanText, lang, rate, callbacks);
+    }
+  }
+
+  private static speakWithAudioStream(
+    text: string,
+    lang: SupportedLanguage,
+    rate: number,
+    callbacks?: TTSEventCallbacks
+  ): void {
+    try {
+      this.stop();
+      const encodedText = encodeURIComponent(text.slice(0, 200));
+      const audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${lang}&client=tw-ob&q=${encodedText}`;
+
+      const audio = new Audio(audioUrl);
+      audio.playbackRate = Math.max(0.7, Math.min(1.5, rate));
+      this.currentAudioElement = audio;
+
+      const words = text.split(/\s+/).filter(Boolean);
+      let wordIndex = 0;
+
+      audio.onplay = () => {
+        this.isPausedState = false;
+        callbacks?.onStart?.();
+        callbacks?.onWord?.(0, 0);
+        wordIndex = 1;
+
+        const msPerWord = Math.max(140, Math.round(330 / audio.playbackRate));
+        this.wordTimerInterval = setInterval(() => {
+          if (this.isPausedState) return;
+          if (wordIndex < words.length) {
+            callbacks?.onWord?.(wordIndex, 0);
+            wordIndex++;
+          } else {
+            this.clearWordTimer();
+          }
+        }, msPerWord);
+      };
+
+      audio.onended = () => {
+        this.cleanUp();
+        callbacks?.onEnd?.();
+      };
+
+      audio.onerror = (e) => {
+        console.warn('Audio streaming notice:', e);
+        this.cleanUp();
+        callbacks?.onEnd?.();
+      };
+
+      audio.play().catch((err) => {
+        console.warn('Audio play error:', err);
         callbacks?.onError?.(err);
-      }
-    }, 60);
+      });
+    } catch (err) {
+      callbacks?.onError?.(err);
+    }
   }
 
   public static pause(): void {
     const synth = this.initSynth();
-    if (synth && !this.isPausedState) {
+    if (synth && !this.isPausedState && synth.speaking) {
       synth.pause();
+      this.isPausedState = true;
+    }
+    if (this.currentAudioElement && !this.currentAudioElement.paused) {
+      this.currentAudioElement.pause();
       this.isPausedState = true;
     }
   }
@@ -204,11 +283,16 @@ export class TTSService {
       synth.resume();
       this.isPausedState = false;
     }
+    if (this.currentAudioElement && this.isPausedState) {
+      this.currentAudioElement.play().catch(console.warn);
+      this.isPausedState = false;
+    }
   }
 
   public static stop(): void {
     const synth = this.initSynth();
     this.cleanUp();
+
     if (synth) {
       try {
         synth.cancel();
@@ -216,11 +300,23 @@ export class TTSService {
         console.warn('Error during synth cancel', e);
       }
     }
+
+    if (this.currentAudioElement) {
+      try {
+        this.currentAudioElement.pause();
+        this.currentAudioElement.currentTime = 0;
+        this.currentAudioElement = null;
+      } catch {
+        // Ignored
+      }
+    }
   }
 
   public static isSpeaking(): boolean {
     const synth = this.initSynth();
-    return !!synth && (synth.speaking || this.isPausedState);
+    const synthSpeaking = !!synth && (synth.speaking || this.isPausedState);
+    const audioSpeaking = !!this.currentAudioElement && (!this.currentAudioElement.paused || this.isPausedState);
+    return synthSpeaking || audioSpeaking;
   }
 
   private static clearWordTimer(): void {
@@ -242,5 +338,8 @@ export class TTSService {
     this.isPausedState = false;
     this.clearWordTimer();
     this.clearKeepAlive();
+    if (this.currentAudioElement) {
+      this.currentAudioElement = null;
+    }
   }
 }
