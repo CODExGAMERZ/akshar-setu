@@ -152,7 +152,7 @@ A huge thank you to the 6-member team building inclusive, accessible educational
 
 | # | Name / Contributor | Role & Domain | GitHub Profile |
 | :-: | :--- | :--- | :--- |
-| 1 | **Team Lead** | Project Lead & System Design | [@username](https://github.com) |
+| 1 | **Chiraag Agarwal** (Team Lead) | Project Lead & System Design | [@chiraagagarwal](https://github.com/chiraagagarwal) |
 | 2 | **Core Contributor** | Full-Stack Architecture, Next.js 14 & AI Integrations | [@CODExGAMERZ](https://github.com/CODExGAMERZ) |
 | 3 | **Core Contributor** | Multilingual Indic NLP, Translation & Simplification | [@username](https://github.com) |
 | 4 | **Core Contributor** | Speech Synthesis, Audio Streaming & Karaoke Engine | [@username](https://github.com) |
