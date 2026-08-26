@@ -1,8 +1,9 @@
 import { ReadingPreferences, ReadingProfile } from '../types';
 import { DEFAULT_READING_PREFERENCES } from '../data/themes';
 
-const PROFILE_STORAGE_KEY = 'lexiease_user_profile_v1';
-const CALIBRATED_STORAGE_KEY = 'lexiease_calibrated_profile_v1';
+const PROFILE_STORAGE_KEY = 'aksharsetu_user_profile_v1';
+const CALIBRATED_STORAGE_KEY = 'aksharsetu_calibrated_profile_v1';
+
 
 class ProfileService {
   private currentProfile: ReadingProfile | null = null;

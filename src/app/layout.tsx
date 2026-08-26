@@ -7,10 +7,11 @@ import { DocumentUploaderModal } from '@/components/documents/DocumentUploaderMo
 import { AssessmentUploadModal } from '@/components/documents/AssessmentUploadModal';
 
 export const metadata: Metadata = {
-  title: 'LexiEase — Personalized Multisensory Reading Assistant',
+  title: 'AksharSetu — Personalized Multisensory Reading Assistant',
   description: 'Accessible dyslexia-support reading assistant with personalized typography, color overlays, read-aloud synchronization, and focus modes.',
-  applicationName: 'LexiEase',
+  applicationName: 'AksharSetu',
 };
+
 
 export const viewport: Viewport = {
   width: 'device-width',

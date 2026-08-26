@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { 
   BookOpen, 
   Sliders, 
@@ -35,17 +36,17 @@ export const Header: React.FC = () => {
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
         {/* Brand & Logo */}
         <div className="flex items-center gap-3">
-          <button
+          <Link
             id="brand-logo-btn"
-            onClick={() => setCurrentRoute('landing')}
+            href="/"
             className="flex items-center gap-2.5 group text-left focus:outline-none"
           >
             <div className="w-10 h-10 rounded-xl bg-[#26231E] text-[#FEF9EB] flex items-center justify-center font-bold text-lg shadow-xs group-hover:scale-105 transition-transform">
-              <span className="font-serif">L</span>
+              <span className="font-serif">A</span>
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="font-bold text-lg text-[#26231E] tracking-tight">LexiEase</span>
+                <span className="font-bold text-lg text-[#26231E] tracking-tight">AksharSetu</span>
                 <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-[#FAF1DA] text-[#8C6D23] border border-[#E4D5AD]">
                   Ivory
                 </span>
@@ -54,14 +55,14 @@ export const Header: React.FC = () => {
                 Accessible Multisensory Reader
               </p>
             </div>
-          </button>
+          </Link>
         </div>
 
         {/* Navigation Links */}
         <nav className="hidden md:flex items-center gap-1 bg-[#FAF3E0] p-1 rounded-xl border border-[#E7DFCA]">
-          <button
+          <Link
             id="nav-home-btn"
-            onClick={() => setCurrentRoute('landing')}
+            href="/"
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
               currentRoute === 'landing' 
                 ? 'bg-[#26231E] text-[#FEF9EB] shadow-xs' 
@@ -69,11 +70,11 @@ export const Header: React.FC = () => {
             }`}
           >
             Overview
-          </button>
+          </Link>
 
-          <button
+          <Link
             id="nav-library-btn"
-            onClick={() => setCurrentRoute('library')}
+            href="/library"
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
               currentRoute === 'library' 
                 ? 'bg-[#26231E] text-[#FEF9EB] shadow-xs' 
@@ -82,12 +83,12 @@ export const Header: React.FC = () => {
           >
             <BookOpen className="w-3.5 h-3.5" />
             Library
-          </button>
+          </Link>
 
           {activeDocument && (
-            <button
+            <Link
               id="nav-reader-btn"
-              onClick={() => setCurrentRoute('reader')}
+              href={`/read/${activeDocument.id}`}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
                 currentRoute === 'reader' 
                   ? 'bg-[#26231E] text-[#FEF9EB] shadow-xs' 
@@ -96,12 +97,12 @@ export const Header: React.FC = () => {
             >
               <FileText className="w-3.5 h-3.5" />
               Reader
-            </button>
+            </Link>
           )}
 
-          <button
+          <Link
             id="nav-calibration-btn"
-            onClick={() => setCurrentRoute('calibration')}
+            href="/calibrate"
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
               currentRoute === 'calibration' 
                 ? 'bg-[#26231E] text-[#FEF9EB] shadow-xs' 
@@ -110,11 +111,11 @@ export const Header: React.FC = () => {
           >
             <Sparkles className="w-3.5 h-3.5 text-[#D97706]" />
             Calibration
-          </button>
+          </Link>
 
-          <button
+          <Link
             id="nav-profile-btn"
-            onClick={() => setCurrentRoute('profile')}
+            href="/profile"
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
               currentRoute === 'profile' 
                 ? 'bg-[#26231E] text-[#FEF9EB] shadow-xs' 
@@ -123,8 +124,9 @@ export const Header: React.FC = () => {
           >
             <Sliders className="w-3.5 h-3.5" />
             Profile
-          </button>
+          </Link>
         </nav>
+
 
         {/* Action Controls */}
         <div className="flex items-center gap-2">
@@ -163,12 +165,13 @@ export const Header: React.FC = () => {
           {/* How It Works Button */}
           <button
             id="header-help-btn"
-            aria-label="How LexiEase works"
+            aria-label="How AksharSetu works"
             onClick={() => setIsHowItWorksOpen(true)}
             className="p-2 rounded-xl text-[#786E5E] hover:text-[#26231E] hover:bg-[#FAF3E0] transition-colors border border-transparent hover:border-[#E7DFCA]"
           >
             <HelpCircle className="w-4 h-4" />
           </button>
+
 
           {/* User Profile / Mock Login Badge */}
           {currentUser ? (

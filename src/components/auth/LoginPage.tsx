@@ -46,8 +46,9 @@ export const LoginPage: React.FC = () => {
       const user: UserType = {
         id: `user_${Date.now()}`,
         name: name || 'Demo Reader',
-        email: email || 'reader@lexiease.org',
+        email: email || 'reader@aksharsetu.org',
         avatar: (name || 'DR').substring(0, 2).toUpperCase(),
+
         role: 'student',
         createdAt: new Date().toISOString()
       };
@@ -62,13 +63,14 @@ export const LoginPage: React.FC = () => {
         {/* Header */}
         <div className="text-center space-y-2">
           <div className="w-12 h-12 rounded-2xl bg-[#26231E] text-[#FEF9EB] flex items-center justify-center font-bold text-xl mx-auto shadow-xs">
-            L
+            A
           </div>
-          <h2 className="text-2xl font-bold text-[#1E1B18]">Welcome to LexiEase</h2>
+          <h2 className="text-2xl font-bold text-[#1E1B18]">Welcome to AksharSetu</h2>
           <p className="text-xs text-[#706655]">
             Sign in to load your personalized reading profile, saved documents, and calibration preferences.
           </p>
         </div>
+
 
         {/* Form */}
         <form onSubmit={handleCustomSubmit} className="space-y-4">

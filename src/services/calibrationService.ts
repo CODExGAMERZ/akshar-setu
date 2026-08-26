@@ -99,8 +99,9 @@ class CalibrationService {
     await new Promise(r => setTimeout(r, 60));
     if (typeof window !== 'undefined') {
       try {
-        localStorage.setItem('lexiease_latest_calibration', JSON.stringify(result));
+        localStorage.setItem('aksharsetu_latest_calibration', JSON.stringify(result));
       } catch (e) {
+
         console.warn('Failed to store calibration result:', e);
       }
     }

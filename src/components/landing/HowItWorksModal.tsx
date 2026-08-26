@@ -43,7 +43,7 @@ export const HowItWorksModal: React.FC = () => {
     <Modal
       isOpen={isHowItWorksOpen}
       onClose={() => setIsHowItWorksOpen(false)}
-      title="How LexiEase Works"
+      title="How AksharSetu Works"
       subtitle="Accessible Multisensory Reading Assistant"
       maxWidth="xl"
     >
@@ -71,10 +71,11 @@ export const HowItWorksModal: React.FC = () => {
           <div className="text-xs text-[#706655] space-y-1">
             <p className="font-bold text-[#1E1B18]">Accessibility & Comfort Platform</p>
             <p>
-              LexiEase adapts your visual reading environment. It is an assistive educational tool and makes no diagnostic or clinical claims.
+              AksharSetu adapts your visual reading environment. It is an assistive educational tool and makes no diagnostic or clinical claims.
             </p>
           </div>
         </div>
+
 
         {/* CTA */}
         <div className="flex justify-end gap-3 pt-2">

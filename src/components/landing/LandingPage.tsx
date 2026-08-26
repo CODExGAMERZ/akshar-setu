@@ -241,7 +241,7 @@ export const LandingPage: React.FC = () => {
       {/* Footer */}
       <footer className="border-t border-[#E7DFCA] py-6 px-4 text-center text-xs text-[#706655]">
         <div className="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-4">
-          <p>© 2026 LexiEase. &ldquo;Your reading environment should adapt to you.&rdquo;</p>
+          <p>© 2026 AksharSetu. &ldquo;Your reading environment should adapt to you.&rdquo;</p>
           <div className="flex items-center gap-4">
             <button onClick={() => setCurrentRoute('library')} className="hover:underline">Library</button>
             <button onClick={() => setCurrentRoute('calibration')} className="hover:underline">Calibration</button>
@@ -249,6 +249,7 @@ export const LandingPage: React.FC = () => {
           </div>
         </div>
       </footer>
+
     </div>
   );
 };

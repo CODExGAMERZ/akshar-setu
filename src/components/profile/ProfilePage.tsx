@@ -58,9 +58,10 @@ export const ProfilePage: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `LexiEase_Profile_${currentUser?.name || 'User'}.json`;
+    a.download = `AksharSetu_Profile_${currentUser?.name || 'User'}.json`;
     a.click();
   };
+
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 text-[#26231E]">
@@ -75,8 +76,9 @@ export const ProfilePage: React.FC = () => {
               {currentUser?.name || 'Alex Rivera'}
             </h1>
             <p className="text-xs text-[#706655]">
-              {currentUser?.email || 'alex@lexiease.org'} • Role: <span className="capitalize font-semibold text-[#1E1B18]">{currentUser?.role || 'student'}</span>
+              {currentUser?.email || 'alex@aksharsetu.org'} • Role: <span className="capitalize font-semibold text-[#1E1B18]">{currentUser?.role || 'student'}</span>
             </p>
+
             <div className="flex items-center gap-2 pt-1">
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#FAF1DA] text-[#8C6D23] border border-[#E4D5AD]">
                 Ivory Clarity Design Profile

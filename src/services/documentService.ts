@@ -1,7 +1,8 @@
 import { Document } from '../types';
 import { MOCK_DOCUMENTS } from '../data/mockDocuments';
 
-const STORAGE_KEY = 'lexiease_documents_v1';
+const STORAGE_KEY = 'aksharsetu_documents_v1';
+
 
 class DocumentService {
   private documents: Document[] = [];

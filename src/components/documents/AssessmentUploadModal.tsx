@@ -68,9 +68,10 @@ export const AssessmentUploadModal: React.FC = () => {
             <div className="p-3.5 bg-[#FAF1DA] border border-[#E4D5AD] rounded-xl flex items-start gap-3">
               <ShieldCheck className="w-5 h-5 text-[#8C6D23] shrink-0 mt-0.5" />
               <p className="text-xs text-[#706655] leading-relaxed">
-                <strong>Non-Diagnostic Notice:</strong> LexiEase analyzes educator recommendations or past assessments strictly to pre-tune typographic comfort parameters. It does not replace medical advice.
+                <strong>Non-Diagnostic Notice:</strong> AksharSetu analyzes educator recommendations or past assessments strictly to pre-tune typographic comfort parameters. It does not replace medical advice.
               </p>
             </div>
+
 
             <label className="block p-8 border-2 border-dashed border-[#D8CEB9] hover:border-[#D97706] rounded-2xl text-center bg-[#FAF3E0] hover:bg-[#FEF9EB] transition-all cursor-pointer">
               <input

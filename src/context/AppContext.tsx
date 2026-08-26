@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import { 
   AppRoute, 
   Document, 
@@ -11,6 +12,7 @@ import {
   ActiveViewMode, 
   CalibrationResult 
 } from '../types';
+
 import { DEFAULT_READING_PREFERENCES } from '../data/themes';
 import { documentService } from '../services/documentService';
 import { profileService } from '../services/profileService';
@@ -146,57 +148,44 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isSessionSummaryOpen, setIsSessionSummaryOpen] = useState(false);
   const [isHowItWorksOpen, setIsHowItWorksOpen] = useState(false);
 
+  const router = useRouter();
+  const pathname = usePathname();
+
+  // Synchronize route on Next.js pathname changes
+  useEffect(() => {
+    if (!pathname) return;
+    if (pathname.startsWith('/library')) {
+      setCurrentRouteState('library');
+    } else if (pathname.startsWith('/read') || pathname.startsWith('/reader')) {
+      setCurrentRouteState('reader');
+    } else if (pathname.startsWith('/calibrate')) {
+      setCurrentRouteState('calibration');
+    } else if (pathname.startsWith('/profile')) {
+      setCurrentRouteState('profile');
+    } else if (pathname.startsWith('/login')) {
+      setCurrentRouteState('login');
+    } else {
+      setCurrentRouteState('landing');
+    }
+  }, [pathname]);
+
   const setCurrentRoute = useCallback((route: AppRoute) => {
     setCurrentRouteState(route);
-    if (typeof window !== 'undefined') {
-      const pathMap: Record<AppRoute, string> = {
-        landing: '/',
-        library: '/library',
-        reader: '/reader',
-        calibration: '/calibrate',
-        profile: '/profile',
-        login: '/login',
-        assessment: '/calibrate'
-      };
-      const targetPath = pathMap[route] || '/';
-      if (window.location.pathname !== targetPath) {
-        window.history.pushState(null, '', targetPath);
-      }
+    const pathMap: Record<AppRoute, string> = {
+      landing: '/',
+      library: '/library',
+      reader: '/reader',
+      calibration: '/calibrate',
+      profile: '/profile',
+      login: '/login',
+      assessment: '/calibrate'
+    };
+    const targetPath = pathMap[route] || '/';
+    if (pathname !== targetPath) {
+      router.push(targetPath);
     }
-  }, []);
+  }, [pathname, router]);
 
-  // Synchronize route on initial mount or popstate
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const pathname = window.location.pathname;
-      if (pathname.startsWith('/library')) {
-        setCurrentRouteState('library');
-      } else if (pathname.startsWith('/read') || pathname.startsWith('/reader')) {
-        setCurrentRouteState('reader');
-      } else if (pathname.startsWith('/calibrate')) {
-        setCurrentRouteState('calibration');
-      } else if (pathname.startsWith('/profile')) {
-        setCurrentRouteState('profile');
-      } else if (pathname.startsWith('/login')) {
-        setCurrentRouteState('login');
-      } else {
-        setCurrentRouteState('landing');
-      }
-
-      const onPopState = () => {
-        const path = window.location.pathname;
-        if (path.startsWith('/library')) setCurrentRouteState('library');
-        else if (path.startsWith('/read') || path.startsWith('/reader')) setCurrentRouteState('reader');
-        else if (path.startsWith('/calibrate')) setCurrentRouteState('calibration');
-        else if (path.startsWith('/profile')) setCurrentRouteState('profile');
-        else if (path.startsWith('/login')) setCurrentRouteState('login');
-        else setCurrentRouteState('landing');
-      };
-
-      window.addEventListener('popstate', onPopState);
-      return () => window.removeEventListener('popstate', onPopState);
-    }
-  }, []);
 
   // Initial Load
   useEffect(() => {
@@ -324,8 +313,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const navigateToReader = useCallback((documentId: string) => {
     selectDocument(documentId);
-    setCurrentRoute('reader');
-  }, [selectDocument, setCurrentRoute]);
+    router.push(`/read/${documentId}`);
+  }, [selectDocument, router]);
+
 
   const deleteDocument = useCallback(async (id: string) => {
     await documentService.deleteDocument(id);
