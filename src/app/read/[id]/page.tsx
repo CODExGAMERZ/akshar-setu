@@ -125,29 +125,47 @@ export default function ReadingViewPage() {
     }
   };
 
-  // Helper to render individual karaoke-enabled words
-  const renderWord = (w: string) => {
-    const currentWordGlobalIndex = globalWordCounter++;
-    const isCurrentKaraokeWord = isPlayingAudio && activeWordIndex === currentWordGlobalIndex;
+  // Helper to render formatted line/paragraph with live karaoke words & markdown bold
+  const renderFormattedTokens = (rawContent: string) => {
+    const rawTokens = rawContent.trim().split(/\s+/);
+    let isInsideBold = false;
 
-    const isBold = w.startsWith('**') && w.endsWith('**');
-    const cleanWord = w.replace(/\*\*/g, '');
+    return rawTokens.map((rawToken, tIdx) => {
+      let token = rawToken;
+      let boldThisWord = isInsideBold;
 
-    const displayText =
-      profile.syllableHighlighting && viewMode === 'personalized'
-        ? formatTextWithSyllables(cleanWord)
-      : cleanWord;
+      if (token.startsWith('**') && token.endsWith('**') && token.length > 4) {
+        boldThisWord = true;
+        token = token.slice(2, -2);
+      } else if (token.startsWith('**')) {
+        isInsideBold = true;
+        boldThisWord = true;
+        token = token.slice(2);
+      } else if (token.includes('**')) {
+        boldThisWord = true;
+        token = token.replace(/\*\*/g, '');
+        isInsideBold = false;
+      }
 
-    return (
-      <span
-        key={currentWordGlobalIndex}
-        className={`inline transition-colors duration-100 rounded-xs px-0.5 mr-0.5 ${
-          isBold ? 'font-bold text-primary' : ''
-        } ${isCurrentKaraokeWord ? 'karaoke-active-word' : ''}`}
-      >
-        {displayText}
-      </span>
-    );
+      const currentWordGlobalIndex = globalWordCounter++;
+      const isCurrentKaraokeWord = isPlayingAudio && activeWordIndex === currentWordGlobalIndex;
+
+      const displayText =
+        profile.syllableHighlighting && viewMode === 'personalized'
+          ? formatTextWithSyllables(token)
+          : token;
+
+      return (
+        <span
+          key={`${tIdx}-${currentWordGlobalIndex}`}
+          className={`inline transition-colors duration-100 rounded-xs px-0.5 mr-0.5 ${
+            boldThisWord ? 'font-bold text-primary' : ''
+          } ${isCurrentKaraokeWord ? 'karaoke-active-word' : ''}`}
+        >
+          {displayText}
+        </span>
+      );
+    });
   };
 
   return (
@@ -420,7 +438,6 @@ export default function ReadingViewPage() {
 
               if (isHeading) {
                 const headingText = pText.replace(/^#+\s*/, '');
-                const headingWords = headingText.trim().split(/\s+/);
 
                 return (
                   <h2
@@ -431,7 +448,7 @@ export default function ReadingViewPage() {
                     }}
                   >
                     <span className="material-symbols-outlined text-primary text-lg shrink-0">bookmark</span>
-                    {headingWords.map((w) => renderWord(w))}
+                    {renderFormattedTokens(headingText)}
                   </h2>
                 );
               }
@@ -442,7 +459,6 @@ export default function ReadingViewPage() {
                   <div key={pIdx} className="space-y-1.5 my-3 pl-1 sm:pl-2 max-w-full overflow-hidden">
                     {bulletItems.map((bItem, bIdx) => {
                       const cleanItem = bItem.replace(/^[•\-\*]\s*/, '');
-                      const itemWords = cleanItem.split(/\s+/);
                       return (
                         <div key={bIdx} className="flex items-start gap-2 max-w-full">
                           <span className="text-primary font-bold text-base select-none mt-0.5 shrink-0">•</span>
@@ -452,7 +468,7 @@ export default function ReadingViewPage() {
                               lineHeight: viewMode === 'personalized' ? profile.lineHeight : 1.6,
                             }}
                           >
-                            {itemWords.map((w) => renderWord(w))}
+                            {renderFormattedTokens(cleanItem)}
                           </p>
                         </div>
                       );
@@ -461,7 +477,6 @@ export default function ReadingViewPage() {
                 );
               }
 
-              const wordsInParagraph = pText.trim().split(/\s+/);
               return (
                 <p
                   key={pIdx}
@@ -470,7 +485,7 @@ export default function ReadingViewPage() {
                     marginBottom: viewMode === 'personalized' ? `${profile.paragraphSpacing}px` : '20px',
                   }}
                 >
-                  {wordsInParagraph.map((w) => renderWord(w))}
+                  {renderFormattedTokens(pText)}
                 </p>
               );
             })}

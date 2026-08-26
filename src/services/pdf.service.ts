@@ -1,10 +1,96 @@
 import { SupportedLanguage } from '@/types';
 
+// High-frequency English dictionary for universal word-segmentation of glued PDF text
+const COMMON_ENGLISH_WORDS = new Set([
+  'a', 'about', 'above', 'across', 'act', 'actually', 'adds', 'adoption', 'affects', 'after',
+  'again', 'against', 'ai', 'all', 'almost', 'alone', 'along', 'also', 'an', 'analysis', 'and',
+  'any', 'app', 'are', 'around', 'as', 'association', 'at', 'automatically', 'available', 'awareness',
+  'away', 'back', 'be', 'because', 'becomes', 'been', 'before', 'behaviour', 'between', 'bold',
+  'both', 'brain', 'brief', 'bring', 'brings', 'browser', 'built', 'bulbul', 'but', 'by', 'calibration',
+  'can', 'category', 'children', 'choice', 'choices', 'cites', 'clean', 'clear', 'closerto', 'colour',
+  'commonly', 'companion', 'comparing', 'concept', 'confirm', 'contents', 'contrast', 'converge', 'core',
+  'could', 'country', 'custom', 'cutting', 'day', 'decoding', 'density', 'different', 'difficult', 'difficulty',
+  'digital', 'disabilities', 'disability', 'discussion', 'display', 'do', 'document', 'documents', 'does',
+  'doing', 'done', 'down', 'dyslexia', 'each', 'easier', 'easy', 'educational', 'eight', 'either',
+  'engine', 'english', 'enough', 'entitling', 'estimates', 'even', 'every', 'everyone', 'everything',
+  'example', 'existing', 'explain', 'fast', 'features', 'feel', 'feels', 'figure', 'find', 'finds',
+  'first', 'fit', 'fixes', 'flexi', 'focus', 'font', 'fonts', 'for', 'format', 'formatted', 'formatting',
+  'four', 'free', 'freely', 'from', 'frontend', 'future', 'gap', 'gently', 'get', 'give', 'gives',
+  'go', 'good', 'government', 'great', 'had', 'hand', 'has', 'hasnt', 'have', 'he', 'head', 'health',
+  'hear', 'heavy', 'help', 'helps', 'her', 'here', 'heres', 'high', 'higher', 'highlight', 'highlighted',
+  'highlighting', 'him', 'his', 'hold', 'home', 'house', 'how', 'idea', 'identifying', 'impact', 'important',
+  'in', 'included', 'inclusive', 'independent', 'india', 'indian', 'instead', 'interface', 'into', 'is',
+  'isnt', 'issue', 'it', 'its', 'just', 'karaoke', 'keep', 'keeps', 'key', 'kind', 'know', 'language',
+  'languages', 'large', 'last', 'later', 'learning', 'leave', 'left', 'legal', 'less', 'letter', 'let',
+  'level', 'life', 'light', 'like', 'line', 'lines', 'list', 'little', 'live', 'look', 'make', 'makes',
+  'many', 'margin', 'matter', 'may', 'meaning', 'meaningful', 'memory', 'men', 'meta', 'method',
+  'might', 'million', 'millions', 'mind', 'mode', 'model', 'models', 'more', 'most', 'move', 'much',
+  'multilingual', 'must', 'my', 'name', 'narration', 'national', 'native', 'natively', 'need', 'needs',
+  'neither', 'nep', 'network', 'never', 'new', 'next', 'no', 'non', 'none', 'nor', 'not', 'note', 'now',
+  'number', 'ocr', 'of', 'off', 'often', 'old', 'on', 'one', 'onesize', 'only', 'open', 'order', 'original',
+  'or', 'other', 'others', 'our', 'out', 'over', 'overrides', 'own', 'page', 'pairs', 'paragraph',
+  'part', 'pattern', 'patterns', 'people', 'per', 'percent', 'persistence', 'personal', 'personalized',
+  'place', 'plan', 'planned', 'planning', 'plugin', 'point', 'policy', 'pooled', 'possible', 'practice',
+  'prefer', 'prefers', 'preservation', 'prevalence', 'primary', 'problem', 'profile', 'program', 'project',
+  'public', 'push', 'put', 'question', 'quick', 'quietly', 'quote', 'quoted', 'rare', 'rather', 'read',
+  'reader', 'readers', 'readout', 'reading', 'real', 'recognition', 'recognised', 'recalibrating', 'refining',
+  'reflow', 'regional', 'regular', 'related', 'report', 'research', 'review', 'right', 'rights', 'roadmap',
+  'ruler', 'run', 'same', 'sample', 'samples', 'sarvam', 'saved', 'say', 'scale', 'school', 'schoolchildren', 'schools',
+  'scope', 'second', 'secondary', 'see', 'sees', 'sentences', 'session', 'set', 'settings', 'seven',
+  'share', 'she', 'short', 'shorten', 'should', 'show', 'side', 'sight', 'sign', 'simple', 'simpler',
+  'simplification', 'simplify', 'since', 'single', 'six', 'size', 'slight', 'slightly', 'small', 'so',
+  'some', 'something', 'sometimes', 'sound', 'source', 'space', 'spacing', 'speak', 'special', 'specific',
+  'speech', 'speed', 'stack', 'stage', 'standard', 'start', 'starting', 'state', 'stays', 'still', 'stop',
+  'stored', 'stretch', 'strong', 'structure', 'student', 'students', 'studies', 'study', 'style', 'sub',
+  'subsections', 'such', 'summary', 'support', 'surrounding', 'system', 'systematic', 'table', 'take',
+  'teacher', 'teachers', 'tech', 'technical', 'technology', 'tell', 'ten', 'tens', 'terms', 'test', 'text',
+  'than', 'that', 'thats', 'the', 'their', 'them', 'themselves', 'then', 'there', 'theres', 'these',
+  'they', 'thing', 'things', 'think', 'this', 'three', 'through', 'throughout', 'time', 'times', 'tight',
+  'title', 'to', 'together', 'too', 'tool', 'tools', 'tracking', 'translated', 'try', 'turn', 'two',
+  'type', 'typeface', 'typefaces', 'under', 'underserved', 'understand', 'unit', 'until', 'up', 'uploaded',
+  'us', 'use', 'used', 'user', 'users', 'uses', 'using', 'variable', 'varies', 'various', 'version',
+  'very', 'view', 'visual', 'voice', 'want', 'was', 'water', 'way', 'wcag', 'we', 'well', 'went', 'were',
+  'what', 'whats', 'when', 'where', 'which', 'whichever', 'while', 'white', 'who', 'whos', 'whole',
+  'why', 'wide', 'wider', 'width', 'will', 'with', 'without', 'word', 'words', 'workflow', 'work', 'works',
+  'would', 'write', 'written', 'year', 'you', 'young', 'your'
+]);
+
 export class PDFService {
+  /**
+   * Universal Word Segmentation:
+   * Dynamically separates glued words using DP Word-Break when PDF extractors fuse characters together.
+   */
+  public static segmentGluedWords(text: string): string {
+    return text.replace(/([a-zA-Z]{7,})/g, (match) => {
+      const lower = match.toLowerCase();
+      if (COMMON_ENGLISH_WORDS.has(lower)) return match;
+
+      const n = lower.length;
+      const dp: (string[] | null)[] = new Array(n + 1).fill(null);
+      dp[0] = [];
+
+      for (let i = 0; i < n; i++) {
+        if (dp[i] === null) continue;
+        for (let len = 1; len <= Math.min(20, n - i); len++) {
+          const sub = lower.slice(i, i + len);
+          if (COMMON_ENGLISH_WORDS.has(sub) || (len === 1 && (sub === 'a' || sub === 'i'))) {
+            if (dp[i + len] === null || dp[i + len]!.length > dp[i]!.length + 1) {
+              dp[i + len] = [...dp[i]!, match.slice(i, i + len)];
+            }
+          }
+        }
+      }
+
+      if (dp[n] && dp[n]!.length > 1) {
+        return dp[n]!.join(' ');
+      }
+      return match;
+    });
+  }
+
   /**
    * Universal PDF Text Cleaner & Reflow Engine:
    * Transforms raw, messy, vertically-split, or glued text extracted from ANY PDF
-   * (academic papers, textbooks, government reports, resumes, articles, storybooks)
    * into clean, dyslexia-optimized reading material with proper headings, lists, and spacing.
    */
   public static cleanPDFText(rawText: string): string {
@@ -21,7 +107,7 @@ export class PDFService {
       .replace(/^[ \t]*(?:copyright|all rights reserved|confidential|draft|internal use).*$/gim, '')
       .replace(/AksharSetu\s*[—–-]\s*Concept\s*Brief\s*Page(?:\s*\d+\s*(?:of\s*\d+)?)?/gi, '');
 
-    // 2. Fix End-of-Line Hyphenation (e.g. "experi-\nment" -> "experiment", "infor-\nmation" -> "information")
+    // 2. Fix End-of-Line Hyphenation
     text = text.replace(/([a-zA-Z\u0900-\u0D7F]+)-\s*\n\s*([a-zA-Z\u0900-\u0D7F]+)/g, '$1$2');
 
     // 3. Recombine Multi-Line Vertically-Split Headings
@@ -47,8 +133,7 @@ export class PDFService {
       text = text.replace(regex, replacement);
     }
 
-    // 4. Generalized Headings Detector:
-    // Formats standalone numbered sections (e.g., "1. Introduction", "Chapter 3: Thermodynamics", "Section 4.1 Data Analysis")
+    // 4. Generalized Headings Detector
     text = text.replace(
       /(?:^|\n{2,})\s*((?:Chapter|Section|Module|Unit|Part)\s+\d+[:\s—–-]+[^\n]{3,80})\s*(?:\n{2,}|$)/gi,
       '\n\n### $1\n\n'
@@ -90,10 +175,8 @@ export class PDFService {
       text = text.replace(regex, replacement);
     }
 
-    // 6. Universal Glued-Word & Casing Normalization
-    // Fixes camelCase / PascalCase gluing produced by tightly tracked PDF fonts
+    // 6. Universal Punctuation & Boundary Space Normalization
     text = text
-      .replace(/\b([a-z]{2,})([A-Z][a-z]{2,})\b/g, '$1 $2')
       .replace(/([a-zA-Z0-9]),([a-zA-Z])/g, '$1, $2')
       .replace(/([a-z0-9])\.([A-Z])/g, '$1. $2')
       .replace(/([a-z0-9])\?([A-Z“"'])/g, '$1? $2')
@@ -111,7 +194,10 @@ export class PDFService {
       .replace(/AI\s*[•●■*·]\s*4\.\s*Bharat/gi, 'AI4Bharat')
       .replace(/\bmeta-?\s*analysis\b/gi, 'meta-analysis');
 
-    // 7. Fix broken decimal numbers, percentages, and web domains
+    // 7. Dynamic English Word Segmentation on Glued Blocks
+    text = this.segmentGluedWords(text);
+
+    // 8. Fix broken numbers / decimals / versions / URLs
     text = text
       .replace(/(\d+)\.\s*\n*\s*(\d+)%/g, '$1.$2%')
       .replace(/(\d+)\.\s+(\d+)\s*(AA|%|[a-zA-Z])/g, '$1.$2 $3')
@@ -126,11 +212,11 @@ export class PDFService {
       .replace(/link\.\s*springer\.\s*com/gi, 'link.springer.com')
       .replace(/journals\.\s*lww\.\s*com/gi, 'journals.lww.com');
 
-    // 8. Reformat Table of Contents and Numbered List items
+    // 9. Reformat Table of Contents and Numbered List items
     text = text.replace(/(?:^|\n)\s*(\d{1,2})\.\s*([A-Za-z]+)\s*(?:\n|$)/g, '\n• $1. $2\n');
     text = text.replace(/(?:^|\n)\s*(\d{1,2})\s*\n+\s*([A-Za-z]+)\s*(?:\n|$)/g, '\n• $1. $2\n');
 
-    // 9. Intelligent Paragraph Segmentation & Reflow
+    // 10. Intelligent Paragraph Segmentation & Reflow
     const rawBlocks = text.split(/\n{2,}/);
     const formattedBlocks: string[] = [];
 
@@ -161,7 +247,7 @@ export class PDFService {
         .replace(/[ \t]{2,}/g, ' ')
         .trim();
 
-      // Break dense multi-sentence text walls (>300 chars or >3 sentences) into readable 2-to-3 sentence micro-paragraphs
+      // Break dense multi-sentence text walls into readable 2-to-3 sentence micro-paragraphs
       const sentences = cleanParagraph.match(/[^.!?।\n]+[.!?।\n]+["']?|\S+$/g);
       if (sentences && sentences.length > 3) {
         let chunk = '';
