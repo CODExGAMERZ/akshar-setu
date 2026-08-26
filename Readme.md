@@ -1,57 +1,70 @@
 # 📖 AksharSetu (अक्षरसेतु)
 ### *Bridging Every Mind to the Written Word*
-> **A personalized, multilingual, and AI-powered reading companion engineered for individuals with dyslexia and diverse learning differences across Indian languages.**
+> **An AI-powered, multimodal, and multilingual accessible reading companion engineered for individuals with dyslexia, ADHD, visual tracking challenges, and diverse learning differences across 13 Indic & global languages.**
 
-[![Next.js](https://img.shields.io/badge/Next.js-14.2-black?style=flat&logo=next.js)](https://nextjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.5-blue?style=flat&logo=typescript)](https://www.typescriptlang.org/)
-[![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3.4-38bdf8?style=flat&logo=tailwindcss)](https://tailwindcss.com/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20with-Vercel-000000?style=flat&logo=vercel)](https://vercel.com/)
+[![Next.js](https://img.shields.io/badge/Next.js-14.2-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.5-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
+[![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3.4-38bdf8?style=for-the-badge&logo=tailwindcss)](https://tailwindcss.com/)
+[![Google Gemini](https://img.shields.io/badge/Gemini-3.0_Flash-orange?style=for-the-badge&logo=google)](https://aistudio.google.com/)
+[![Sarvam AI](https://img.shields.io/badge/Sarvam_AI-Mayura_%26_Bulbul-purple?style=for-the-badge)](https://sarvam.ai/)
+[![WCAG 2.1 AA](https://img.shields.io/badge/WCAG-2.1_AA_Compliant-success?style=for-the-badge)](https://www.w3.org/WAI/standards-guidelines/wcag/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
 ---
 
-## 📌 Problem Background & Impact
+## 📌 Problem Background & Inclusive Vision
 
 Reading difficulty is neither rare nor one-size-fits-all:
 
-- **Tens of Millions Affected**: Studies indicate that dyslexia affects **6.2% to 15%** of Indian schoolchildren (spanning over 35+ million learners).
-- **Policy & Legal Mandate**: Recognised under the **Rights of Persons with Disabilities Act, 2016** as a Specific Learning Disability, and strongly aligned with **NEP 2020's** mission for equitable, tech-enabled inclusive education.
-- **Why Generic Tools Fail**: Research (including recent meta-analyses in the *Annals of Dyslexia*) proves that single solutions like static "dyslexia fonts" do not work universally. What truly helps is **multimodal personalization**: customized letter spacing, word tracking, line rhythm, high-contrast anti-glare palettes, synchronized audio read-aloud, and native Indian language support.
+- **35+ Million Learners Affected**: Dyslexia impacts **6.2% to 15%** of Indian schoolchildren.
+- **Policy & Legal Alignment**: Recognized as a Specific Learning Disability under the **Rights of Persons with Disabilities (RPwD) Act, 2016** and strongly aligned with **NEP 2020's** mandate for equitable, tech-enabled inclusive education.
+- **Why Generic Solutions Fail**: Scientific research (*Annals of Dyslexia*) proves that static "dyslexia fonts" alone do not solve reading hurdles. What truly assists comprehension is **multimodal personalization**: customizable letter/word tracking, spacious saccadic line rhythms, anti-glare warmth, b/d disambiguation, synchronized read-aloud karaoke tracking, and multi-tier linguistic simplification.
 
-**AksharSetu** solves this by putting the reader in complete control through an interactive calibration engine and AI-driven assistive tools.
+**AksharSetu** delivers a complete ecosystem that reflows any textbook, worksheet, or digital document to the reader's unique cognitive profile.
 
 ---
 
-## 🚀 Key Modules & Capabilities
+## 🚀 Core Features & Capabilities
 
-### 1. 🎯 Interactive 8-Step Calibration Engine
-- A gamified, interactive visual A/B diagnostic that tests font apertures, line height, letter tracking, word spacing, background tint, and line-length caps.
-- Builds an individualized **Reading Profile** stored persistently in localStorage.
+### 1. 🎯 Interactive 8-Step Visual Calibration Engine
+- Gamified visual A/B diagnostic testing font apertures, line heights (1.4x–2.8x), letter spacing, word tracking, anti-glare color palettes, and reading ruler heights.
+- Generates an individualized **Reading Profile** saved locally and exportable as JSON.
 
-### 2. 🌐 Multilingual Indian Language Engine (7 Languages)
-- Instant translation and native script rendering across **English**, **Hindi (हिन्दी)**, **Odia (ଓଡ଼ିଆ)**, **Bengali (বাংলা)**, **Tamil (தமிழ்)**, **Telugu (తెలుగు)**, and **Marathi (मराठी)**.
-- Full phonetic and typographical integrity for Indic scripts (Devanagari, Eastern Nagari, Tamil, Telugu, Odia).
+### 2. 🔤 Confusable Letter Disambiguation & Bionic Fixations
+- **Confusable Letter Markers**: Differentiates mirror pairs like `b/d`, `p/q`, `m/w`, and `n/u` with custom typographic weights, distinct amber/green cues, underlines, or under-dots.
+- **Bionic Reading Fixations**: Automatically bolds initial word phonemes to guide eye saccades smoothly across sentences.
 
-### 3. 🧠 Generative AI Text Simplification
-- **Light**: Replaces complex/academic vocabulary with common everyday words while maintaining paragraph layout.
-- **Medium**: Rewrites text in clear, conversational statements (under 14 words per sentence).
-- **Heavy**: Restructures dense paragraphs into clean, bulleted key takeaways (`•`) for maximum cognitive ease.
-- Supports native simplification in all 7 supported languages.
+### 3. 📄 Universal Document & PDF Digitization Engine
+- **Textbook & Lesson Ingestion**: Upload any textbook PDF, worksheet, image, or text file.
+- **Multimodal AI OCR**: Integrated with Google Gemini 3.0/Flash for scanned image PDFs and `pdf-parse` for digital documents.
+- **Automatic Classification**: Intelligently categorizes uploaded material into `Science`, `History`, `English`, `Mathematics`, or `General`.
 
-### 4. 🔊 Assistive Text-to-Speech (TTS) & Karaoke Word Tracking
-- High-fidelity Web Speech API synthesizer with intelligent voice matching and phonetics fallback.
-- Real-time word boundary karaoke tracker highlighting each spoken word synchronously.
-- Speed control (0.75x, 1.0x, 1.2x) and Chrome 15-second speech cutoff protection.
+### 4. 🌐 Multilingual Indian & Global Language Support (13 Languages)
+Native script rendering, contextual translations, and phonetic integrity across:
+- **Indic Languages (11)**: Hindi (हिन्दी), Marathi (मराठी), Bengali (বাংলা), Tamil (தமிழ்), Telugu (తెలుగు), Odia (ଓଡ଼ିଆ), Gujarati (ગુજરાતી), Kannada (ಕನ್ನಡ), Malayalam (മലയാളം), Punjabi (ਪੰਜਾਬੀ), English.
+- **Global Languages (2)**: Spanish (Español), French (Français).
+- **Hybrid NLP Backend**: Powered by Sarvam AI Mayura Translation with parallel MyMemory caching.
 
-### 5. 📏 Visual Comfort & Focus Tools
-- **Digital Reading Focus Ruler**: Amber-tinted tracking ruler following the cursor/touch to prevent visual crowding and line jumping.
-- **Syllable Breakpoint Insertion**: Visual middle-dots (`·`) dividing multisyllabic words to ease phonetic decoding.
-- **Anti-Glare Palettes**: Warm Cream, Soft Peach, Mint Tint, High-Contrast Dark, and Pure Paper.
-- **Scientific Typography**: Lexend, Atkinson Hyperlegible, OpenDyslexic, Open Sans, Verdana, and Calibri.
+### 5. 🧠 WCAG Plain Language AI Text Simplification
+- **Light Simplification**: Swaps archaic and multi-syllabic vocabulary with everyday conversational terms.
+- **Medium Simplification**: Shortens compound sentences into clear statements under 14 words each.
+- **Heavy Simplification**: Restructures dense paragraphs into clean, bulleted key takeaways (`•`).
+- **Zero-Key Local Algorithmic Engine**: Includes a 60+ vocabulary simplifier and sentence breaker that operates fully offline even without external API keys.
 
-### 6. 🔐 Zero-Leak Server AI & BYOK (Bring Your Own Key)
-- **Built-in Server AI (Zero Key Leakage)**: Server-side environment variables run securely on Next.js Route Handlers without exposure to client bundles.
-- **BYOK (Bring Your Own Key)**: Users can plug in personal **Google Gemini (1.5 / 2.0 Flash)**, **OpenAI (GPT-4o)**, **Groq (Llama 3)**, or **Sarvam AI** keys directly in Settings.
+### 6. 🔊 Dual-Engine High-Fidelity Audio Dock & Karaoke Tracking
+- **High-Fidelity Server Audio**: Routes through `/api/tts/synthesize` (Google TTS, Sarvam Bulbul, OpenAI) for natural human pronunciation in all 13 languages.
+- **Synchronized Word Boundary Tracker**: Highlights active words on the canvas in real time as they are spoken.
+- **Fail-Safe Web Speech API**: Client-side browser synthesis fallback for uninterrupted offline playback.
+
+### 7. 🛡️ Clinical Assessment & IEP Ingestion
+- Upload optometric contrast recommendations, school IEPs, or psychoeducational evaluation PDFs to automatically pre-tune reading comfort settings.
+
+### 8. 🎨 Ivory Clarity Design System
+- Built on calming, scientifically tested anti-glare palettes:
+  - **Warm Cream** (`#FEF9EB` / `#26231E`) — Primary Anti-Glare
+  - **Soft Mint** (`#EDF5EC` / `#1E3A2F`) — Calming Contrast
+  - **Muted Sunset** (`#FAF1DA` / `#422006`) — Low Blue-Light
+  - **Deep Charcoal** (`#1C1917` / `#F5F5F4`) — High-Contrast Dark
 
 ---
 
@@ -59,48 +72,121 @@ Reading difficulty is neither rare nor one-size-fits-all:
 
 ```mermaid
 graph TD
-    User(["User / Student"]) --> Client["Next.js 14 Frontend Canvas"]
-    Client --> Calibration["8-Step Calibration Engine"]
-    Client --> ReaderContext["Reader & Profile Context"]
-    Client --> Storage[("LocalStorage Persistence")]
+    User(["Student / Educator / Parent"]) --> NextApp["Next.js 14 Web Application"]
     
-    ReaderContext --> TTS["SpeechSynthesis & Karaoke Service"]
-    ReaderContext --> APIRoutes["Next.js Server API Routes"]
-    
-    APIRoutes --> UploadAPI["/api/documents/upload (PDF/TXT Extract)"]
-    APIRoutes --> TranslateAPI["/api/translate (Multilingual Engine)"]
-    APIRoutes --> SimplifyAPI["/api/simplify (Multi-Level AI Simplifier)"]
-    
-    TranslateAPI --> Gemini["Google Gemini 1.5/2.0 Flash"]
-    TranslateAPI --> OpenAI["OpenAI GPT-4o-mini"]
-    TranslateAPI --> Sarvam["Sarvam Indic AI"]
-    
-    SimplifyAPI --> Gemini
-    SimplifyAPI --> OpenAI
-    SimplifyAPI --> Groq["Groq Llama 3"]
+    subgraph Client Layer
+        NextApp --> ReaderCanvas["Accessible Reading Canvas (Reflow Engine)"]
+        NextApp --> CalibrationEngine["8-Step Visual Calibration Diagnostic"]
+        NextApp --> AudioDock["Persistent Audio Dock & Word Tracker"]
+        NextApp --> AppContext["AppContext State (localStorage Persistence)"]
+    end
+
+    subgraph API Route Layer
+        AppContext --> UploadAPI["/api/documents/upload"]
+        AppContext --> SimplifyAPI["/api/simplify"]
+        AppContext --> TranslateAPI["/api/translate"]
+        AppContext --> TTSAPI["/api/tts/synthesize"]
+    end
+
+    subgraph AI & Service Integrations
+        UploadAPI --> PDFParser["pdf-parse (Layer Extractor)"]
+        UploadAPI --> GeminiVision["Gemini 3.0 Flash (Multimodal OCR)"]
+        
+        SimplifyAPI --> GeminiNLP["Gemini 3.0 Flash (Plain Language Simplifier)"]
+        SimplifyAPI --> LocalEngine["Local Algorithmic Simplifier (Offline Fallback)"]
+        
+        TranslateAPI --> SarvamMayura["Sarvam AI Mayura (Indic Engine)"]
+        TranslateAPI --> MyMemoryCache["Parallel Translation Memory"]
+        
+        TTSAPI --> GoogleTTS["High-Fidelity Server Google TTS"]
+        TTSAPI --> SarvamBulbul["Sarvam Bulbul (Indic Audio)"]
+        TTSAPI --> WebSpeech["Browser Web Speech API (Client Fallback)"]
+    end
 ```
 
 ---
 
 ## 🛠️ Technology Stack
 
-- **Framework:** [Next.js 14](https://nextjs.org/) (App Router, Server Route Handlers)
-- **Language:** [TypeScript 5.5](https://www.typescriptlang.org/)
-- **Styling:** [Tailwind CSS 3.4](https://tailwindcss.com/) with Material Design 3 tokens
-- **Document Parser:** `pdf-parse` for seamless PDF/TXT extraction
-- **AI Integrations:** Google Gemini 1.5/2.0, OpenAI GPT-4o-mini, Groq, Sarvam AI
-- **Icons & Fonts:** Google Material Symbols, Lexend, Atkinson Hyperlegible, OpenDyslexic
+| Domain | Technologies & Libraries |
+| :--- | :--- |
+| **Framework** | [Next.js 14.2](https://nextjs.org/) (App Router, Server Components & Route Handlers) |
+| **Language** | [TypeScript 5.5](https://www.typescriptlang.org/) (Strict Mode) |
+| **Styling** | [Tailwind CSS 3.4](https://tailwindcss.com/) with Ivory Clarity accessible color system |
+| **Icons & Assets** | [Lucide React](https://lucide.dev/) |
+| **Document Processing** | `pdf-parse` + Gemini Multimodal Vision API |
+| **AI Providers** | Google Gemini 3.0 Flash, Sarvam AI (Mayura & Bulbul), OpenAI GPT-4o-mini |
+| **Audio Processing** | HTML5 Web Audio Stream + Web Speech Synthesis API |
+| **Deployment** | [Vercel](https://vercel.com/) (Edge / Serverless Functions) |
+
+---
+
+## 📁 Repository Structure
+
+```
+akshar-setu/
+├── src/
+│   ├── app/
+│   │   ├── api/
+│   │   │   ├── documents/upload/    # PDF / TXT ingestion & OCR route
+│   │   │   ├── simplify/            # Plain Language AI text simplifier
+│   │   │   ├── translate/           # 13-language translation endpoint
+│   │   │   └── tts/synthesize/      # Server-side audio synthesis endpoint
+│   │   ├── calibrate/               # 8-step visual diagnostic page
+│   │   ├── library/                 # Document library & category filters
+│   │   ├── login/                   # User profile & role sign-in
+│   │   ├── profile/                 # Reading profile & BYOK settings
+│   │   ├── read/                    # Dynamic reader route ([id])
+│   │   ├── layout.tsx               # Root layout with AppProvider
+│   │   └── page.tsx                 # Interactive landing & quick start
+│   ├── components/
+│   │   ├── calibration/             # Calibration round cards & A/B testers
+│   │   ├── common/                  # Buttons, Modals, Sliders, ToggleSwitches
+│   │   ├── documents/               # DocumentCards, UploaderModal, IEPModal
+│   │   ├── landing/                 # Landing hero, feature highlights & showcase
+│   │   ├── navigation/              # Accessible top navbar & mobile drawer
+│   │   ├── profile/                 # Profile editor & JSON exporter
+│   │   └── reader/                  # ReadingContent, AudioDock, FocusOverlay, Rulers
+│   ├── context/
+│   │   └── AppContext.tsx           # Global state (documents, audio, preferences)
+│   ├── data/
+│   │   ├── calibrationRounds.ts     # Visual diagnostic round definitions
+│   │   ├── mockDocuments.ts         # Pre-loaded educational curriculum lessons
+│   │   └── themes.ts                # Anti-glare color palettes & font configurations
+│   ├── lib/
+│   │   ├── ai-provider.ts           # Unified multi-provider LLM executor
+│   │   └── utils.ts                 # Font families & CSS styling utilities
+│   ├── services/
+│   │   ├── calibrationService.ts    # Preference compilation algorithm
+│   │   ├── documentService.ts       # Document persistence & category detector
+│   │   ├── pdf.service.ts           # Structural PDF cleaner & language detector
+│   │   ├── profileService.ts        # Reading profile JSON manager
+│   │   ├── readingService.ts        # Session analytics (WPM, words read)
+│   │   ├── simplificationService.ts # Local + AI text simplification service
+│   │   ├── translationService.ts    # Multilingual translation service
+│   │   └── ttsService.ts            # Dual-engine server audio + Web Speech TTS
+│   └── types/
+│       └── index.ts                 # TypeScript data contracts & models
+├── .env.example                     # Environment variables template
+├── .gitignore                       # Protected local secrets & build artifacts
+├── next.config.js                   # Next.js optimization configuration
+├── package.json                     # Project manifest & dependencies
+├── tailwind.config.ts               # Custom color tokens & fonts
+└── tsconfig.json                    # TypeScript compiler configuration
+```
 
 ---
 
 ## ⚡ Quick Start (Local Setup)
 
 ### Prerequisites
-- Node.js 18.17+ or higher
-- npm or yarn
+- Node.js `18.18.0` or higher
+- npm, yarn, or pnpm
 
-### 1. Install Dependencies
+### 1. Clone & Install Dependencies
 ```bash
+git clone https://github.com/CODExGAMERZ/akshar-setu.git
+cd akshar-setu
 npm install
 ```
 
@@ -109,116 +195,55 @@ Copy `.env.example` to `.env.local`:
 ```bash
 cp .env.example .env.local
 ```
-Add your API key (optional — app includes graceful fallback engines):
+
+Add your API keys (optional — the platform includes full offline algorithmic fallbacks):
 ```env
+# 1. Google Gemini (For Multimodal OCR & AI Simplification)
 GEMINI_API_KEY=your_gemini_api_key_here
+
+# 2. Sarvam AI (For High-Accuracy Indic Translation & Speech)
+SARVAM_API_KEY=your_sarvam_api_key_here
+
+# 3. OpenAI / Groq (Optional)
+OPENAI_API_KEY=
+GROQ_API_KEY=
 ```
 
 ### 3. Run Development Server
 ```bash
 npm run dev
 ```
-Open **[http://localhost:3000](http://localhost:3000)** (or port 3001) in your browser.
+
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
-## 🚢 Deploying to Vercel via GitHub
+## 🚢 Deploying to Vercel
 
-### Step 1: Push Code to GitHub
-```bash
-git init
-git add .
-git commit -m "feat: complete AksharSetu multilingual accessible reading platform"
-git branch -M main
-git remote add origin https://github.com/<your-username>/akshar-setu.git
-git push -u origin main
-```
+AksharSetu is engineered to deploy seamlessly on [Vercel](https://vercel.com/):
 
-### Step 2: Deploy on Vercel
-1. Log in to **[Vercel](https://vercel.com/)** using your GitHub account.
-2. Click **"Add New..."** → **"Project"**.
-3. Select your `akshar-setu` repository and click **Import**.
-4. *(Optional)* In **Environment Variables**, add:
-   - `GEMINI_API_KEY` (Free from [Google AI Studio](https://aistudio.google.com/))
-5. Click **Deploy**.
+1. Push your repository to GitHub.
+2. Import the project into the **Vercel Dashboard**.
+3. In **Settings → Environment Variables**, add:
+   - `GEMINI_API_KEY`
+   - `SARVAM_API_KEY`
+4. Click **Deploy**.
 
-Vercel will build and launch your application globally!
+Vercel will compile all static pages and serverless API functions automatically with zero configuration required.
 
 ---
 
-## 👥 Team & Contributors (6 Members)
+## 👥 Contributors & Acknowledgements
 
-A huge thank you to the 6-member team building inclusive, accessible educational technology for Smart India Hackathon:
+Built with ❤️ for the **Smart India Hackathon** to foster inclusive educational technology:
 
-| # | Name / Contributor | Role & Domain | GitHub Profile |
+| # | Contributor | Role & Specialization | GitHub |
 | :-: | :--- | :--- | :--- |
-| 1 | **Chiraag Agarwal** (Team Lead) | Project Lead & System Design | [@chiraagagarwal](https://github.com/chiraagagarwal) |
-| 2 | **Core Contributor** | AI Integration, Multilingual Indic NLP & Speech Systems | [@CODExGAMERZ](https://github.com/CODExGAMERZ) |
-| 3 | **Core Contributor** | Full-Stack Architecture & Next.js 14 App Platform | [@username](https://github.com) |
-| 4 | **Core Contributor** | Frontend Engineering, Accessibility & UI Components | [@username](https://github.com) |
-| 5 | **Core Contributor** | UI/UX Design, WCAG 2.1 AA Compliance & Visual Calibration | [@username](https://github.com) |
-| 6 | **Core Contributor** | Document Parsing Engine, Cloud Infrastructure & QA | [@username](https://github.com) |
-
-> *To update names, roles, or GitHub links, simply edit this table or share the details!*
-
----
-
-## 🤝 Contributing
-
-Contributions, issues, and feature requests are welcome!
-
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'feat: Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
----
-
-## 📁 Repository Structure
-
-```
-├── src/
-│   ├── app/
-│   │   ├── api/
-│   │   │   ├── documents/upload/    # PDF / TXT upload & parser
-│   │   │   ├── simplify/            # Generative AI text simplifier
-│   │   │   ├── translate/           # Multilingual translation endpoint
-│   │   │   └── tts/synthesize/      # Server TTS endpoint
-│   │   ├── calibrate/               # 8-step visual calibration test
-│   │   ├── history/                 # Document library & reading history
-│   │   ├── language/                # Language selection grid
-│   │   ├── read/[id]/               # Main reading canvas with ruler & audio
-│   │   ├── settings/                # Typography, themes & BYOK settings
-│   │   ├── upload/                  # Document upload zone
-│   │   ├── layout.tsx               # Root layout & providers
-│   │   └── page.tsx                 # Welcome & sign-in screen
-│   ├── components/
-│   │   ├── layout/AppShell.tsx      # Responsive desktop/tablet/mobile shell
-│   │   └── navigation/              # Adaptive headers, sidebars & bottom nav
-│   ├── context/
-│   │   ├── AuthContext.tsx          # Session management
-│   │   └── ReaderContext.tsx        # Profile, document & audio state
-│   ├── lib/
-│   │   ├── ai-provider.ts           # Unified Gemini / OpenAI / Groq execution
-│   │   ├── constants.ts             # Default profiles, fonts, themes & samples
-│   │   └── storage.ts               # LocalStorage persistence & BYOK manager
-│   ├── services/
-│   │   ├── simplification.service.ts # Multi-level simplification service
-│   │   ├── translation.service.ts    # Multilingual translation service
-│   │   └── tts.service.ts           # Speech synthesis & karaoke engine
-│   └── types/index.ts               # TypeScript data models & interfaces
-├── .env.example                     # Environment variable template
-├── .gitignore                       # Git ignore configuration
-└── package.json                     # Project manifest & dependencies
-```
+| 1 | **Chiraag Agarwal** | Team Lead • Architecture & System Design | [@chiraagagarwal](https://github.com/chiraagagarwal) |
+| 2 | **CODExGAMERZ** | AI Engineering • Indic NLP & Speech Systems | [@CODExGAMERZ](https://github.com/CODExGAMERZ) |
 
 ---
 
 ## 📜 License
 
-This project is licensed under the **MIT License** — free to use and extend for accessibility, non-profit, and educational purposes.
-
----
-
-### 💡 Made with ❤️ for Smart India Hackathon & inclusive education.
+This project is licensed under the **MIT License** — free to use, modify, and distribute for educational, non-profit, and accessibility purposes.
