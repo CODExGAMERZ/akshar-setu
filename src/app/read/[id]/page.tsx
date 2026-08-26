@@ -119,22 +119,22 @@ export default function ReadingViewPage() {
   };
 
   return (
-    <div className="w-full pb-12 min-h-dvh">
+    <div className="w-full pb-12 min-h-dvh overflow-x-hidden">
       {/* Top Document Control Bar */}
-      <div className="sticky top-0 bg-background/95 backdrop-blur-md z-30 border-b-2 border-surface-container-highest px-4 sm:px-6 md:px-8 py-3.5 flex flex-wrap items-center justify-between gap-3 shadow-xs">
+      <div className="sticky top-0 bg-background/95 backdrop-blur-md z-30 border-b-2 border-surface-container-highest px-3 sm:px-6 md:px-8 py-2.5 sm:py-3.5 flex flex-wrap items-center justify-between gap-2.5 shadow-xs max-w-full">
         {/* Toggle Personalized vs Original */}
         <div className="flex items-center bg-surface-container-low rounded-full p-1 border-2 border-surface-container-highest shrink-0">
           <button
             type="button"
             onClick={() => setViewMode('personalized')}
-            className={`px-3.5 sm:px-6 py-1.5 sm:py-2 rounded-full text-xs sm:text-label-md font-label-md font-bold transition-all flex items-center gap-1.5 sm:gap-2 h-touch-target ${
+            className={`px-3 sm:px-5 py-1.5 rounded-full text-xs sm:text-label-md font-label-md font-bold transition-all flex items-center gap-1.5 h-touch-target ${
               viewMode === 'personalized'
                 ? 'bg-secondary-container text-on-secondary-container shadow-sm'
                 : 'text-on-surface-variant hover:bg-surface-container-high'
             }`}
           >
             <span
-              className="material-symbols-outlined text-lg sm:text-xl"
+              className="material-symbols-outlined text-base sm:text-lg"
               style={{ fontVariationSettings: viewMode === 'personalized' ? "'FILL' 1" : "'FILL' 0" }}
             >
               tune
@@ -144,7 +144,7 @@ export default function ReadingViewPage() {
           <button
             type="button"
             onClick={() => setViewMode('original')}
-            className={`px-3.5 sm:px-6 py-1.5 sm:py-2 rounded-full text-xs sm:text-label-md font-label-md font-bold transition-all h-touch-target ${
+            className={`px-3 sm:px-5 py-1.5 rounded-full text-xs sm:text-label-md font-label-md font-bold transition-all h-touch-target ${
               viewMode === 'original'
                 ? 'bg-secondary-container text-on-secondary-container shadow-sm'
                 : 'text-on-surface-variant hover:bg-surface-container-high'
@@ -155,20 +155,20 @@ export default function ReadingViewPage() {
         </div>
 
         {/* Action Controls: Reading Ruler, Language Bar, Audio TTS, Simplify */}
-        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+        <div className="flex items-center gap-1.5 sm:gap-2.5 flex-wrap">
           {/* Reading Ruler Toggle */}
           <button
             type="button"
             onClick={() => updateProfile({ readingRulerEnabled: !profile.readingRulerEnabled })}
-            className={`px-3 sm:px-4 py-1.5 sm:py-2.5 rounded-full text-xs sm:text-label-md font-label-md font-bold border transition-colors flex items-center gap-1.5 h-touch-target ${
+            className={`px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-full text-xs font-bold border transition-colors flex items-center gap-1 h-touch-target ${
               profile.readingRulerEnabled
                 ? 'bg-primary-container text-on-primary-container border-primary shadow-sm'
                 : 'bg-surface-container border-outline-variant text-on-surface hover:bg-surface-container-high'
             }`}
             title="Toggle Reading Focus Ruler"
           >
-            <span className="material-symbols-outlined text-base sm:text-lg">highlight</span>
-            <span>Ruler</span>
+            <span className="material-symbols-outlined text-base">highlight</span>
+            <span className="hidden xs:inline">Ruler</span>
           </button>
 
           {/* Language Selector Bar */}
@@ -179,16 +179,16 @@ export default function ReadingViewPage() {
                 setIsLanguageMenuOpen(!isLanguageMenuOpen);
                 setIsSimplifyMenuOpen(false);
               }}
-              className="px-3 sm:px-4 py-1.5 sm:py-2.5 rounded-full text-xs sm:text-label-md font-label-md font-bold border border-outline-variant bg-surface-container text-on-surface hover:bg-surface-container-high transition-colors flex items-center gap-1.5 h-touch-target shadow-xs"
+              className="px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-full text-xs font-bold border border-outline-variant bg-surface-container text-on-surface hover:bg-surface-container-high transition-colors flex items-center gap-1 h-touch-target shadow-xs"
               title="Change Language"
             >
-              <span className="material-symbols-outlined text-base sm:text-lg text-primary">language</span>
+              <span className="material-symbols-outlined text-base text-primary">language</span>
               <span>{currentLangObj?.nativeName || 'Language'}</span>
-              <span className="material-symbols-outlined text-sm sm:text-base">arrow_drop_down</span>
+              <span className="material-symbols-outlined text-sm">arrow_drop_down</span>
             </button>
 
             {isLanguageMenuOpen && (
-              <div className="absolute left-0 sm:right-0 sm:left-auto mt-2 w-56 bg-surface-container-lowest border-2 border-surface-container-highest rounded-xl shadow-xl p-2 z-50 animate-in fade-in zoom-in-95">
+              <div className="absolute right-0 mt-2 w-56 bg-surface-container-lowest border-2 border-surface-container-highest rounded-xl shadow-xl p-2 z-50 animate-in fade-in zoom-in-95">
                 <p className="text-xs font-bold text-on-surface-variant px-3 py-1.5 border-b border-surface-container-highest mb-1">
                   Select Language
                 </p>
@@ -225,13 +225,13 @@ export default function ReadingViewPage() {
           </div>
 
           {/* Read Aloud (TTS Audio) */}
-          <div className="flex items-center bg-surface-container-lowest border-2 border-surface-container-highest rounded-full px-2 py-1 gap-1 sm:gap-2 shadow-sm h-touch-target">
+          <div className="flex items-center bg-surface-container-lowest border border-surface-container-highest rounded-full px-2 py-1 gap-1 shadow-xs h-touch-target">
             <button
               type="button"
               onClick={isPlayingAudio ? pauseReadAloud : startReadAloud}
-              className="flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-1.5 bg-primary text-on-primary rounded-full text-xs sm:text-label-md font-label-md font-bold hover:bg-on-primary-fixed-variant transition-colors"
+              className="flex items-center gap-1 px-3 py-1 bg-primary text-on-primary rounded-full text-xs font-bold hover:bg-on-primary-fixed-variant transition-colors"
             >
-              <span className="material-symbols-outlined text-base sm:text-lg">
+              <span className="material-symbols-outlined text-base">
                 {isPlayingAudio ? 'pause' : 'volume_up'}
               </span>
               <span>{isPlayingAudio ? 'Pause' : 'Listen'}</span>
@@ -243,14 +243,14 @@ export default function ReadingViewPage() {
                 className="p-1 text-on-surface-variant hover:text-error rounded-full"
                 title="Stop reading"
               >
-                <span className="material-symbols-outlined text-base sm:text-lg">stop</span>
+                <span className="material-symbols-outlined text-base">stop</span>
               </button>
             )}
             <select
               value={speechRate}
               onChange={(e) => setSpeechRate(parseFloat(e.target.value))}
               aria-label="Speech rate"
-              className="bg-transparent text-xs font-bold text-on-surface border-0 focus:ring-0 cursor-pointer py-1 pr-4"
+              className="bg-transparent text-xs font-bold text-on-surface border-0 focus:ring-0 cursor-pointer py-0.5 pr-3 pl-1"
             >
               <option value="0.75">0.75x</option>
               <option value="0.95">1.0x</option>
@@ -266,10 +266,10 @@ export default function ReadingViewPage() {
                 setIsSimplifyMenuOpen(!isSimplifyMenuOpen);
                 setIsLanguageMenuOpen(false);
               }}
-              className="flex items-center gap-1.5 bg-primary text-on-primary px-3.5 sm:px-6 py-1.5 sm:py-2.5 rounded-full text-xs sm:text-label-md font-label-md font-bold hover:bg-primary-container hover:text-on-primary-container transition-colors active:scale-95 shadow-sm h-touch-target"
+              className="flex items-center gap-1 bg-primary text-on-primary px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs font-bold hover:bg-primary-container hover:text-on-primary-container transition-colors active:scale-95 shadow-xs h-touch-target"
             >
               <span
-                className="material-symbols-outlined text-base sm:text-lg"
+                className="material-symbols-outlined text-base"
                 style={{ fontVariationSettings: "'FILL' 1" }}
               >
                 auto_awesome
@@ -308,20 +308,20 @@ export default function ReadingViewPage() {
 
       {/* Status banner when translating or simplifying */}
       {(isTranslating || isSimplifying) && (
-        <div className="sticky top-[69px] z-20 w-full bg-secondary-container/90 backdrop-blur-sm border-b border-primary/20 px-4 py-2 text-center text-xs font-bold text-on-secondary-container flex items-center justify-center gap-2 animate-in fade-in">
+        <div className="w-full bg-secondary-container/95 border-b border-primary/20 px-4 py-2 text-center text-xs font-bold text-on-secondary-container flex items-center justify-center gap-2 animate-in fade-in">
           <span className="material-symbols-outlined text-sm animate-spin text-primary">progress_activity</span>
           <span>{isTranslating ? `Translating document into ${currentLangObj?.nativeName || 'selected language'}...` : 'Simplifying document with AI...'}</span>
         </div>
       )}
 
-      {/* Main Reading Canvas */}
-      <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 md:px-8 py-6 sm:py-8 md:py-12">
+      {/* Main Reading Canvas Container */}
+      <div className="w-full max-w-4xl mx-auto px-3 sm:px-6 md:px-8 py-4 sm:py-6 md:py-8 overflow-hidden">
         <div
           ref={containerRef}
           onMouseMove={handleMouseMove}
           onTouchMove={handleTouchMove}
           onTouchStart={handleTouchMove}
-          className={`relative w-full p-6 sm:p-8 md:p-10 select-text rounded-2xl shadow-sm border border-surface-container-highest transition-colors duration-200 ${
+          className={`relative w-full max-w-full p-4 sm:p-6 md:p-8 select-text rounded-2xl shadow-sm border border-surface-container-highest transition-colors duration-200 overflow-hidden box-border ${
             isTranslating || isSimplifying ? 'opacity-60 pointer-events-none' : ''
           }`}
           style={{
@@ -353,16 +353,16 @@ export default function ReadingViewPage() {
           )}
 
           {/* Document Header */}
-          <header className="mb-6 sm:mb-8 border-b pb-4 border-surface-container-highest">
+          <header className="mb-6 sm:mb-8 border-b pb-4 border-surface-container-highest max-w-full overflow-hidden">
             <h1
-              className="text-headline-md sm:text-headline-lg font-headline-md sm:font-headline-lg font-bold text-primary mb-2"
+              className="text-headline-md sm:text-headline-lg font-headline-md sm:font-headline-lg font-bold text-primary mb-2 break-words"
               style={{
                 fontFamily: viewMode === 'personalized' ? profile.fontFamily : 'inherit',
               }}
             >
               {doc.title}
             </h1>
-            <div className="flex items-center gap-3 text-xs sm:text-sm text-on-surface-variant flex-wrap">
+            <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm text-on-surface-variant flex-wrap">
               <span className="font-semibold">{doc.wordCount || 0} words</span>
               <span>•</span>
               <span className="px-2 py-0.5 rounded bg-surface-container text-xs font-bold">
@@ -375,9 +375,11 @@ export default function ReadingViewPage() {
 
           {/* Formatted Semantic Paragraphs, Headings, and Lists with Karaoke */}
           <div
-            className="reading-content w-full"
+            className="reading-content w-full max-w-full overflow-hidden"
             style={{
-              maxWidth: viewMode === 'personalized' ? `${profile.maxCharactersPerLine}ch` : '70ch',
+              maxWidth: viewMode === 'personalized' ? `min(100%, ${profile.maxCharactersPerLine}ch)` : 'min(100%, 70ch)',
+              wordBreak: 'break-word',
+              overflowWrap: 'break-word',
             }}
           >
             {paragraphs.map((pText, pIdx) => {
@@ -391,12 +393,12 @@ export default function ReadingViewPage() {
                 return (
                   <h2
                     key={pIdx}
-                    className="text-xl sm:text-2xl font-bold text-primary mt-8 mb-4 pt-3 border-b border-surface-container-highest flex items-center gap-2"
+                    className="text-lg sm:text-xl font-bold text-primary mt-6 mb-3 pt-2 border-b border-surface-container-highest flex items-center gap-1.5 flex-wrap max-w-full"
                     style={{
                       fontFamily: viewMode === 'personalized' ? profile.fontFamily : 'inherit',
                     }}
                   >
-                    <span className="material-symbols-outlined text-primary text-xl">bookmark</span>
+                    <span className="material-symbols-outlined text-primary text-lg shrink-0">bookmark</span>
                     {headingWords.map((w) => renderWord(w))}
                   </h2>
                 );
@@ -405,15 +407,15 @@ export default function ReadingViewPage() {
               if (isBullet) {
                 const bulletItems = pText.split('\n').filter(Boolean);
                 return (
-                  <div key={pIdx} className="space-y-2 my-4 pl-2">
+                  <div key={pIdx} className="space-y-1.5 my-3 pl-1 sm:pl-2 max-w-full overflow-hidden">
                     {bulletItems.map((bItem, bIdx) => {
                       const cleanItem = bItem.replace(/^[•\-\*]\s*/, '');
                       const itemWords = cleanItem.split(/\s+/);
                       return (
-                        <div key={bIdx} className="flex items-start gap-2.5">
-                          <span className="text-primary font-bold text-base select-none mt-0.5">•</span>
+                        <div key={bIdx} className="flex items-start gap-2 max-w-full">
+                          <span className="text-primary font-bold text-base select-none mt-0.5 shrink-0">•</span>
                           <p
-                            className="flex-1"
+                            className="flex-1 max-w-full break-words"
                             style={{
                               lineHeight: viewMode === 'personalized' ? profile.lineHeight : 1.6,
                             }}
@@ -431,8 +433,9 @@ export default function ReadingViewPage() {
               return (
                 <p
                   key={pIdx}
+                  className="max-w-full break-words"
                   style={{
-                    marginBottom: viewMode === 'personalized' ? `${profile.paragraphSpacing}px` : '24px',
+                    marginBottom: viewMode === 'personalized' ? `${profile.paragraphSpacing}px` : '20px',
                   }}
                 >
                   {wordsInParagraph.map((w) => renderWord(w))}
