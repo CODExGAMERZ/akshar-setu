@@ -3,29 +3,10 @@
 @tailwind utilities;
 
 :root {
-  --bg-main: #fbf9f8;
-  --text-main: #1b1c1c;
+  --bg-main: #FEF9EB;
+  --text-main: #26231E;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-top: env(safe-area-inset-top, 0px);
-}
-
-/* Fallback definitions for specialty dyslexia fonts when locally present or served */
-@font-face {
-  font-family: 'Dyslexie';
-  src: local('Dyslexie'), local('Dyslexie Regular'), local('OpenDyslexic');
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Read Regular';
-  src: local('Read Regular'), local('Lexend'), local('Open Sans');
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Sylexiad';
-  src: local('Sylexiad'), local('OpenDyslexic'), local('Arial');
-  font-display: swap;
 }
 
 html {
@@ -34,9 +15,9 @@ html {
 }
 
 body {
-  background-color: var(--bg-main, #fbf9f8);
-  color: var(--text-main, #1b1c1c);
-  font-family: 'Open Sans', Arial, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--bg-main, #FEF9EB);
+  color: var(--text-main, #26231E);
+  font-family: 'Lexend', 'Atkinson Hyperlegible', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   margin: 0;
   padding: 0;
   min-height: 100vh;
@@ -47,78 +28,49 @@ body {
   overflow-x: hidden;
 }
 
-/* Material symbols utility styling */
-.material-symbols-outlined {
-  font-family: 'Material Symbols Outlined';
-  font-weight: normal;
-  font-style: normal;
-  font-size: 24px;
-  line-height: 1;
-  letter-spacing: normal;
-  text-transform: none;
-  display: inline-block;
-  white-space: nowrap;
-  word-wrap: normal;
-  direction: ltr;
-  font-feature-settings: 'liga';
-  -webkit-font-smoothing: antialiased;
-  user-select: none;
-}
-
-.material-symbols-outlined[data-weight="fill"],
-.material-symbols-outlined.fill-icon {
-  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-}
-
-/* Touch targets: ensure min 48px on mobile for accessibility */
-.touch-target {
-  min-height: 48px;
-  min-width: 48px;
-}
-
 /* Accessible Range Slider styling */
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
   background: transparent;
-  height: 2.5rem;
+  height: 2rem;
   touch-action: pan-y;
 }
 
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  height: 28px;
-  width: 28px;
+  height: 24px;
+  width: 24px;
   border-radius: 50%;
-  background: #064192;
+  background: #D97706;
   cursor: pointer;
-  margin-top: -10px;
+  margin-top: -8px;
   border: 2.5px solid #ffffff;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
   transition: transform 0.15s ease, background-color 0.15s ease;
 }
 
 input[type="range"]::-webkit-slider-thumb:active,
 input[type="range"]::-webkit-slider-thumb:hover {
-  transform: scale(1.2);
-  background: #0a4394;
+  transform: scale(1.15);
+  background: #B45309;
 }
 
 input[type="range"]::-webkit-slider-runnable-track {
   width: 100%;
   height: 8px;
   cursor: pointer;
-  background: #e4e2e1;
+  background: #E7DFCA;
   border-radius: 9999px;
 }
 
 input[type="range"]::-moz-range-thumb {
-  height: 28px;
-  width: 28px;
+  height: 24px;
+  width: 24px;
   border-radius: 50%;
-  background: #064192;
+  background: #D97706;
   cursor: pointer;
   border: 2.5px solid #ffffff;
 }
@@ -127,106 +79,12 @@ input[type="range"]::-moz-range-track {
   width: 100%;
   height: 8px;
   cursor: pointer;
-  background: #e4e2e1;
+  background: #E7DFCA;
   border-radius: 9999px;
 }
 
 input[type="range"]:focus {
   outline: none;
-}
-
-/* Confusable letter visual emphasis markers */
-.confusable-b {
-  font-weight: 700;
-  text-decoration: underline 2px #064192;
-  text-underline-offset: 3px;
-  background-color: rgba(6, 65, 146, 0.08);
-  border-radius: 2px;
-  padding: 0 1px;
-}
-
-.confusable-d {
-  font-weight: 700;
-  text-decoration: overline 2px #c2410c;
-  background-color: rgba(194, 65, 12, 0.08);
-  border-radius: 2px;
-  padding: 0 1px;
-}
-
-.confusable-p {
-  font-weight: 700;
-  text-decoration: underline 2px #7e22ce;
-  text-underline-offset: 3px;
-  background-color: rgba(126, 34, 206, 0.08);
-  border-radius: 2px;
-  padding: 0 1px;
-}
-
-.confusable-q {
-  font-weight: 700;
-  text-decoration: overline 2px #047857;
-  background-color: rgba(4, 120, 87, 0.08);
-  border-radius: 2px;
-  padding: 0 1px;
-}
-
-.confusable-m {
-  font-weight: 700;
-  border-bottom: 2px dotted #0369a1;
-  background-color: rgba(3, 105, 161, 0.08);
-  border-radius: 2px;
-  padding: 0 1px;
-}
-
-.confusable-w {
-  font-weight: 700;
-  border-top: 2px dotted #b45309;
-  background-color: rgba(180, 83, 9, 0.08);
-  border-radius: 2px;
-  padding: 0 1px;
-}
-
-/* Reading Ruler and Focus tracking */
-.reading-focus-highlight {
-  background-color: #ffdead;
-  border-radius: 0.25rem;
-  padding: 0.125rem 0.25rem;
-}
-
-.reading-focus-dim {
-  opacity: 0.35;
-  transition: opacity 0.2s ease;
-}
-
-/* Multisensory Karaoke Word Highlight */
-.karaoke-active-word {
-  background-color: #fdbe54 !important;
-  color: #1b1c1c !important;
-  border-radius: 0.25rem;
-  box-shadow: 0 0 0 2px #7f5700;
-}
-
-.karaoke-active-phrase {
-  background-color: rgba(253, 190, 84, 0.45) !important;
-  border-radius: 0.25rem;
-}
-
-.karaoke-active-line {
-  background-color: rgba(253, 190, 84, 0.25) !important;
-  border-radius: 0.25rem;
-}
-
-/* Syllable break point visual indicator */
-.syllable-dot {
-  opacity: 0.45;
-  font-weight: bold;
-  padding: 0 1px;
-}
-
-/* Focus Mode distraction reduction */
-.focus-mode-active {
-  max-width: 900px !important;
-  margin: 0 auto !important;
 }
 
 /* Custom Scrollbar */
@@ -236,14 +94,14 @@ input[type="range"]:focus {
 }
 
 ::-webkit-scrollbar-track {
-  background: #f0eded;
+  background: #FAF3E0;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #c3c6d3;
+  background: #D8CEB9;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #737783;
+  background: #B8AC94;
 }

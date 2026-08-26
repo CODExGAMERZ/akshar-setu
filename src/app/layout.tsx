@@ -1,33 +1,15 @@
 import type { Metadata, Viewport } from 'next';
 import '../styles/globals.css';
-import { ReaderProvider } from '@/context/ReaderContext';
-import { AuthProvider } from '@/context/AuthContext';
-import { AppShell } from '@/components/layout/AppShell';
-import { PwaInstaller } from '@/components/pwa/PwaInstaller';
+import { AppProvider } from '@/context/AppContext';
+import { Header } from '@/components/layout/Header';
+import { HowItWorksModal } from '@/components/landing/HowItWorksModal';
+import { DocumentUploaderModal } from '@/components/documents/DocumentUploaderModal';
+import { AssessmentUploadModal } from '@/components/documents/AssessmentUploadModal';
 
 export const metadata: Metadata = {
-  title: 'AksharSetu — Accessible Personalized Multisensory Reading Assistant',
-  description: 'A personalized, multilingual reading companion for people with dyslexia. Read in the way that works for you.',
-  applicationName: 'AksharSetu',
-  manifest: '/manifest.webmanifest',
-  icons: {
-    icon: [
-      { url: '/icons/icon.svg', type: 'image/svg+xml' },
-      { url: '/icons/icon-192x192.svg', sizes: '192x192', type: 'image/svg+xml' },
-      { url: '/icons/icon-512x512.svg', sizes: '512x512', type: 'image/svg+xml' },
-    ],
-    apple: [
-      { url: '/icons/icon-192x192.svg', sizes: '192x192', type: 'image/svg+xml' },
-    ],
-  },
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: 'default',
-    title: 'AksharSetu',
-  },
-  formatDetection: {
-    telephone: false,
-  },
+  title: 'LexiEase — Personalized Multisensory Reading Assistant',
+  description: 'Accessible dyslexia-support reading assistant with personalized typography, color overlays, read-aloud synchronization, and focus modes.',
+  applicationName: 'LexiEase',
 };
 
 export const viewport: Viewport = {
@@ -35,7 +17,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 5,
   userScalable: true,
-  themeColor: '#064192',
+  themeColor: '#FEF9EB',
   viewportFit: 'cover',
 };
 
@@ -49,28 +31,25 @@ export default function RootLayout({
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        {/* Curated Dyslexia-Friendly & Web Accessibility Fonts */}
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Lexend:wght@300..700&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Inter:wght@300..800&family=Roboto:ital,wght@0,300;0,400;0,700;1,400&family=Lato:ital,wght@0,300;0,400;0,700;1,400&family=Nunito:ital,wght@0,300..800;1,400&family=Nunito+Sans:ital,opsz,wght@0,6..12,300..800;1,6..12,400&family=Source+Sans+3:ital,wght@0,300..800;1,400&family=Ubuntu:ital,wght@0,300;0,400;0,700;1,400&family=PT+Sans:ital,wght@0,400;0,700;1,400&display=swap"
+        <link 
+          href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Comic+Neue:ital,wght@0,400;0,700;1,400&family=Lexend:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" 
+          rel="stylesheet" 
         />
-        {/* OpenDyslexic Web Font CDN fallback */}
-        <link
-          rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/font-opendyslexic@1.0.3/open-dyslexic.css"
-        />
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap"
+        <link 
+          rel="stylesheet" 
+          href="https://cdn.jsdelivr.net/npm/opendyslexic@2.0.0/dist/opendyslexic.min.css" 
         />
       </head>
-      <body className="font-sans antialiased min-h-dvh selection:bg-secondary-container selection:text-on-secondary-container bg-surface-main text-on-surface">
-        <AuthProvider>
-          <ReaderProvider>
-            <AppShell>{children}</AppShell>
-            <PwaInstaller />
-          </ReaderProvider>
-        </AuthProvider>
+      <body className="min-h-screen bg-[#FEF9EB] text-[#26231E] flex flex-col font-sans selection:bg-[#FDE047] selection:text-[#1E1B18] antialiased">
+        <AppProvider>
+          <Header />
+          <main className="flex-1 flex flex-col">
+            {children}
+          </main>
+          <HowItWorksModal />
+          <DocumentUploaderModal />
+          <AssessmentUploadModal />
+        </AppProvider>
       </body>
     </html>
   );

@@ -1,19 +1,20 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import React, { useEffect } from 'react';
+import { useParams } from 'next/navigation';
+import { useApp } from '@/context/AppContext';
+import { ReaderView } from '@/components/reader/ReaderView';
 
-export default function ReaderRouteRedirect() {
-  const router = useRouter();
+export default function ReaderDocumentIdPage() {
   const params = useParams();
+  const { selectDocument, activeDocument } = useApp();
 
   useEffect(() => {
-    if (params?.documentId) {
-      router.replace(`/read/${params.documentId}`);
-    } else {
-      router.replace('/library');
+    const id = params?.documentId as string;
+    if (id && (!activeDocument || activeDocument.id !== id)) {
+      selectDocument(id);
     }
-  }, [params, router]);
+  }, [params, selectDocument, activeDocument]);
 
-  return null;
+  return <ReaderView />;
 }
