@@ -86,7 +86,7 @@ export interface DocumentPage {
 export interface Document {
   id: string;
   title: string;
-  category: 'Science' | 'History' | 'English' | 'Mathematics' | 'General';
+  category: 'Science' | 'History' | 'English' | 'Mathematics' | 'General' | string;
   language: string;
   createdAt: string;
   updatedAt: string;

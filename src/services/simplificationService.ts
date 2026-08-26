@@ -6,6 +6,160 @@ export interface SimplifiedResult {
   bulletSummary: string[];
 }
 
+// Algorithmic vocabulary simplification map
+const SIMPLIFY_MAP: [RegExp, string][] = [
+  [/\bmoreover\b/gi, 'Also'],
+  [/\bfurthermore\b/gi, 'Also'],
+  [/\bsubsequently\b/gi, 'Then'],
+  [/\bconsequently\b/gi, 'So'],
+  [/\bnevertheless\b/gi, 'But'],
+  [/\bnonetheless\b/gi, 'Still'],
+  [/\bmerely\b/gi, 'just'],
+  [/\bfundamental\b/gi, 'basic'],
+  [/\bexpansive\b/gi, 'large'],
+  [/\butilize[sd]?\b/gi, 'use'],
+  [/\butilizing\b/gi, 'using'],
+  [/\bcommence[sd]?\b/gi, 'start'],
+  [/\bcommencing\b/gi, 'starting'],
+  [/\bdemonstrate[sd]?\b/gi, 'show'],
+  [/\bdemonstrating\b/gi, 'showing'],
+  [/\bfacilitate[sd]?\b/gi, 'help'],
+  [/\bfacilitating\b/gi, 'helping'],
+  [/\bimplement(?:ed|s|ing)?\b/gi, 'do'],
+  [/\bsufficient\b/gi, 'enough'],
+  [/\binsufficient\b/gi, 'not enough'],
+  [/\bapproximate(?:ly)?\b/gi, 'about'],
+  [/\bnumerous\b/gi, 'many'],
+  [/\bsignificant(?:ly)?\b/gi, 'big'],
+  [/\badditionally\b/gi, 'Also'],
+  [/\bin addition\b/gi, 'Also'],
+  [/\bpurchase[sd]?\b/gi, 'buy'],
+  [/\brequire[sd]?\b/gi, 'need'],
+  [/\brequiring\b/gi, 'needing'],
+  [/\bobtain(?:ed|s)?\b/gi, 'get'],
+  [/\bprovide[sd]?\b/gi, 'give'],
+  [/\bproviding\b/gi, 'giving'],
+  [/\bindicate[sd]?\b/gi, 'show'],
+  [/\bindicating\b/gi, 'showing'],
+  [/\bconsiderable\b/gi, 'a lot of'],
+  [/\bnevertheless\b/gi, 'but'],
+  [/\btherefore\b/gi, 'so'],
+  [/\bconversely\b/gi, 'on the other hand'],
+  [/\bmanufacture[sd]?\b/gi, 'make'],
+  [/\bmanufacturing\b/gi, 'making'],
+  [/\bphenomenon\b/gi, 'event'],
+  [/\bphenomena\b/gi, 'events'],
+  [/\bcomponent[s]?\b/gi, 'part'],
+  [/\bmechanism[s]?\b/gi, 'process'],
+  [/\bconcept[s]?\b/gi, 'idea'],
+  [/\bperceive[sd]?\b/gi, 'see'],
+  [/\bprimarily\b/gi, 'mainly'],
+  [/\bsimultaneously\b/gi, 'at the same time'],
+  [/\benhance[sd]?\b/gi, 'improve'],
+  [/\benhancing\b/gi, 'improving'],
+  [/\bdiminish(?:ed|es|ing)?\b/gi, 'reduce'],
+  [/\bsubstantial(?:ly)?\b/gi, 'large'],
+  [/\bnevertheless\b/gi, 'but'],
+  [/\bin order to\b/gi, 'to'],
+  [/\bdue to the fact that\b/gi, 'because'],
+  [/\bin the event that\b/gi, 'if'],
+  [/\bat this point in time\b/gi, 'now'],
+  [/\bfor the purpose of\b/gi, 'to'],
+  [/\bin spite of the fact that\b/gi, 'although'],
+  [/\bwith regard to\b/gi, 'about'],
+  [/\bin the vicinity of\b/gi, 'near'],
+  [/\ba large number of\b/gi, 'many'],
+  [/\bprior to\b/gi, 'before'],
+  [/\bsubsequent to\b/gi, 'after'],
+];
+
+function simplifyText(text: string): string {
+  let result = text;
+
+  // 1. Apply vocabulary simplification
+  for (const [pattern, replacement] of SIMPLIFY_MAP) {
+    result = result.replace(pattern, replacement);
+  }
+
+  // 2. Break long sentences (>25 words) at commas, semicolons, or conjunctions
+  const paragraphs = result.split(/\n\s*\n/);
+  const simplified = paragraphs.map(para => {
+    const sentences = para.split(/(?<=[.!?])\s+/);
+    const broken: string[] = [];
+
+    for (const sentence of sentences) {
+      const wordCount = sentence.trim().split(/\s+/).length;
+      if (wordCount > 25) {
+        // Try to split at conjunctions or semicolons
+        const parts = sentence.split(/(?:;\s*|\s*,\s*(?:and|but|or|which|that|because|however|although)\s+)/i);
+        for (const part of parts) {
+          const trimmed = part.trim();
+          if (trimmed.length > 0) {
+            // Capitalize first letter and ensure period
+            const capitalized = trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+            broken.push(capitalized.endsWith('.') || capitalized.endsWith('!') || capitalized.endsWith('?') ? capitalized : capitalized + '.');
+          }
+        }
+      } else {
+        broken.push(sentence.trim());
+      }
+    }
+
+    return broken.join(' ');
+  });
+
+  return simplified.join('\n\n');
+}
+
+function extractBulletSummary(text: string): string[] {
+  const sentences = text.split(/(?<=[.!?])\s+/).filter(s => s.trim().length > 10);
+  // Pick up to 3 diverse sentences from different parts of the text
+  const bullets: string[] = [];
+  if (sentences.length <= 3) {
+    return sentences.map(s => s.trim().replace(/\.$/, ''));
+  }
+  const step = Math.floor(sentences.length / 3);
+  for (let i = 0; i < 3; i++) {
+    const idx = Math.min(i * step, sentences.length - 1);
+    bullets.push(sentences[idx].trim().replace(/\.$/, ''));
+  }
+  return bullets;
+}
+
+function extractKeyTerms(text: string): Array<{ term: string; explanation: string }> {
+  // Find capitalized multi-word phrases or bold patterns as potential key terms
+  const terms: Array<{ term: string; explanation: string }> = [];
+  const seen = new Set<string>();
+
+  // Match **bold** terms from markdown
+  const boldMatches = text.matchAll(/\*\*([^*]+)\*\*/g);
+  for (const m of boldMatches) {
+    const term = m[1].trim();
+    if (term.length > 2 && term.length < 40 && !seen.has(term.toLowerCase())) {
+      seen.add(term.toLowerCase());
+      terms.push({ term, explanation: 'Key concept from this passage.' });
+    }
+    if (terms.length >= 4) break;
+  }
+
+  // Match ### headings
+  const headingMatches = text.matchAll(/###?\s+(.+)/g);
+  for (const m of headingMatches) {
+    const term = m[1].trim();
+    if (term.length > 2 && term.length < 50 && !seen.has(term.toLowerCase())) {
+      seen.add(term.toLowerCase());
+      terms.push({ term, explanation: 'Section heading in this document.' });
+    }
+    if (terms.length >= 4) break;
+  }
+
+  if (terms.length === 0) {
+    terms.push({ term: 'Key Ideas', explanation: 'Main concepts simplified for comfortable reading.' });
+  }
+
+  return terms;
+}
+
 class SimplificationService {
   private cache = new Map<string, SimplifiedResult>();
 
@@ -25,115 +179,44 @@ class SimplificationService {
       return this.cache.get(cacheKey)!;
     }
 
-    // 1. Try backend /api/simplify route
+    // 1. Try backend /api/simplify route (works if API keys are configured)
     try {
       const res = await fetch('/api/simplify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text,
-          level: 'medium'
-        })
+        body: JSON.stringify({ text, level: 'medium' })
       });
 
       if (res.ok) {
         const data = await res.json();
-        if (data.simplifiedText && data.simplifiedText.trim().length > 0 && data.status === 'success') {
-          const paragraphs = data.simplifiedText.split('\n\n').filter((p: string) => p.trim().length > 0);
-          const bullets = paragraphs.slice(0, 3).map((p: string) => p.replace(/^[•\-\d.]\s*/, ''));
-
+        if (data.simplifiedText && data.status === 'success' && data.simplifiedText.trim() !== text.trim()) {
+          const bullets = extractBulletSummary(data.simplifiedText);
           const result: SimplifiedResult = {
             originalText: text,
             simplifiedText: data.simplifiedText,
-            readingGradeReduction: 'Advanced → Plain Language (Grade 4)',
-            keyVocabulary: [
-              { term: 'Core Ideas', explanation: 'Restructured for dyslexia cognitive ease and minimal clutter.' }
-            ],
-            bulletSummary: bullets.length > 0 ? bullets : ['Key ideas explained in direct, simple terms.']
+            readingGradeReduction: 'Advanced → Plain Language (AI)',
+            keyVocabulary: extractKeyTerms(text),
+            bulletSummary: bullets.length > 0 ? bullets : ['Key ideas restructured for accessible reading.']
           };
-
           this.cache.set(cacheKey, result);
           return result;
         }
       }
     } catch (e) {
-      console.warn('API simplification call failed, using local educational engine:', e);
+      console.warn('API simplification call failed, using local engine:', e);
     }
 
-    // 2. Pre-computed high quality simplifications for educational documents
-    if (text.toLowerCase().includes('deforestation') || text.toLowerCase().includes('forest')) {
-      const result: SimplifiedResult = {
-        originalText: text,
-        simplifiedText: `Deforestation happens when people cut down large forests. They do this to make space for farms, houses, and factories.
-
-Forest fires and long dry periods (droughts) can also destroy trees naturally. When trees are cut down, the Earth gets hotter and air pollution increases.
-
-Trees help bring rain and protect our soil. Without trees, we get more floods and dry land.
-
-Biosphere reserves are large protected natural areas where animals, plants, and people live safely together.`,
-        readingGradeReduction: 'Grade 8 → Grade 4 reading level',
-        keyVocabulary: [
-          { term: 'Deforestation', explanation: 'Cutting down lots of trees at once.' },
-          { term: 'Drought', explanation: 'A very long period of time with no rain.' },
-          { term: 'Biosphere Reserve', explanation: 'A safe, protected home for wildlife and trees.' }
-        ],
-        bulletSummary: [
-          'Trees are cut down for wood, houses, and farmland.',
-          'Losing trees makes the Earth warmer and lowers underground water.',
-          'Special nature reserves help keep animals and plants safe.'
-        ]
-      };
-      this.cache.set(cacheKey, result);
-      return result;
-    }
-
-    if (text.toLowerCase().includes('silk road') || text.toLowerCase().includes('merchant')) {
-      const result: SimplifiedResult = {
-        originalText: text,
-        simplifiedText: `The Silk Road was not one single road. It was a giant network of travel routes connecting Asia, India, and Europe.
-
-Traders did not walk the whole 5,000 miles. Instead, they traveled in groups with camels from one desert town (oasis) to the next.
-
-People traded silk, spices, and glass. More importantly, they shared inventions like paper and the magnetic compass.`,
-        readingGradeReduction: 'Grade 7 → Grade 3 reading level',
-        keyVocabulary: [
-          { term: 'Silk Road', explanation: 'Ancient trade paths connecting continents.' },
-          { term: 'Caravan', explanation: 'A group of travelers traveling together across the desert.' },
-          { term: 'Oasis', explanation: 'A green, watery spot in the middle of a dry desert.' }
-        ],
-        bulletSummary: [
-          'The Silk Road connected Asia, India, and Europe.',
-          'Merchants traveled in camel caravans between oasis towns.',
-          'They traded goods and shared ideas like paper and compasses.'
-        ]
-      };
-      this.cache.set(cacheKey, result);
-      return result;
-    }
-
-    // 3. General Rule-based Algorithmic Simplifier
-    const sentences = text.split(/(?<=[.?!])\s+/).filter(s => s.trim().length > 0);
-    const simplified = sentences.map(s => {
-      return s
-        .replace(/\bmoreover\b|\bfurthermore\b|\bsubsequently\b|\bconsequently\b/gi, 'Also')
-        .replace(/\bmerely\b/gi, 'just')
-        .replace(/\bfundamental\b/gi, 'basic')
-        .replace(/\bexpansive\b/gi, 'large')
-        .replace(/\butilize\b|\butilizes\b|\butilizing\b/gi, 'use')
-        .replace(/\bcommence\b|\bcommenced\b/gi, 'start')
-        .replace(/\bdemonstrates\b|\bdemonstrate\b/gi, 'shows');
-    }).join('\n\n');
+    // 2. Local algorithmic simplifier — works on ANY text without API keys
+    const simplified = simplifyText(text);
+    const bullets = extractBulletSummary(simplified);
+    const keyTerms = extractKeyTerms(text);
 
     const result: SimplifiedResult = {
       originalText: text,
       simplifiedText: simplified,
       readingGradeReduction: 'Intermediate → Plain Language',
-      keyVocabulary: [
-        { term: 'Key Concepts', explanation: 'Main core ideas simplified for faster reading.' }
-      ],
-      bulletSummary: [
-        'Main points restructured into shorter, bite-sized sentences.'
-      ]
+      keyVocabulary: keyTerms,
+      bulletSummary: bullets.length > 0 ? bullets : ['Main points restructured into shorter sentences.']
     };
 
     this.cache.set(cacheKey, result);

@@ -12,6 +12,7 @@ export const DocumentUploaderModal: React.FC = () => {
   const [uploadStep, setUploadStep] = useState<'idle' | 'uploading' | 'processing' | 'extracting' | 'formatting' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [createdDocId, setCreatedDocId] = useState<string | null>(null);
+  const [previewSnippet, setPreviewSnippet] = useState<string>('');
 
   const handleFileChange = async (file: File) => {
     setSelectedFile(file);
@@ -31,6 +32,9 @@ export const DocumentUploaderModal: React.FC = () => {
 
       const doc = await uploadAndDigitise(file);
       setCreatedDocId(doc.id);
+      // Extract preview from first page content
+      const firstPageText = doc.pages?.[0]?.content || '';
+      setPreviewSnippet(firstPageText.slice(0, 250).trim());
       setUploadStep('success');
     } catch (err: any) {
       console.warn('OCR error:', err);
@@ -51,6 +55,7 @@ export const DocumentUploaderModal: React.FC = () => {
     setUploadStep('idle');
     setErrorMessage(null);
     setCreatedDocId(null);
+    setPreviewSnippet('');
     setIsUploadModalOpen(false);
   };
 
@@ -166,12 +171,20 @@ export const DocumentUploaderModal: React.FC = () => {
               </p>
             </div>
 
-            <div className="p-4 bg-[#FAF3E0] border border-[#E7DFCA] rounded-xl flex items-center gap-3 text-left">
-              <FileText className="w-6 h-6 text-[#D97706] shrink-0" />
-              <div className="overflow-hidden">
-                <p className="text-xs font-bold text-[#1E1B18] truncate">{selectedFile?.name}</p>
-                <p className="text-[11px] text-[#706655]">Ready for personalized reading, TTS & translation</p>
+            <div className="p-4 bg-[#FAF3E0] border border-[#E7DFCA] rounded-xl space-y-2 text-left">
+              <div className="flex items-center gap-3">
+                <FileText className="w-6 h-6 text-[#D97706] shrink-0" />
+                <div className="overflow-hidden">
+                  <p className="text-xs font-bold text-[#1E1B18] truncate">{selectedFile?.name}</p>
+                  <p className="text-[11px] text-[#706655]">Ready for personalized reading, TTS & translation</p>
+                </div>
               </div>
+              {previewSnippet && (
+                <div className="p-3 bg-[#FEF9EB] border border-[#E7DFCA] rounded-lg">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#706655] mb-1">Extracted Text Preview:</p>
+                  <p className="text-xs text-[#524B40] leading-relaxed line-clamp-4">{previewSnippet}...</p>
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end gap-3 pt-2">

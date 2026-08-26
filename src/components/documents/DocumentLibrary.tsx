@@ -11,7 +11,7 @@ export const DocumentLibrary: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
 
-  const categories = ['All', 'Science', 'History', 'English', 'Mathematics'];
+  const categories = ['All', 'Science', 'History', 'English', 'Mathematics', 'General'];
 
   const filteredDocuments = documents.filter(doc => {
     const matchesSearch = doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||

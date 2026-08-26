@@ -3,6 +3,39 @@ import { MOCK_DOCUMENTS } from '../data/mockDocuments';
 
 const STORAGE_KEY = 'aksharsetu_documents_v1';
 
+type DocCategory = 'Science' | 'History' | 'English' | 'Mathematics' | 'General';
+
+const CATEGORY_KEYWORDS: Record<DocCategory, string[]> = {
+  Science: ['science', 'biology', 'chemistry', 'physics', 'cell', 'atom', 'molecule', 'ecosystem', 'photosynthesis', 'evolution', 'genetics', 'organism', 'pollination', 'deforestation', 'biosphere', 'experiment', 'laboratory', 'hypothesis', 'chemical', 'reaction', 'electron', 'nucleus', 'energy', 'force', 'gravity', 'density', 'velocity'],
+  History: ['history', 'civilization', 'empire', 'ancient', 'medieval', 'war', 'revolution', 'dynasty', 'kingdom', 'independence', 'colonial', 'mughal', 'british', 'silk road', 'constitution', 'democracy', 'treaty', 'archaeological', 'monument', 'heritage', 'century', 'battle'],
+  English: ['poem', 'poetry', 'literature', 'grammar', 'essay', 'novel', 'story', 'chapter', 'character', 'narrative', 'fiction', 'shakespeare', 'metaphor', 'simile', 'comprehension', 'vocabulary', 'prose', 'lighthouse', 'author', 'literary'],
+  Mathematics: ['math', 'mathematics', 'algebra', 'geometry', 'equation', 'theorem', 'formula', 'triangle', 'circle', 'calculus', 'fraction', 'decimal', 'percentage', 'graph', 'polynomial', 'quadratic', 'probability', 'statistics', 'arithmetic', 'number'],
+  General: []
+};
+
+function detectCategory(title: string, content: string): DocCategory {
+  const combined = `${title} ${content.slice(0, 2000)}`.toLowerCase();
+
+  let bestCategory: DocCategory = 'General';
+  let bestScore = 0;
+
+  for (const [category, keywords] of Object.entries(CATEGORY_KEYWORDS) as [DocCategory, string[]][]) {
+    if (category === 'General') continue;
+    let score = 0;
+    for (const kw of keywords) {
+      if (combined.includes(kw)) {
+        score++;
+      }
+    }
+    if (score > bestScore) {
+      bestScore = score;
+      bestCategory = category;
+    }
+  }
+
+  return bestScore >= 1 ? bestCategory : 'General';
+}
+
 class DocumentService {
   private documents: Document[] = [];
   private initialized = false;
@@ -89,6 +122,7 @@ class DocumentService {
     const cleanTitle = file.name.replace(/\.[^/.]+$/, "");
     let extractedText = '';
     let detectedLanguage = 'en-IN';
+    let serverTitle = '';
 
     // 1. Try server OCR extraction if File instance
     if (typeof window !== 'undefined' && file instanceof File) {
@@ -108,13 +142,16 @@ class DocumentService {
             if (data.language) {
               detectedLanguage = data.language;
             }
+            if (data.title) {
+              serverTitle = data.title;
+            }
           }
         }
       } catch (uploadErr) {
         console.warn('Server upload OCR failed, trying local extraction:', uploadErr);
       }
 
-      // If text file and server extraction wasn't used
+      // If text file and server extraction wasn't used or failed
       if (!extractedText && (file.type.includes('text') || file.name.endsWith('.txt') || file.name.endsWith('.md'))) {
         try {
           extractedText = await file.text();
@@ -124,17 +161,23 @@ class DocumentService {
       }
     }
 
-    // 2. Fallback text if file has no selectable text layer
+    // 2. Use textContent if provided (non-File objects)
     if (!extractedText || extractedText.trim().length === 0) {
       if ('textContent' in file && typeof file.textContent === 'string' && file.textContent.trim()) {
         extractedText = file.textContent;
-      } else {
-        extractedText = `### ${cleanTitle}\n\nThis document has been extracted into your library. You can read with personalized typography, adjust contrast, change language, or use read-aloud playback.`;
       }
     }
 
+    // 3. Final fallback — document title placeholder
+    if (!extractedText || extractedText.trim().length === 0) {
+      extractedText = `### ${cleanTitle}\n\nThis document was uploaded but could not be text-extracted. It may be a scanned image PDF. Try uploading a text-based PDF or a .txt file for best results.`;
+    }
 
-    // 3. Paginate text into comfortable accessible pages (approx 180 words per page)
+    // 4. Auto-detect category from title and content
+    const finalTitle = serverTitle || cleanTitle;
+    const category: DocCategory = detectCategory(finalTitle, extractedText);
+
+    // 5. Paginate text into comfortable accessible pages (~200 words per page)
     const allParagraphs = extractedText.split(/\n\s*\n/).filter(p => p.trim().length > 0);
     const pages: DocumentPage[] = [];
     let currentPageParagraphs: string[] = [];
@@ -144,15 +187,12 @@ class DocumentService {
     for (const para of allParagraphs) {
       const wordsInPara = para.trim().split(/\s+/).length;
       if (currentWordCount > 0 && currentWordCount + wordsInPara > 220) {
-        // flush page
         const pageContent = currentPageParagraphs.join('\n\n');
         pages.push({
           pageNumber,
           content: pageContent,
           paragraphs: [...currentPageParagraphs],
-          keyTerms: [
-            { term: 'Key Concept', definition: 'Important educational term extracted for study review.' }
-          ]
+          keyTerms: []
         });
         pageNumber++;
         currentPageParagraphs = [para];
@@ -169,9 +209,7 @@ class DocumentService {
         pageNumber,
         content: pageContent,
         paragraphs: [...currentPageParagraphs],
-        keyTerms: [
-          { term: 'Key Concept', definition: 'Important educational term extracted for study review.' }
-        ]
+        keyTerms: []
       });
     }
 
@@ -179,8 +217,8 @@ class DocumentService {
 
     const newDoc: Document = {
       id: docId,
-      title: cleanTitle,
-      category: 'Science',
+      title: finalTitle,
+      category,
       language: detectedLanguage,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -189,8 +227,8 @@ class DocumentService {
       estimatedReadTimeMinutes: Math.max(1, Math.ceil(totalWordCount / 120)),
       originalViewStyle: {
         headerColor: '#1E40AF',
-        chapterNumber: 'EXTRACTED OCR',
-        subheading: 'Digitized Educational Document',
+        chapterNumber: `PAGE 1 of ${pages.length}`,
+        subheading: `Digitized from ${file.name}`,
         accentColor: '#3B82F6'
       },
       pages: pages.length > 0 ? pages : [
