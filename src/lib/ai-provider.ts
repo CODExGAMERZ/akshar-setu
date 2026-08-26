@@ -28,8 +28,16 @@ export async function executeAICompletion(options: AICallOptions): Promise<strin
 
   for (const prov of providersToTry) {
     if (prov === 'gemini' && geminiKey) {
-      // Try Gemini 1.5 Flash and Gemini 2.0 Flash
-      const geminiModels = ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro'];
+      // Try latest responsive Gemini flash models
+      const geminiModels = [
+        'gemini-3-flash-preview',
+        'gemini-flash-latest',
+        'gemini-2.5-flash-lite',
+        'gemini-2.5-flash',
+        'gemini-1.5-flash',
+        'gemini-2.0-flash',
+        'gemini-1.5-pro'
+      ];
       for (const model of geminiModels) {
         try {
           const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`;

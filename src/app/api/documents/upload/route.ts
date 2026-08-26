@@ -32,24 +32,32 @@ export async function POST(req: NextRequest) {
         if (geminiKey) {
           try {
             const base64Data = buffer.toString('base64');
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`;
-            const ocrRes = await fetch(url, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                contents: [{
-                  parts: [
-                    { text: 'Extract all readable text, headings, lists, and paragraphs from this document accurately for an accessible reader.' },
-                    { inline_data: { mime_type: 'application/pdf', data: base64Data } }
-                  ]
-                }]
-              })
-            });
-            if (ocrRes.ok) {
-              const ocrJson = await ocrRes.json();
-              const extracted = ocrJson.candidates?.[0]?.content?.parts?.[0]?.text;
-              if (extracted && extracted.trim().length > 0) {
-                rawText = extracted;
+            const ocrModels = ['gemini-3-flash-preview', 'gemini-flash-latest', 'gemini-2.5-flash-lite', 'gemini-1.5-flash'];
+            for (const m of ocrModels) {
+              try {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${geminiKey}`;
+                const ocrRes = await fetch(url, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    contents: [{
+                      parts: [
+                        { text: 'Extract all readable text, headings, lists, and paragraphs from this document accurately for an accessible reader.' },
+                        { inline_data: { mime_type: 'application/pdf', data: base64Data } }
+                      ]
+                    }]
+                  })
+                });
+                if (ocrRes.ok) {
+                  const ocrJson = await ocrRes.json();
+                  const extracted = ocrJson.candidates?.[0]?.content?.parts?.[0]?.text;
+                  if (extracted && extracted.trim().length > 0) {
+                    rawText = extracted;
+                    break;
+                  }
+                }
+              } catch (mErr) {
+                console.warn(`Gemini OCR with ${m} failed:`, mErr);
               }
             }
           } catch (geminiOcrErr) {
