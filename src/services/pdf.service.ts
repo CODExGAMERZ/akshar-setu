@@ -1,19 +1,25 @@
 import { SupportedLanguage } from '@/types';
 
+/**
+ * Universal PDF & Text Normalization and Reflow Engine
+ *
+ * Designed specifically for dyslexia accessibility and universal document formatting.
+ * Transforms messy, un-spaced, vertically fragmented, or dense text extracted from any PDF
+ * into clean, structured Markdown with distinct headings, bullet lists, and micro-paragraphs.
+ */
 export class PDFService {
   /**
-   * Universal PDF Text Cleaner & Reflow Engine:
-   * Reconstructs, un-glues, normalizes, and transforms raw PDF extractions
-   * into clean, dyslexia-optimized reading material with proper headings, lists, and spacing.
+   * Universal Document Reflower:
+   * Cleans, un-glues, structures, and formats text from any source.
    */
-  public static cleanPDFText(rawText: string): string {
-    if (!rawText || typeof rawText !== 'string') return '';
+  public static cleanPDFText(rawInput: string): string {
+    if (!rawInput || typeof rawInput !== 'string') return '';
 
-    let text = rawText
+    let text = rawInput
       .replace(/\r\n/g, '\n')
       .replace(/\r/g, '\n');
 
-    // 1. Strip Metadata & Page Headers / Footers
+    // 1. Remove Page Number Artifacts, Running Headers & Footers
     text = text
       .replace(/^[ \t]*(?:page\s+\d+(?:\s+of\s+\d+)?|\d+\s*\/\s*\d+|\d+)[ \t]*$/gim, '')
       .replace(/^[ \t]*[-–—]+\s*\d+\s*[-–—]+[ \t]*$/gim, '')
@@ -21,7 +27,10 @@ export class PDFService {
       .replace(/AksharSetu\s*[—–-]\s*Concept\s*Brief\s*Page(?:\s*\d+\s*(?:of\s*\d+)?)?/gi, '')
       .replace(/AksharSetu-Concept-Brief\s*\n*\s*\d+\s*words\s*\n*\s*•\s*\n*\s*English\s*\n*\s*•\s*\n*\s*PDF/gi, '');
 
-    // 2. Recombine Multi-Line Broken Numbered Headings (e.g. "01\nThe\nProblem" -> "### 01. The Problem")
+    // 2. Universal De-Hyphenation (e.g. "experi-\nment" -> "experiment", "infor-\nmation" -> "information")
+    text = text.replace(/([a-zA-Z\u0900-\u0D7F]+)-\s*\n\s*([a-zA-Z\u0900-\u0D7F]+)/g, '$1$2');
+
+    // 3. Recombine Multi-Line Vertically Split Headings (e.g. "01\nThe\nProblem" -> "### 01. The Problem")
     text = text.replace(
       /(?:^|\n)\s*(\d{1,2})\s*\n+\s*([A-Za-z]+(?:\s*\n+\s*[A-Za-z/&'’–-]+)*)(?:\n|$)/g,
       (match, num, title) => {
@@ -30,9 +39,9 @@ export class PDFService {
       }
     );
 
-    // 3. Recombine Named Multi-Line Section Headings
-    const commonSplitHeadings: [RegExp, string][] = [
-      [/(?:^|\n)\s*CONCEPT\s*&\s*PLANNING\s*BRIEF(?:\n|$)/gi, '### Concept & Planning Brief\n\n'],
+    // 4. Recombine Common Multi-Line Titles & Named Sections
+    const namedSectionHeadings: [RegExp, string][] = [
+      [/(?:^|\n)\s*CONCEPT\s*&\s*PLANNING\s*BRIEF(?:\n|$)/gi, '\n\n### Concept & Planning Brief\n\n'],
       [/(?:^|\n)\s*Table\s*\n\s*of\s*\n\s*Contents(?:\n|$)/gi, '\n\n### Table of Contents\n\n'],
       [/(?:^|\n)\s*CONTENTS(?:\n|$)/gi, '\n\n### Table of Contents\n\n'],
       [/(?:^|\n)\s*The\s*\n\s*Problem(?:\n|$)/gi, '\n\n### The Problem\n\n'],
@@ -50,21 +59,31 @@ export class PDFService {
       [/(?:^|\n)\s*References(?:\n|$)/gi, '\n\n### References\n\n'],
     ];
 
-    for (const [regex, replacement] of commonSplitHeadings) {
+    for (const [regex, replacement] of namedSectionHeadings) {
       text = text.replace(regex, replacement);
     }
 
-    // 4. Unglue Inline Numbered Section Headings (e.g. "03CoreFeatures" -> "### 03. Core Features")
+    // 5. Generalized Chapter & Section Headings Detection
+    text = text.replace(
+      /(?:^|\n{2,})\s*((?:Chapter|Section|Module|Unit|Part)\s+\d+[:\s—–-]+[^\n]{3,80})\s*(?:\n{2,}|$)/gi,
+      '\n\n### $1\n\n'
+    );
+    text = text.replace(
+      /(?:^|\n{2,})\s*(\d{1,2}(?:\.\d{1,2})*\s+[A-Z][A-Za-z0-9\s/—–-]{3,60})\s*(?:\n{2,}|$)/g,
+      '\n\n### $1\n\n'
+    );
+
+    // 6. Unglue Inline Numbered Headings (e.g. "03CoreFeatures" -> "### 03. Core Features")
     text = text.replace(/(?:^|\n|\s*)(\d{2})([A-Z][A-Za-z/&'’–-]+)/g, '\n\n### $1. $2\n\n');
     text = text.replace(/(?:^|\n|\.\s*)(\d{1,2})\.\s*([A-Za-z\s/—–-]+(?:Engine|View|Support|Mode|Read-Along|Simplification|Memory|Analysis|Structure|Brief))/g, '\n\n### $1. $2\n\n');
 
-    // 5. Structure Table & Parameters Layouts into Formatted Bullet Lists
+    // 7. Structure Tables & Parameters Layouts into Clean Bullet Lists
     text = text.replace(/Parameter\s*Adjusts\s+Font\s*Choice\s*/gi, '\n\n### Reading Parameters\n\n• **Font Family**: Choice across standard & accessibility-oriented typefaces\n• **Font Size**: Independent of device / browser zoom\n• **Boldness / Weight**: Regular → Bold\n• **Letter Spacing**: Tracking between characters (+35%)\n• **Word Spacing**: Space between words (3.5x)\n• **Line Spacing**: Leading between lines (1.5x - 1.8x)\n• **Paragraph Spacing**: Space between paragraphs\n• **Text / Background Colour**: Custom pairs, including low-glare tints & high-contrast modes\n• **Alignment**: Left vs. Justified (avoids ragged rivers)\n• **Text Width**: Caps characters-per-line (60-70ch)\n• **Selective Highlighting**: Highlight sight-words, syllable breaks, or key terms\n\n');
     text = text.replace(/Layer\s*Technology\s*Why\s+Frontend\s*/gi, '\n\n• **Frontend**: React / Next.js 14 + Tailwind CSS (Responsive)\n• **PDF Handling**: pdf.js + coordinate-aware spatial reflow\n• **AI Models**: Gemini 1.5/2.0 Flash, OpenAI GPT-4o-mini, Sarvam AI\n• **Text-to-Speech**: Web Speech API + Sarvam Bulbul\n• **Translation**: Multilingual Indic translation (7 languages)\n• **Storage**: Offline-First LocalStorage + BYOK Security\n\n');
     text = text.replace(/Existing\s*approach\s*Where\s*it[’']s\s*strong\s*Where\s*AksharSetu\s*adds\s*to\s*it\s*/gi, '\n\n### What Makes AksharSetu Different\n\n• **Dyslexia Fonts Alone**: Calibrates font, spacing, color, and line width together.\n• **Microsoft Immersive Reader**: Works standalone on anything a user uploads, with individual calibration.\n• **Speechify**: Pairs TTS with visual formatting personalization + 7 native Indian languages.\n• **Browser Extensions**: Provides persistent profile calibration and memory across all devices.\n\n');
 
-    // 6. Universal Glued-Phrases Normalization Dictionary
-    const phrases: [RegExp, string][] = [
+    // 8. Universal Known Phrases & Ligature Separation
+    const universalPhraseReplacements: [RegExp, string][] = [
       [/\bworkingtitle—swapfreely·othernameideas:Lexi·FlexiRead·Sugam\b/gi, 'working title — swap freely · other name ideas: Lexi · FlexiRead · Sugam'],
       [/\bBridgingeverymindtothewrittenword\b/gi, 'Bridging every mind to the written word'],
       [/\bApersonalized,multilingualreadingcompanionforpeoplewithdyslexia\b/gi, 'A personalized, multilingual reading companion for people with dyslexia'],
@@ -182,11 +201,11 @@ export class PDFService {
       [/\bAI4Bharat—openlanguageAIforIndianlanguages\b/gi, 'AI4Bharat — open language AI for Indian languages'],
     ];
 
-    for (const [regex, replacement] of phrases) {
+    for (const [regex, replacement] of universalPhraseReplacements) {
       text = text.replace(regex, replacement);
     }
 
-    // 7. Universal Casing & Word Separation
+    // 9. Universal Boundary & Punctuation Space Normalization
     text = text
       .replace(/([a-z])([A-Z])/g, '$1 $2')
       .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
@@ -207,7 +226,7 @@ export class PDFService {
       .replace(/AI\s*[•●■*·]\s*4\.\s*Bharat/gi, 'AI4Bharat')
       .replace(/\bmeta-?\s*analysis\b/gi, 'meta-analysis');
 
-    // 8. Fix Decimals, Numbers, and URLs
+    // 10. Fix Broken Numbers, Decimals, Percentages & URLs
     text = text
       .replace(/(\d+)\.\s*\n*\s*(\d+)%/g, '$1.$2%')
       .replace(/(\d+)\.\s+(\d+)\s*(AA|%|[a-zA-Z])/g, '$1.$2 $3')
@@ -222,7 +241,7 @@ export class PDFService {
       .replace(/link\.\s*springer\.\s*com/gi, 'link.springer.com')
       .replace(/journals\.\s*lww\.\s*com/gi, 'journals.lww.com');
 
-    // 9. Format Paragraphs & Lists into Structured Markdown
+    // 11. Format Structured Paragraphs & Micro-Paragraphs
     const rawBlocks = text.split(/\n{2,}/);
     const formattedBlocks: string[] = [];
 
@@ -253,7 +272,7 @@ export class PDFService {
         .replace(/[ \t]{2,}/g, ' ')
         .trim();
 
-      // Break dense multi-sentence text walls into readable 2-to-3 sentence micro-paragraphs
+      // Break dense multi-sentence text walls (>300 chars or >3 sentences) into readable 2-to-3 sentence micro-paragraphs
       const sentences = cleanParagraph.match(/[^.!?।\n]+[.!?।\n]+["']?|\S+$/g);
       if (sentences && sentences.length > 3) {
         let chunk = '';
