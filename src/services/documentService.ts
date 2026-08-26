@@ -124,18 +124,15 @@ class DocumentService {
       }
     }
 
-    // 2. Fallback sample educational text if empty
+    // 2. Fallback text if file has no selectable text layer
     if (!extractedText || extractedText.trim().length === 0) {
       if ('textContent' in file && typeof file.textContent === 'string' && file.textContent.trim()) {
         extractedText = file.textContent;
       } else {
-        extractedText = `In natural biology, pollination is the vital ecological process by which pollen grains are transferred from the male anther of a flower to the female stigma.
-
-Insects like honeybees, bumblebees, and butterflies are among the most effective animal pollinators on Earth. As they forage for sweet floral nectar, tiny pollen particles adhere to their fuzzy bodies and are gently deposited onto neighboring blooms.
-
-Without healthy pollinator populations, more than one-third of our global food supply—including crunchy apples, sweet berries, almonds, and colorful garden vegetables—would fail to produce fruit. Protecting natural biodiversity and avoiding chemical insecticides ensures our agricultural systems stay resilient.`;
+        extractedText = `### ${cleanTitle}\n\nThis document has been extracted into your library. You can read with personalized typography, adjust contrast, change language, or use read-aloud playback.`;
       }
     }
+
 
     // 3. Paginate text into comfortable accessible pages (approx 180 words per page)
     const allParagraphs = extractedText.split(/\n\s*\n/).filter(p => p.trim().length > 0);
