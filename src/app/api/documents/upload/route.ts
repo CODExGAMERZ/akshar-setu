@@ -10,29 +10,48 @@ function coordinateAwarePageRenderer(pageData: any) {
   };
 
   return pageData.getTextContent(render_options).then(function (textContent: any) {
+    if (!textContent || !textContent.items || textContent.items.length === 0) {
+      return '';
+    }
+
+    // 1. Sort glyph items geometrically into visual reading order (top-to-bottom, left-to-right)
+    const items = textContent.items.slice().sort((a: any, b: any) => {
+      const yA = a.transform[5];
+      const yB = b.transform[5];
+      const xA = a.transform[4];
+      const xB = b.transform[4];
+
+      if (Math.abs(yA - yB) > 3.5) {
+        return yB - yA; // Higher Y coordinate comes first (PDF Y origin is bottom-left)
+      }
+      return xA - xB; // Same line: lower X coordinate comes first (left-to-right)
+    });
+
     let lastY: number | undefined;
     let lastX: number | undefined;
     let lastWidth = 0;
     let text = '';
 
-    for (const item of textContent.items) {
+    for (const item of items) {
       if (!item.str) continue;
       const currentX = item.transform[4];
       const currentY = item.transform[5];
+      const fontHeight = item.height || Math.abs(item.transform[0]) || 12;
+      const fontWidth = item.width || (item.str.length * (fontHeight * 0.48));
 
       if (lastY === undefined) {
         text += item.str;
-      } else if (Math.abs(currentY - lastY) > 3) {
-        // Vertical displacement: line break or paragraph break
-        if (Math.abs(currentY - lastY) > 14) {
+      } else if (Math.abs(currentY - lastY) > (fontHeight * 0.4)) {
+        // Vertical jump: check if it's a line break or paragraph break
+        if (Math.abs(currentY - lastY) > (fontHeight * 1.5)) {
           text += '\n\n' + item.str;
         } else {
           text += '\n' + item.str;
         }
       } else {
-        // Same line: check horizontal gap between glyph bounding boxes
+        // Same line: check horizontal gap
         const gap = currentX - (lastX! + lastWidth);
-        if (gap > 1.5 || (!text.endsWith(' ') && !item.str.startsWith(' '))) {
+        if (gap > 1.2 || (!text.endsWith(' ') && !item.str.startsWith(' '))) {
           text += ' ' + item.str;
         } else {
           text += item.str;
@@ -41,7 +60,7 @@ function coordinateAwarePageRenderer(pageData: any) {
 
       lastX = currentX;
       lastY = currentY;
-      lastWidth = item.width || (item.str.length * 4.5);
+      lastWidth = fontWidth;
     }
 
     return text;
