@@ -146,18 +146,20 @@ Vercel will build and launch your application globally!
 
 ---
 
-## 👥 Contributors & Team
+## 👥 Team & Contributors (6 Members)
 
-A huge thank you to the team building inclusive, accessible educational technology:
+A huge thank you to the 6-member team building inclusive, accessible educational technology for Smart India Hackathon:
 
-| Contributor | Role / Contribution | GitHub Profile |
-| :--- | :--- | :--- |
-| **Team Lead** | Full-Stack Architecture, AI & Next.js Integration | [@username](https://github.com) |
-| **Contributor** | UI/UX Design, Accessibility & Calibration Engine | [@username](https://github.com) |
-| **Contributor** | Multilingual Indic NLP & Translation Pipelines | [@username](https://github.com) |
-| **Contributor** | Assistive TTS & Speech Synthesis Integration | [@username](https://github.com) |
+| # | Name / Contributor | Role & Domain | GitHub Profile |
+| :-: | :--- | :--- | :--- |
+| 1 | **Team Lead** | Full-Stack Architecture, Next.js 14 & AI Integrations | [@CODExGAMERZ](https://github.com/CODExGAMERZ) |
+| 2 | **Core Contributor** | Frontend Engineering, Accessibility & UI Components | [@username](https://github.com) |
+| 3 | **Core Contributor** | Multilingual Indic NLP, Translation & Simplification | [@username](https://github.com) |
+| 4 | **Core Contributor** | Speech Synthesis, Audio Streaming & Karaoke Engine | [@username](https://github.com) |
+| 5 | **Core Contributor** | UI/UX Design, WCAG 2.1 AA Compliance & Visual Calibration | [@username](https://github.com) |
+| 6 | **Core Contributor** | QA, Document Parsing Engine & Cloud Infrastructure | [@username](https://github.com) |
 
-> *To add or modify contributors, update the table above or submit a pull request!*
+> *To update names, roles, or GitHub links, simply edit this table or share the details!*
 
 ---
 
