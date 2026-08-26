@@ -8,31 +8,35 @@ export const TabletHeader: React.FC = () => {
   const pathname = usePathname();
 
   const navItems = [
+    { label: 'Library', href: '/library', icon: 'local_library' },
     { label: 'Upload', href: '/upload', icon: 'upload_file' },
-    { label: 'History', href: '/history', icon: 'history' },
+    { label: 'Profile', href: '/profile', icon: 'tune' },
     { label: 'Settings', href: '/settings', icon: 'settings' },
   ];
 
   return (
-    <header className="hidden md:flex lg:hidden justify-between items-center px-margin-desktop w-full h-touch-target bg-background border-b-2 border-surface-container-highest sticky top-0 z-40">
-      <Link href="/" className="text-headline-md font-headline-md font-bold text-primary">
-        AksharSetu
+    <header className="hidden md:flex lg:hidden justify-between items-center px-6 w-full h-16 bg-background border-b-2 border-surface-container-highest sticky top-0 z-40">
+      <Link href="/" className="text-xl font-bold text-primary flex items-center gap-2">
+        <span className="material-symbols-outlined text-2xl text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>
+          auto_stories
+        </span>
+        <span>AksharSetu</span>
       </Link>
-      <nav className="flex gap-6 h-full items-center">
+      <nav className="flex gap-4 h-full items-center">
         {navItems.map((item) => {
-          const isActive = pathname === item.href || (item.href === '/upload' && pathname?.startsWith('/read'));
+          const isActive = pathname === item.href || (item.href === '/library' && pathname?.startsWith('/read'));
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-2 h-full px-2 text-label-md font-label-md transition-colors duration-200 ${
+              className={`flex items-center gap-2 h-full px-3 text-xs sm:text-sm font-bold transition-colors ${
                 isActive
-                  ? 'text-primary font-bold border-b-2 border-primary'
-                  : 'text-on-surface-variant font-medium hover:bg-surface-container-low'
+                  ? 'text-primary border-b-2 border-primary'
+                  : 'text-on-surface-variant hover:bg-surface-container-low'
               }`}
             >
               <span
-                className="material-symbols-outlined"
+                className="material-symbols-outlined text-lg"
                 style={{ fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0" }}
               >
                 {item.icon}
@@ -41,13 +45,6 @@ export const TabletHeader: React.FC = () => {
             </Link>
           );
         })}
-        <Link
-          href="/language"
-          aria-label="Language"
-          className="flex items-center gap-2 h-full px-2 text-on-surface-variant hover:bg-surface-container-low transition-colors duration-200"
-        >
-          <span className="material-symbols-outlined">language</span>
-        </Link>
       </nav>
     </header>
   );

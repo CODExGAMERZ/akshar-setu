@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useReader } from '@/context/ReaderContext';
-import { formatTextWithSyllables } from '@/lib/formatting/engine';
-import { SUPPORTED_LANGUAGES } from '@/lib/constants';
+import { formatTextWithSyllables, renderConfusableSpans } from '@/lib/formatting/engine';
+import { AVAILABLE_FONTS, SUPPORTED_LANGUAGES, THEME_PRESETS } from '@/lib/constants';
 import { PDFService } from '@/services/pdf.service';
+import { FontFamily, ThemePreset } from '@/types';
 
 export default function ReadingViewPage() {
   const params = useParams();
@@ -31,13 +33,28 @@ export default function ReadingViewPage() {
     stopReadAloud,
     pauseReadAloud,
     resumeReadAloud,
+    replayReadAloud,
     readingRulerY,
     setReadingRulerY,
     updateProfile,
+    focusMode,
+    setFocusMode,
+    confusableLettersEnabled,
+    setConfusableLettersEnabled,
+    confusablePairs,
+    toggleConfusablePair,
+    highlightMode,
+    setHighlightMode,
+    saveAsGlobalSettings,
+    saveForCurrentDocumentOnly,
   } = useReader();
 
   const [isSimplifyMenuOpen, setIsSimplifyMenuOpen] = useState(false);
   const [isLanguageMenuOpen, setIsLanguageMenuOpen] = useState(false);
+  const [isQuickSettingsOpen, setIsQuickSettingsOpen] = useState(false);
+  const [isSpeedMenuOpen, setIsSpeedMenuOpen] = useState(false);
+  const [saveBanner, setSaveBanner] = useState<string | null>(null);
+
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Sync route param id with current document
@@ -47,9 +64,9 @@ export default function ReadingViewPage() {
         setCurrentDocumentId(params.id);
       }
     }
-  }, [params?.id, currentDocument]);
+  }, [params?.id, currentDocument, setCurrentDocumentId]);
 
-  // Auto-follow audio voice: smoothly glide Reading Focus Ruler and auto-scroll viewport with speech
+  // Auto-follow audio voice: smoothly glide Reading Focus Ruler and auto-scroll viewport
   useEffect(() => {
     if (!isPlayingAudio || activeWordIndex < 0) return;
 
@@ -60,17 +77,15 @@ export default function ReadingViewPage() {
       const containerRect = containerRef.current.getBoundingClientRect();
       const wordRect = activeEl.getBoundingClientRect();
       const rulerHeight = profile.readingRulerHeight || 44;
-      const relativeY = wordRect.top - containerRect.top + (wordRect.height / 2) - (rulerHeight / 2);
+      const relativeY = wordRect.top - containerRect.top + wordRect.height / 2 - rulerHeight / 2;
 
-      // Smoothly update ruler position over current spoken line
       if (profile.readingRulerEnabled) {
         setReadingRulerY(Math.max(10, Math.min(relativeY, containerRect.height - rulerHeight - 10)));
       }
 
-      // Auto-scroll screen so currently spoken word is always kept in comfortable view
       const viewportHeight = window.innerHeight;
       const wordTop = wordRect.top;
-      if (wordTop < 120 || wordTop > viewportHeight - 140) {
+      if (wordTop < 120 || wordTop > viewportHeight - 160) {
         activeEl.scrollIntoView({
           behavior: 'smooth',
           block: 'center',
@@ -84,29 +99,70 @@ export default function ReadingViewPage() {
   const doc = currentDocument || documents[0];
   const currentLangObj = SUPPORTED_LANGUAGES.find((l) => l.code === activeLanguage);
 
+  // Reflow and format text
+  const rawText = viewMode === 'original' ? (doc?.originalText || '') : (doc?.processedText || '');
+  const formattedText = PDFService.cleanPDFText(rawText);
+  const paragraphs = formattedText.split('\n\n').filter((p) => p.trim().length > 0);
+
+  // Extract sentences and word offsets for previous/next sentence jumping
+  const sentences = useMemo(() => {
+    return formattedText.split(/(?<=[.!?\n])\s+/).map((s) => s.trim()).filter((s) => s.length > 0);
+  }, [formattedText]);
+
+  const totalSentences = Math.max(1, sentences.length);
+
+  const sentenceWordOffsets = useMemo(() => {
+    const offsets: number[] = [];
+    let currentOffset = 0;
+    sentences.forEach((sentence) => {
+      offsets.push(currentOffset);
+      const wordsInSentence = sentence.split(/\s+/).filter(Boolean).length;
+      currentOffset += wordsInSentence;
+    });
+    return offsets;
+  }, [sentences]);
+
+  const currentSentenceIndex = useMemo(() => {
+    if (activeWordIndex < 0) return 0;
+    let idx = 0;
+    for (let i = 0; i < sentenceWordOffsets.length; i++) {
+      if (activeWordIndex >= sentenceWordOffsets[i]) {
+        idx = i;
+      } else {
+        break;
+      }
+    }
+    return idx;
+  }, [activeWordIndex, sentenceWordOffsets]);
+
+  const handlePreviousSentence = () => {
+    const targetIdx = Math.max(0, currentSentenceIndex - 1);
+    const targetWordOffset = sentenceWordOffsets[targetIdx] || 0;
+    startReadAloud(targetWordOffset);
+  };
+
+  const handleNextSentence = () => {
+    const targetIdx = Math.min(sentences.length - 1, currentSentenceIndex + 1);
+    const targetWordOffset = sentenceWordOffsets[targetIdx] || 0;
+    startReadAloud(targetWordOffset);
+  };
+
   if (!doc) {
     return (
       <div className="w-full p-8 text-center">
         <p className="text-body-lg">Document not found.</p>
         <button
-          onClick={() => router.push('/upload')}
+          onClick={() => router.push('/library')}
           className="mt-4 px-6 py-2 bg-primary text-on-primary rounded-full font-bold touch-target"
         >
-          Go to upload
+          Go to Library
         </button>
       </div>
     );
   }
 
-  // Reflow and format text on the fly
-  const rawText = viewMode === 'original' ? doc.originalText : doc.processedText;
-  const formattedText = PDFService.cleanPDFText(rawText);
-  const paragraphs = formattedText.split('\n\n').filter((p) => p.trim().length > 0);
-
-  // Split text into words for live audio karaoke highlighting
   let globalWordCounter = 0;
 
-  // Handle Reading Ruler Mouse & Touch Tracking across mobile and desktop
   const updateRulerPosition = (clientY: number) => {
     if (profile.readingRulerEnabled && containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
@@ -115,17 +171,19 @@ export default function ReadingViewPage() {
     }
   };
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    updateRulerPosition(e.clientY);
+  const handleSaveGlobal = () => {
+    saveAsGlobalSettings();
+    setSaveBanner('Saved as global reading preferences.');
+    setTimeout(() => setSaveBanner(null), 3000);
   };
 
-  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
-    if (e.touches[0]) {
-      updateRulerPosition(e.touches[0].clientY);
-    }
+  const handleSaveDocOnly = () => {
+    saveForCurrentDocumentOnly();
+    setSaveBanner(`Saved preferences for "${doc.title}" only.`);
+    setTimeout(() => setSaveBanner(null), 3000);
   };
 
-  // Helper to render formatted line/paragraph with live karaoke words & markdown bold
+  // Helper to render formatted line/paragraph with live karaoke words & confusable letter cues
   const renderFormattedTokens = (rawContent: string) => {
     const rawTokens = rawContent.trim().split(/\s+/);
     let isInsideBold = false;
@@ -150,10 +208,18 @@ export default function ReadingViewPage() {
       const currentWordGlobalIndex = globalWordCounter++;
       const isCurrentKaraokeWord = isPlayingAudio && activeWordIndex === currentWordGlobalIndex;
 
-      const displayText =
-        profile.syllableHighlighting && viewMode === 'personalized'
-          ? formatTextWithSyllables(token)
-          : token;
+      let displayText: React.ReactNode = token;
+      if (profile.syllableHighlighting && viewMode === 'personalized') {
+        displayText = formatTextWithSyllables(token);
+      }
+
+      if (confusableLettersEnabled && viewMode === 'personalized') {
+        displayText = renderConfusableSpans(
+          typeof displayText === 'string' ? displayText : token,
+          true,
+          confusablePairs
+        );
+      }
 
       return (
         <span
@@ -168,8 +234,12 @@ export default function ReadingViewPage() {
     });
   };
 
+  // Heading scale: 1.5x body text font size
+  const headingFontSize = Math.round(profile.fontSize * 1.5);
+  const titleFontSize = Math.round(profile.fontSize * 1.75);
+
   return (
-    <div className="w-full pb-12 min-h-dvh overflow-x-hidden">
+    <div className={`w-full pb-36 min-h-dvh overflow-x-hidden ${focusMode ? 'focus-mode-active' : ''}`}>
       {/* Top Document Control Bar */}
       <div className="sticky top-0 bg-background/95 backdrop-blur-md z-30 border-b-2 border-surface-container-highest px-3 sm:px-6 md:px-8 py-2.5 sm:py-3.5 flex flex-wrap items-center justify-between gap-2.5 shadow-xs max-w-full">
         {/* Toggle Personalized vs Original */}
@@ -177,7 +247,7 @@ export default function ReadingViewPage() {
           <button
             type="button"
             onClick={() => setViewMode('personalized')}
-            className={`px-3 sm:px-5 py-1.5 rounded-full text-xs sm:text-label-md font-label-md font-bold transition-all flex items-center gap-1.5 h-touch-target ${
+            className={`px-3 sm:px-5 py-1.5 rounded-full text-xs sm:text-label-md font-bold transition-all flex items-center gap-1.5 touch-target ${
               viewMode === 'personalized'
                 ? 'bg-secondary-container text-on-secondary-container shadow-sm'
                 : 'text-on-surface-variant hover:bg-surface-container-high'
@@ -194,7 +264,7 @@ export default function ReadingViewPage() {
           <button
             type="button"
             onClick={() => setViewMode('original')}
-            className={`px-3 sm:px-5 py-1.5 rounded-full text-xs sm:text-label-md font-label-md font-bold transition-all h-touch-target ${
+            className={`px-3 sm:px-5 py-1.5 rounded-full text-xs sm:text-label-md font-bold transition-all touch-target ${
               viewMode === 'original'
                 ? 'bg-secondary-container text-on-secondary-container shadow-sm'
                 : 'text-on-surface-variant hover:bg-surface-container-high'
@@ -204,15 +274,45 @@ export default function ReadingViewPage() {
           </button>
         </div>
 
-        {/* Action Controls: Reading Ruler, Language Bar, Audio TTS, Simplify */}
+        {/* Action Controls: Focus Mode, Confusable Letters, Ruler, Language, Quick Adjust */}
         <div className="flex items-center gap-1.5 sm:gap-2.5 flex-wrap">
+          {/* Focus Mode Toggle */}
+          <button
+            type="button"
+            onClick={() => setFocusMode(!focusMode)}
+            className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors flex items-center gap-1 touch-target ${
+              focusMode
+                ? 'bg-primary text-on-primary border-primary shadow-sm'
+                : 'bg-surface-container border-outline-variant text-on-surface hover:bg-surface-container-high'
+            }`}
+            title="Toggle Distraction-Free Focus Mode"
+          >
+            <span className="material-symbols-outlined text-base">center_focus_strong</span>
+            <span className="hidden sm:inline">{focusMode ? 'Exit Focus' : 'Focus Mode'}</span>
+          </button>
+
+          {/* Confusable Letters Toggle */}
+          <button
+            type="button"
+            onClick={() => setConfusableLettersEnabled(!confusableLettersEnabled)}
+            className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors flex items-center gap-1 touch-target ${
+              confusableLettersEnabled
+                ? 'bg-secondary-container text-on-secondary-container border-primary shadow-sm'
+                : 'bg-surface-container border-outline-variant text-on-surface hover:bg-surface-container-high'
+            }`}
+            title="Toggle b/d, p/q, m/w highlighting"
+          >
+            <span className="material-symbols-outlined text-base">rule</span>
+            <span className="hidden md:inline">b/d Cues</span>
+          </button>
+
           {/* Reading Ruler Toggle */}
           <button
             type="button"
             onClick={() => updateProfile({ readingRulerEnabled: !profile.readingRulerEnabled })}
-            className={`px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-full text-xs font-bold border transition-colors flex items-center gap-1 h-touch-target ${
+            className={`px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-bold border transition-colors flex items-center gap-1 touch-target ${
               profile.readingRulerEnabled
-                ? 'bg-primary-container text-on-primary-container border-primary shadow-sm'
+                ? 'bg-secondary-container text-on-secondary-container border-primary shadow-sm'
                 : 'bg-surface-container border-outline-variant text-on-surface hover:bg-surface-container-high'
             }`}
             title="Toggle Reading Focus Ruler"
@@ -221,15 +321,16 @@ export default function ReadingViewPage() {
             <span className="hidden xs:inline">Ruler</span>
           </button>
 
-          {/* Language Selector Bar */}
+          {/* Language Selector Dropdown */}
           <div className="relative">
             <button
               type="button"
               onClick={() => {
                 setIsLanguageMenuOpen(!isLanguageMenuOpen);
                 setIsSimplifyMenuOpen(false);
+                setIsQuickSettingsOpen(false);
               }}
-              className="px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-full text-xs font-bold border border-outline-variant bg-surface-container text-on-surface hover:bg-surface-container-high transition-colors flex items-center gap-1 h-touch-target shadow-xs"
+              className="px-3 py-1.5 rounded-full text-xs font-bold border border-outline-variant bg-surface-container text-on-surface hover:bg-surface-container-high transition-colors flex items-center gap-1 touch-target shadow-xs"
               title="Change Language"
             >
               <span className="material-symbols-outlined text-base text-primary">language</span>
@@ -238,9 +339,9 @@ export default function ReadingViewPage() {
             </button>
 
             {isLanguageMenuOpen && (
-              <div className="absolute right-0 mt-2 w-56 bg-surface-container-lowest border-2 border-surface-container-highest rounded-xl shadow-xl p-2 z-50 animate-in fade-in zoom-in-95">
+              <div className="absolute right-0 mt-2 w-56 bg-surface-container-lowest border-2 border-surface-container-highest rounded-xl shadow-xl p-2 z-50 animate-in fade-in">
                 <p className="text-xs font-bold text-on-surface-variant px-3 py-1.5 border-b border-surface-container-highest mb-1">
-                  Select Language
+                  Select Language (11 Languages)
                 </p>
                 <div className="max-h-60 overflow-y-auto space-y-1">
                   {SUPPORTED_LANGUAGES.map((lang) => {
@@ -253,15 +354,15 @@ export default function ReadingViewPage() {
                           setIsLanguageMenuOpen(false);
                           await setLanguage(lang.code);
                         }}
-                        className={`w-full text-left px-3 py-2 rounded-lg text-sm font-bold flex items-center justify-between transition-colors ${
+                        className={`w-full text-left px-3 py-2 rounded-lg text-xs sm:text-sm font-bold flex items-center justify-between transition-colors ${
                           isSelected
                             ? 'bg-secondary-container text-on-secondary-container'
                             : 'hover:bg-surface-container text-on-surface'
                         }`}
                       >
                         <div>
-                          <span className="block text-sm leading-tight">{lang.nativeName}</span>
-                          <span className="block text-xs font-normal text-on-surface-variant">{lang.name}</span>
+                          <span className="block">{lang.nativeName}</span>
+                          <span className="block text-[11px] font-normal text-on-surface-variant">{lang.name}</span>
                         </div>
                         {isSelected && (
                           <span className="material-symbols-outlined text-sm text-primary">check</span>
@@ -274,104 +375,103 @@ export default function ReadingViewPage() {
             )}
           </div>
 
-          {/* Read Aloud (TTS Audio) */}
-          <div className="flex items-center bg-surface-container-lowest border border-surface-container-highest rounded-full px-2 py-1 gap-1 shadow-xs h-touch-target">
-            <button
-              type="button"
-              onClick={isPlayingAudio ? pauseReadAloud : startReadAloud}
-              className="flex items-center gap-1 px-3 py-1 bg-primary text-on-primary rounded-full text-xs font-bold hover:bg-on-primary-fixed-variant transition-colors"
-            >
-              <span className="material-symbols-outlined text-base">
-                {isPlayingAudio ? 'pause' : 'volume_up'}
-              </span>
-              <span>{isPlayingAudio ? 'Pause' : 'Listen'}</span>
-            </button>
-            {isPlayingAudio && (
-              <button
-                type="button"
-                onClick={stopReadAloud}
-                className="p-1 text-on-surface-variant hover:text-error rounded-full"
-                title="Stop reading"
-              >
-                <span className="material-symbols-outlined text-base">stop</span>
-              </button>
-            )}
-            <select
-              value={speechRate}
-              onChange={(e) => setSpeechRate(parseFloat(e.target.value))}
-              aria-label="Speech rate"
-              className="bg-transparent text-xs font-bold text-on-surface border-0 focus:ring-0 cursor-pointer py-0.5 pr-3 pl-1"
-            >
-              <option value="0.75">0.75x</option>
-              <option value="0.95">1.0x</option>
-              <option value="1.2">1.2x</option>
-            </select>
-          </div>
-
-          {/* Simplify text Dropdown */}
+          {/* Quick Adjust Sheet Button */}
           <div className="relative">
             <button
               type="button"
               onClick={() => {
-                setIsSimplifyMenuOpen(!isSimplifyMenuOpen);
+                setIsQuickSettingsOpen(!isQuickSettingsOpen);
                 setIsLanguageMenuOpen(false);
+                setIsSimplifyMenuOpen(false);
               }}
-              className="flex items-center gap-1 bg-primary text-on-primary px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs font-bold hover:bg-primary-container hover:text-on-primary-container transition-colors active:scale-95 shadow-xs h-touch-target"
+              className="p-2 rounded-full border border-outline-variant bg-surface-container text-on-surface hover:bg-surface-container-high touch-target"
+              title="Quick Typography Adjust"
             >
-              <span
-                className="material-symbols-outlined text-base"
-                style={{ fontVariationSettings: "'FILL' 1" }}
-              >
-                auto_awesome
-              </span>
-              <span>Simplify {simplifyLevel !== 'off' ? `(${simplifyLevel})` : ''}</span>
+              <span className="material-symbols-outlined text-lg">tune</span>
             </button>
 
-            {isSimplifyMenuOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-surface-container-lowest border-2 border-surface-container-highest rounded-xl shadow-lg p-2 z-50 animate-in fade-in zoom-in-95">
-                <p className="text-xs font-bold text-on-surface-variant px-3 py-1">AI Simplification</p>
-                {(['off', 'light', 'medium', 'heavy'] as const).map((lvl) => (
-                  <button
-                    key={lvl}
-                    type="button"
-                    onClick={() => {
-                      setSimplifyLevel(lvl);
-                      setIsSimplifyMenuOpen(false);
-                    }}
-                    className={`w-full text-left px-3 py-2 rounded-lg text-sm font-bold flex items-center justify-between capitalize transition-colors ${
-                      simplifyLevel === lvl
-                        ? 'bg-secondary-container text-on-secondary-container'
-                        : 'hover:bg-surface-container text-on-surface'
-                    }`}
+            {isQuickSettingsOpen && (
+              <div className="absolute right-0 mt-2 w-72 sm:w-80 bg-surface-container-lowest border-2 border-surface-container-highest rounded-2xl shadow-2xl p-4 z-50 animate-in fade-in space-y-4">
+                <div className="flex items-center justify-between border-b pb-2 border-surface-container-highest">
+                  <span className="text-xs font-bold text-primary flex items-center gap-1">
+                    <span className="material-symbols-outlined text-base">format_size</span>
+                    Quick Typography Controls
+                  </span>
+                  <Link href="/profile" className="text-[11px] text-primary underline font-bold">
+                    All Settings →
+                  </Link>
+                </div>
+
+                {/* Font Family Quick Select */}
+                <div>
+                  <label className="block text-[11px] font-bold text-on-surface mb-1">Font Family</label>
+                  <select
+                    value={profile.fontFamily}
+                    onChange={(e) => updateProfile({ fontFamily: e.target.value as FontFamily })}
+                    className="w-full p-2 bg-surface-bright border border-surface-container-highest rounded-lg text-xs font-bold text-on-surface"
                   >
-                    <span>{lvl}</span>
-                    {simplifyLevel === lvl && (
-                      <span className="material-symbols-outlined text-sm">check</span>
-                    )}
+                    {AVAILABLE_FONTS.map((f) => (
+                      <option key={f.id} value={f.id}>
+                        {f.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Font Size Quick Slider */}
+                <div>
+                  <div className="flex justify-between text-[11px] font-bold text-on-surface mb-1">
+                    <span>Font Size</span>
+                    <span className="text-primary">{profile.fontSize}px</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="16"
+                    max="32"
+                    value={profile.fontSize}
+                    onChange={(e) => updateProfile({ fontSize: parseInt(e.target.value, 10) })}
+                  />
+                </div>
+
+                {/* Per-Document Overrides Save Buttons */}
+                <div className="pt-2 border-t border-surface-container-highest flex flex-col gap-2">
+                  <button
+                    type="button"
+                    onClick={handleSaveDocOnly}
+                    className="w-full py-2 px-3 rounded-lg bg-secondary-container text-on-secondary-container text-xs font-bold hover:bg-primary/20 transition-colors"
+                  >
+                    Save for This Document Only
                   </button>
-                ))}
+                  <button
+                    type="button"
+                    onClick={handleSaveGlobal}
+                    className="w-full py-2 px-3 rounded-lg bg-primary text-on-primary text-xs font-bold hover:bg-on-primary-fixed-variant transition-colors"
+                  >
+                    Save as Global Settings
+                  </button>
+                </div>
               </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* Status banner when translating or simplifying */}
-      {(isTranslating || isSimplifying) && (
-        <div className="w-full bg-secondary-container/95 border-b border-primary/20 px-4 py-2 text-center text-xs font-bold text-on-secondary-container flex items-center justify-center gap-2 animate-in fade-in">
-          <span className="material-symbols-outlined text-sm animate-spin text-primary">progress_activity</span>
-          <span>{isTranslating ? `Translating document into ${currentLangObj?.nativeName || 'selected language'}...` : 'Simplifying document with AI...'}</span>
+      {/* Save Notification Banner */}
+      {saveBanner && (
+        <div className="w-full bg-secondary-container border-b border-primary/20 px-4 py-2 text-center text-xs font-bold text-on-secondary-container flex items-center justify-center gap-2 animate-in fade-in">
+          <span className="material-symbols-outlined text-sm text-primary">check_circle</span>
+          <span>{saveBanner}</span>
         </div>
       )}
 
       {/* Main Reading Canvas Container */}
-      <div className="w-full max-w-4xl mx-auto px-3 sm:px-6 md:px-8 py-4 sm:py-6 md:py-8 overflow-hidden">
+      <div className="w-full max-w-4xl mx-auto px-3 sm:px-6 md:px-8 py-6 sm:py-8 overflow-hidden">
         <div
           ref={containerRef}
-          onMouseMove={handleMouseMove}
-          onTouchMove={handleTouchMove}
-          onTouchStart={handleTouchMove}
-          className={`relative w-full max-w-full p-4 sm:p-6 md:p-8 select-text rounded-2xl shadow-sm border border-surface-container-highest transition-colors duration-200 overflow-hidden box-border ${
+          onMouseMove={(e) => updateRulerPosition(e.clientY)}
+          onTouchMove={(e) => e.touches[0] && updateRulerPosition(e.touches[0].clientY)}
+          onTouchStart={(e) => e.touches[0] && updateRulerPosition(e.touches[0].clientY)}
+          className={`relative w-full max-w-full p-5 sm:p-8 md:p-10 select-text rounded-3xl shadow-sm border border-surface-container-highest transition-all duration-200 overflow-hidden box-border ${
             isTranslating || isSimplifying ? 'opacity-60 pointer-events-none' : ''
           }`}
           style={{
@@ -383,7 +483,7 @@ export default function ReadingViewPage() {
             lineHeight: viewMode === 'personalized' ? profile.lineHeight : 1.5,
             letterSpacing: viewMode === 'personalized' ? `${profile.letterSpacing}em` : 'normal',
             wordSpacing: viewMode === 'personalized' ? `${profile.wordSpacing}em` : 'normal',
-            textAlign: viewMode === 'personalized' ? profile.textAlign : 'left',
+            textAlign: 'left', // Strictly left-aligned
             minHeight: '75dvh',
           }}
         >
@@ -405,14 +505,15 @@ export default function ReadingViewPage() {
           {/* Document Header */}
           <header className="mb-6 sm:mb-8 border-b pb-4 border-surface-container-highest max-w-full overflow-hidden">
             <h1
-              className="text-headline-md sm:text-headline-lg font-headline-md sm:font-headline-lg font-bold text-primary mb-2 break-words"
+              className="font-bold text-primary mb-2 break-words"
               style={{
+                fontSize: viewMode === 'personalized' ? `${titleFontSize}px` : '26px',
                 fontFamily: viewMode === 'personalized' ? profile.fontFamily : 'inherit',
               }}
             >
               {doc.title}
             </h1>
-            <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm text-on-surface-variant flex-wrap">
+            <div className="flex items-center gap-2 sm:gap-3 text-xs text-on-surface-variant flex-wrap">
               <span className="font-semibold">{doc.wordCount || 0} words</span>
               <span>•</span>
               <span className="px-2 py-0.5 rounded bg-surface-container text-xs font-bold">
@@ -423,7 +524,7 @@ export default function ReadingViewPage() {
             </div>
           </header>
 
-          {/* Formatted Semantic Paragraphs, Headings, and Lists with Karaoke */}
+          {/* Formatted Semantic Paragraphs, 1.5x Headings, and Lists with Karaoke */}
           <div
             className="reading-content w-full max-w-full overflow-hidden"
             style={{
@@ -442,8 +543,9 @@ export default function ReadingViewPage() {
                 return (
                   <h2
                     key={pIdx}
-                    className="text-lg sm:text-xl font-bold text-primary mt-6 mb-3 pt-2 border-b border-surface-container-highest flex items-center gap-1.5 flex-wrap max-w-full"
+                    className="font-bold text-primary mt-6 mb-3 pt-2 border-b border-surface-container-highest flex items-center gap-1.5 flex-wrap max-w-full"
                     style={{
+                      fontSize: viewMode === 'personalized' ? `${headingFontSize}px` : '20px',
                       fontFamily: viewMode === 'personalized' ? profile.fontFamily : 'inherit',
                     }}
                   >
@@ -492,6 +594,136 @@ export default function ReadingViewPage() {
           </div>
         </div>
       </div>
+
+      {/* Floating Audio Dock (Section 22 of Specification) */}
+      <aside
+        aria-label="Audio Reader Controls"
+        className="fixed bottom-4 sm:bottom-6 left-1/2 transform -translate-x-1/2 z-40 w-[94%] max-w-2xl bg-surface-bright/95 backdrop-blur-xl border-2 border-primary/20 shadow-2xl rounded-full p-2 sm:px-4 sm:py-2.5 flex items-center justify-between gap-2 sm:gap-4 transition-all animate-in fade-in slide-in-from-bottom-4"
+      >
+        {/* Left: Play / Pause Button + Replay */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            type="button"
+            onClick={isPlayingAudio ? pauseReadAloud : () => startReadAloud(sentenceWordOffsets[currentSentenceIndex] || 0)}
+            className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all shadow-sm active:scale-95 touch-target ${
+              isPlayingAudio
+                ? 'bg-primary text-on-primary ring-2 ring-primary/40'
+                : 'bg-primary text-on-primary hover:bg-on-primary-fixed-variant'
+            }`}
+          >
+            <span className="material-symbols-outlined text-lg sm:text-xl">
+              {isPlayingAudio ? 'pause' : 'volume_up'}
+            </span>
+            <span>{isPlayingAudio ? 'Pause' : 'Read Aloud'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={replayReadAloud}
+            className="p-2 sm:p-2.5 rounded-full text-on-surface-variant hover:text-primary hover:bg-surface-container transition-colors touch-target"
+            title="Replay from start"
+          >
+            <span className="material-symbols-outlined text-lg sm:text-xl">replay</span>
+          </button>
+        </div>
+
+        {/* Center: Sentence Navigation & Live Progress Status */}
+        <div className="flex items-center gap-1 sm:gap-2 justify-center flex-1 min-w-0">
+          {/* Previous Sentence Button */}
+          <button
+            type="button"
+            onClick={handlePreviousSentence}
+            disabled={currentSentenceIndex <= 0}
+            className="p-1.5 sm:p-2 rounded-full text-on-surface-variant hover:text-primary hover:bg-surface-container disabled:opacity-30 disabled:pointer-events-none transition-colors touch-target"
+            title="Previous sentence"
+          >
+            <span className="material-symbols-outlined text-lg sm:text-xl">skip_previous</span>
+          </button>
+
+          {/* Sentence Progress Text Badge */}
+          <div className="text-center px-1.5 sm:px-3 py-1 rounded-xl bg-surface-container-low border border-surface-container-highest min-w-[100px] sm:min-w-[130px]">
+            <div className="flex items-center justify-center gap-1.5">
+              {isPlayingAudio && (
+                <span className="flex h-2 w-2 relative">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                </span>
+              )}
+              <p className="text-[11px] sm:text-xs font-bold text-on-surface truncate">
+                Sentence {currentSentenceIndex + 1} of {totalSentences}
+              </p>
+            </div>
+            <div className="w-full bg-surface-container-highest rounded-full h-1 mt-1 overflow-hidden">
+              <div
+                className="bg-primary h-1 rounded-full transition-all duration-300"
+                style={{ width: `${Math.round(((currentSentenceIndex + 1) / totalSentences) * 100)}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Next Sentence Button */}
+          <button
+            type="button"
+            onClick={handleNextSentence}
+            disabled={currentSentenceIndex >= totalSentences - 1}
+            className="p-1.5 sm:p-2 rounded-full text-on-surface-variant hover:text-primary hover:bg-surface-container disabled:opacity-30 disabled:pointer-events-none transition-colors touch-target"
+            title="Next sentence"
+          >
+            <span className="material-symbols-outlined text-lg sm:text-xl">skip_next</span>
+          </button>
+        </div>
+
+        {/* Right: Speed Selector Pill & Stop */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setIsSpeedMenuOpen(!isSpeedMenuOpen)}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-surface-container text-on-surface text-xs font-bold border border-surface-container-highest hover:bg-surface-container-high transition-colors shadow-xs touch-target"
+              title="Change speech rate"
+            >
+              <span className="material-symbols-outlined text-sm text-primary">speed</span>
+              <span>{speechRate}×</span>
+            </button>
+
+            {isSpeedMenuOpen && (
+              <div className="absolute bottom-full right-0 mb-2 w-28 bg-surface-container-lowest border-2 border-surface-container-highest rounded-2xl shadow-xl p-1.5 z-50 animate-in fade-in space-y-1">
+                {[0.5, 0.75, 1.0, 1.25, 1.5, 2.0].map((rate) => (
+                  <button
+                    key={rate}
+                    type="button"
+                    onClick={() => {
+                      setSpeechRate(rate);
+                      setIsSpeedMenuOpen(false);
+                    }}
+                    className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center justify-between ${
+                      speechRate === rate
+                        ? 'bg-secondary-container text-on-secondary-container'
+                        : 'hover:bg-surface-container text-on-surface'
+                    }`}
+                  >
+                    <span>{rate}×</span>
+                    {speechRate === rate && (
+                      <span className="material-symbols-outlined text-xs text-primary">check</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {isPlayingAudio && (
+            <button
+              type="button"
+              onClick={stopReadAloud}
+              className="p-2 rounded-full text-on-surface-variant hover:text-error hover:bg-error/10 transition-colors touch-target"
+              title="Stop audio"
+            >
+              <span className="material-symbols-outlined text-lg sm:text-xl">stop</span>
+            </button>
+          )}
+        </div>
+      </aside>
     </div>
   );
 }

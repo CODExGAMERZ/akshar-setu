@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useReader } from '@/context/ReaderContext';
 import { PDFService } from '@/services/pdf.service';
-import { StorageService } from '@/lib/storage';
+import { DocumentService } from '@/services/document.service';
 
 export default function UploadPage() {
   const router = useRouter();
@@ -14,6 +14,8 @@ export default function UploadPage() {
   const [docTitle, setDocTitle] = useState<string>('');
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const [processingStage, setProcessingStage] = useState<string>('Uploading...');
+  const [processingPercent, setProcessingPercent] = useState<number>(0);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const handleStartReadingPasted = () => {
@@ -54,93 +56,93 @@ export default function UploadPage() {
     if (!file) return;
     setIsProcessing(true);
     setErrorMsg(null);
-
-    const formData = new FormData();
-    formData.append('file', file);
-
-    const apiConfig = StorageService.getApiConfig();
-    const userApiKey = apiConfig.geminiKey || apiConfig.openaiKey || apiConfig.groqKey || '';
+    setProcessingPercent(10);
+    setProcessingStage('Uploading document...');
 
     try {
-      const res = await fetch('/api/documents/upload', {
-        method: 'POST',
-        headers: {
-          'x-user-api-key': userApiKey,
-          'x-ai-provider': apiConfig.provider || 'server-default',
+      const digitised = await DocumentService.digitise(file, {
+        onStageChange: (stage) => {
+          if (stage === 'uploading') setProcessingStage('Uploading document...');
+          else if (stage === 'processing') setProcessingStage('Processing document...');
+          else if (stage === 'extracting') setProcessingStage('Extracting text...');
+          else if (stage === 'formatting') setProcessingStage('Formatting content...');
+          else if (stage === 'complete') setProcessingStage('Complete!');
         },
-        body: formData,
+        onProgress: (pct) => setProcessingPercent(pct),
       });
 
-      if (!res.ok) {
-        throw new Error('Failed to parse uploaded document');
-      }
-
-      const data = await res.json();
-      const newDoc = addDocument({
-        title: data.title || file.name.replace(/\.[^/.]+$/, ''),
-        originalText: data.text,
-        processedText: data.text,
-        language: data.language || 'en',
-        sourceFormat: 'pdf',
-        wordCount: data.text.trim().split(/\s+/).length,
-      });
       setIsProcessing(false);
-      router.push(`/read/${newDoc.id}`);
-    } catch {
-      // Fallback: Read as text with client-side formatting
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const rawContent = (e.target?.result as string) || 'Sample document content extracted from ' + file.name;
-        const cleanContent = PDFService.cleanPDFText(rawContent);
-        const detectedLang = PDFService.detectLanguage(cleanContent);
-
-        const newDoc = addDocument({
-          title: file.name.replace(/\.[^/.]+$/, ''),
-          originalText: cleanContent,
-          processedText: cleanContent,
-          language: detectedLang,
-          sourceFormat: 'pdf',
-          wordCount: cleanContent.trim().split(/\s+/).length,
-        });
-        setIsProcessing(false);
-        router.push(`/read/${newDoc.id}`);
-      };
-      reader.readAsText(file);
+      router.push(`/read/${digitised.id}`);
+    } catch (err) {
+      console.warn('Upload/OCR failed:', err);
+      setIsProcessing(false);
+      setErrorMsg('Failed to process document. Please try again.');
     }
   };
 
   return (
-    <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 md:px-8 py-6 sm:py-8">
+    <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 md:px-8 py-6 sm:py-10 pb-32">
       {/* Header */}
       <header className="mb-6 sm:mb-8">
-        <h2 className="text-headline-lg-mobile md:text-headline-lg font-headline-lg-mobile md:font-headline-lg text-on-background font-bold mb-3 sm:mb-4">
-          Upload material
-        </h2>
-        <div className="flex items-start gap-3 bg-surface-container-low p-4 rounded-xl border-2 border-surface-container-highest">
-          <span className="material-symbols-outlined text-secondary shrink-0 mt-0.5">info</span>
-          <p className="text-sm sm:text-body-md font-body-md text-on-surface-variant">
-            Your personalized settings are ready — anything you bring in will be automatically reflowed and formatted for comfortable reading.
+        <h1 className="text-2xl sm:text-4xl font-extrabold text-primary mb-2">
+          Upload Reading Material
+        </h1>
+        <div className="flex items-start gap-3 bg-surface-container-low p-4 rounded-2xl border-2 border-surface-container-highest">
+          <span className="material-symbols-outlined text-primary shrink-0 mt-0.5">auto_awesome</span>
+          <p className="text-xs sm:text-sm text-on-surface-variant leading-relaxed">
+            Your personalized settings are applied automatically — all uploaded PDFs, images, or notes will be cleaned, un-hyphenated, and reflowed for comfortable reading.
           </p>
         </div>
       </header>
 
       {errorMsg && (
-        <div className="mb-6 p-4 rounded-xl bg-error-container text-on-error-container font-medium text-sm flex items-center gap-2">
-          <span className="material-symbols-outlined">error</span>
-          {errorMsg}
+        <div className="mb-6 p-4 rounded-xl bg-error/10 border border-error/30 text-error font-medium text-xs sm:text-sm flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-lg">error</span>
+            <span>{errorMsg}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setErrorMsg(null)}
+            className="text-xs font-bold underline"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {/* Multistep Processing Modal Overlay */}
+      {isProcessing && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-surface-bright rounded-3xl p-8 max-w-md w-full border-2 border-surface-container-highest shadow-2xl flex flex-col items-center text-center animate-in fade-in zoom-in-95">
+            <div className="w-16 h-16 rounded-full bg-secondary-container text-primary flex items-center justify-center mb-4">
+              <span className="material-symbols-outlined text-3xl animate-spin">progress_activity</span>
+            </div>
+            <h3 className="text-lg font-bold text-on-surface mb-1">Digitising Document</h3>
+            <p className="text-xs text-on-surface-variant mb-6">{processingStage}</p>
+
+            {/* Progress Bar */}
+            <div className="w-full bg-surface-container-highest rounded-full h-2 overflow-hidden mb-2">
+              <div
+                className="bg-primary h-2 rounded-full transition-all duration-300 ease-out"
+                style={{ width: `${processingPercent}%` }}
+              />
+            </div>
+            <span className="text-[11px] font-bold text-primary">{processingPercent}%</span>
+          </div>
         </div>
       )}
 
       {/* Bento Grid for Upload Options */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
-        {/* Option 1: PDF Upload */}
-        <section className="flex flex-col bg-surface-bright rounded-xl border-2 border-surface-container-highest overflow-hidden focus-within:border-primary transition-colors shadow-sm">
+        {/* Option 1: PDF & Image Upload */}
+        <section className="flex flex-col bg-surface-bright rounded-2xl border-2 border-surface-container-highest overflow-hidden focus-within:border-primary transition-colors shadow-sm">
           <div className="p-5 sm:p-6 border-b-2 border-surface-container-highest bg-surface-container-lowest">
-            <h3 className="text-lg sm:text-headline-md font-headline-md text-on-background font-bold">
-              Upload a PDF
-            </h3>
-            <p className="text-xs sm:text-body-md font-body-md text-on-surface-variant mt-1 sm:mt-2">
-              Automatically cleans headers, un-hyphenates line splits, and reflows into comfortable paragraphs.
+            <h2 className="text-lg font-bold text-on-surface">
+              Upload PDF or Image
+            </h2>
+            <p className="text-xs text-on-surface-variant mt-1">
+              Supports PDF, PNG, JPG, JPEG with automated structure formatting.
             </p>
           </div>
           <div
@@ -158,14 +160,14 @@ export default function UploadPage() {
             }}
             className={`p-6 flex-grow flex flex-col items-center justify-center gap-4 min-h-[260px] sm:min-h-[300px] border-2 border-dashed rounded-xl m-4 sm:m-6 transition-colors cursor-pointer relative group ${
               isDragging
-                ? 'border-primary bg-surface-container-low'
+                ? 'border-primary bg-secondary-container'
                 : 'border-outline-variant bg-surface-container-lowest hover:bg-surface-container-low'
             }`}
           >
             <input
               type="file"
-              accept=".pdf,.txt,.doc,.docx"
-              aria-label="Upload PDF file"
+              accept=".pdf,.png,.jpg,.jpeg,.txt"
+              aria-label="Upload document file"
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
               onChange={(e) => {
                 if (e.target.files?.[0]) {
@@ -173,62 +175,57 @@ export default function UploadPage() {
                 }
               }}
             />
-            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container group-hover:scale-105 transition-transform">
-              <span className="material-symbols-outlined text-2xl sm:text-3xl">
-                {isProcessing ? 'hourglass_top' : 'picture_as_pdf'}
-              </span>
+            <div className="w-16 h-16 rounded-full bg-secondary-container text-primary flex items-center justify-center group-hover:scale-105 transition-transform">
+              <span className="material-symbols-outlined text-3xl">upload_file</span>
             </div>
             <div className="text-center">
-              <p className="text-sm sm:text-body-lg font-body-lg font-bold text-on-background">
-                {isProcessing ? 'Extracting & reflowing document...' : 'Drag and drop your file here'}
+              <p className="text-sm font-bold text-on-surface">
+                Drag and drop your file here
               </p>
-              <p className="text-xs sm:text-body-md font-body-md text-on-surface-variant mt-1">
-                or tap to browse from your device (PDF, TXT, DOCX)
+              <p className="text-xs text-on-surface-variant mt-1">
+                or tap to browse (PDF, PNG, JPG, TXT)
               </p>
             </div>
-            <div className="mt-2 sm:mt-4 inline-flex items-center justify-center px-6 py-2.5 sm:py-3 bg-surface-container border-2 border-surface-container-highest rounded-full text-xs sm:text-label-md font-label-md text-on-surface-variant group-hover:bg-surface-container-high transition-colors font-bold touch-target">
+            <div className="mt-2 inline-flex items-center justify-center px-6 py-2.5 bg-surface-container border border-surface-container-highest rounded-full text-xs font-bold text-on-surface group-hover:bg-surface-container-high transition-colors touch-target">
               Choose file
             </div>
           </div>
         </section>
 
         {/* Option 2: Paste Text */}
-        <section className="flex flex-col bg-surface-bright rounded-xl border-2 border-surface-container-highest overflow-hidden focus-within:border-primary transition-colors shadow-sm">
+        <section className="flex flex-col bg-surface-bright rounded-2xl border-2 border-surface-container-highest overflow-hidden focus-within:border-primary transition-colors shadow-sm">
           <div className="p-5 sm:p-6 border-b-2 border-surface-container-highest bg-surface-container-lowest">
             <div className="flex justify-between items-center">
-              <h3 className="text-lg sm:text-headline-md font-headline-md text-on-background font-bold">
-                Paste text
-              </h3>
+              <h2 className="text-lg font-bold text-on-surface">
+                Paste Text / Notes
+              </h2>
               <button
                 type="button"
                 onClick={handlePasteClipboard}
-                className="text-xs sm:text-label-md font-label-md text-primary hover:bg-surface-container p-2 rounded-lg transition-colors flex items-center gap-1.5 font-bold"
+                className="text-xs font-bold text-primary hover:bg-surface-container p-2 rounded-lg transition-colors flex items-center gap-1.5"
               >
                 <span className="material-symbols-outlined text-sm">content_paste</span>
                 Paste from clipboard
               </button>
             </div>
-            <p className="text-xs sm:text-body-md font-body-md text-on-surface-variant mt-1 sm:mt-2">
-              Auto-formats articles, chapters, emails, or class notes.
+            <p className="text-xs text-on-surface-variant mt-1">
+              Auto-formats articles, chapters, emails, or study notes.
             </p>
           </div>
-          <div className="p-5 sm:p-6 flex-grow flex flex-col gap-3 sm:gap-4">
+          <div className="p-5 sm:p-6 flex-grow flex flex-col gap-3">
             <input
               type="text"
               placeholder="Optional title (e.g. Science Chapter 4)"
               value={docTitle}
               onChange={(e) => setDocTitle(e.target.value)}
-              className="w-full p-3 bg-surface-container-lowest border-2 border-surface-container-highest rounded-xl text-sm sm:text-body-md font-medium text-on-background focus:ring-0 focus:border-primary focus:outline-none"
+              className="w-full p-3 bg-surface-container-lowest border-2 border-surface-container-highest rounded-xl text-sm font-medium text-on-background focus:ring-0 focus:border-primary"
             />
-            <label className="sr-only" htmlFor="text-input">
-              Paste your text here
-            </label>
             <textarea
               id="text-input"
               value={pastedText}
               onChange={(e) => setPastedText(e.target.value)}
               placeholder="Type or paste your text here..."
-              className="w-full h-full min-h-[160px] sm:min-h-[200px] p-4 bg-surface-container-lowest border-2 border-surface-container-highest rounded-xl text-sm sm:text-body-lg font-body-lg text-on-background focus:ring-0 focus:border-primary focus:outline-none resize-none placeholder:text-outline-variant"
+              className="w-full h-full min-h-[160px] sm:min-h-[200px] p-4 bg-surface-container-lowest border-2 border-surface-container-highest rounded-xl text-sm font-body-lg text-on-background focus:ring-0 focus:border-primary resize-none"
             />
             <div className="mt-1 flex flex-col sm:flex-row justify-between items-center gap-3">
               <span className="text-xs text-on-surface-variant self-start sm:self-center">
@@ -237,7 +234,7 @@ export default function UploadPage() {
               <button
                 type="button"
                 onClick={handleStartReadingPasted}
-                className="w-full sm:w-auto inline-flex items-center justify-center px-8 py-3 bg-primary text-on-primary rounded-full text-sm sm:text-label-md font-label-md font-bold hover:bg-on-primary-fixed-variant transition-colors min-h-[3rem] shadow-sm active:scale-95 touch-target"
+                className="w-full sm:w-auto inline-flex items-center justify-center px-8 py-3 bg-primary text-on-primary rounded-full text-xs sm:text-sm font-bold hover:bg-on-primary-fixed-variant transition-colors min-h-[3rem] shadow-sm active:scale-95 touch-target"
               >
                 Start reading
               </button>

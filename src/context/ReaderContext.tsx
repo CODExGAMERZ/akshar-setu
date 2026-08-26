@@ -1,9 +1,11 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { DocumentItem, ReadingProfile, SupportedLanguage } from '@/types';
+import { ConfusablePair, DocumentItem, HighlightMode, ReadingProfile, SupportedLanguage } from '@/types';
 import { DEFAULT_READING_PROFILE } from '@/lib/constants';
 import { StorageService } from '@/lib/storage';
+import { ProfileService } from '@/services/profile.service';
+import { DocumentService } from '@/services/document.service';
 import { TTSService } from '@/services/tts.service';
 import { TranslationService } from '@/services/translation.service';
 import { SimplificationService } from '@/services/simplification.service';
@@ -12,11 +14,14 @@ interface ReaderContextType {
   profile: ReadingProfile;
   updateProfile: (updates: Partial<ReadingProfile>) => void;
   resetProfile: () => void;
+  saveAsGlobalSettings: () => void;
+  saveForCurrentDocumentOnly: () => void;
   documents: DocumentItem[];
   currentDocument: DocumentItem | null;
   setCurrentDocumentId: (id: string) => void;
   addDocument: (doc: Omit<DocumentItem, 'id' | 'createdAt' | 'lastOpened' | 'progressPercent'>) => DocumentItem;
   deleteDocument: (id: string) => void;
+  renameDocument: (id: string, newTitle: string) => void;
   viewMode: 'personalized' | 'original';
   setViewMode: (mode: 'personalized' | 'original') => void;
   simplifyLevel: 'off' | 'light' | 'medium' | 'heavy';
@@ -30,13 +35,24 @@ interface ReaderContextType {
   activeWordIndex: number;
   speechRate: number;
   setSpeechRate: (rate: number) => void;
-  startReadAloud: () => void;
+  startReadAloud: (fromWordIndex?: number) => void;
   stopReadAloud: () => void;
   pauseReadAloud: () => void;
   resumeReadAloud: () => void;
+  replayReadAloud: () => void;
   // Focus & Reading Ruler
   readingRulerY: number;
   setReadingRulerY: (y: number) => void;
+  focusMode: boolean;
+  setFocusMode: (enabled: boolean) => void;
+  // Confusable Letters
+  confusableLettersEnabled: boolean;
+  setConfusableLettersEnabled: (enabled: boolean) => void;
+  confusablePairs: ConfusablePair[];
+  toggleConfusablePair: (pair: ConfusablePair) => void;
+  // Highlighting Mode
+  highlightMode: HighlightMode;
+  setHighlightMode: (mode: HighlightMode) => void;
 }
 
 const ReaderContext = createContext<ReaderContextType | undefined>(undefined);
@@ -54,22 +70,34 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // TTS State
   const [isPlayingAudio, setIsPlayingAudio] = useState<boolean>(false);
   const [activeWordIndex, setActiveWordIndex] = useState<number>(-1);
-  const [speechRate, setSpeechRate] = useState<number>(0.95);
+  const [speechRate, setSpeechRateState] = useState<number>(1.0);
 
-  // Ruler state
+  // Ruler & Focus State
   const [readingRulerY, setReadingRulerY] = useState<number>(200);
+  const [focusMode, setFocusModeState] = useState<boolean>(false);
+
+  // Confusable Letters & Highlighting
+  const [confusableLettersEnabled, setConfusableLettersEnabledState] = useState<boolean>(false);
+  const [confusablePairs, setConfusablePairs] = useState<ConfusablePair[]>(['bd', 'pq', 'mw']);
+  const [highlightMode, setHighlightModeState] = useState<HighlightMode>('word');
 
   // Load initial data on mount
   useEffect(() => {
-    const loadedProfile = StorageService.getProfile();
-    setProfileState(loadedProfile);
-
-    const loadedDocs = StorageService.getDocuments();
+    const loadedDocs = DocumentService.getDocuments();
     setDocuments(loadedDocs);
 
     const activeDocId = StorageService.getCurrentDocId();
     const doc = loadedDocs.find((d) => d.id === activeDocId) || loadedDocs[0] || null;
     setCurrentDocument(doc);
+
+    const loadedProfile = ProfileService.getEffectiveProfile(doc?.id);
+    setProfileState(loadedProfile);
+    setSpeechRateState(loadedProfile.ttsSpeed || 1.0);
+    setFocusModeState(loadedProfile.focusModeEnabled || false);
+    setConfusableLettersEnabledState(loadedProfile.confusableLettersEnabled || false);
+    setConfusablePairs(loadedProfile.confusablePairs || ['bd', 'pq', 'mw']);
+    setHighlightModeState(loadedProfile.highlightMode || 'word');
+
     if (doc) {
       setActiveLanguage(doc.language || 'en');
     }
@@ -78,14 +106,23 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const updateProfile = (updates: Partial<ReadingProfile>) => {
     setProfileState((prev) => {
       const updated = { ...prev, ...updates, updatedAt: new Date().toISOString() };
-      StorageService.saveProfile(updated);
+      ProfileService.saveProfile(updated);
       return updated;
     });
   };
 
+  const saveAsGlobalSettings = () => {
+    ProfileService.saveProfile(profile);
+  };
+
+  const saveForCurrentDocumentOnly = () => {
+    if (!currentDocument) return;
+    ProfileService.saveDocumentOverride(currentDocument.id, profile);
+  };
+
   const resetProfile = () => {
-    setProfileState(DEFAULT_READING_PROFILE);
-    StorageService.saveProfile(DEFAULT_READING_PROFILE);
+    const def = ProfileService.resetToDefaults();
+    setProfileState(def);
   };
 
   const setCurrentDocumentId = (id: string) => {
@@ -95,6 +132,14 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setActiveLanguage(doc.language || 'en');
       StorageService.setCurrentDocId(id);
       stopReadAloud();
+
+      // Load document-specific profile if exists
+      const effective = ProfileService.getEffectiveProfile(id);
+      setProfileState(effective);
+      setFocusModeState(effective.focusModeEnabled || false);
+      setConfusableLettersEnabledState(effective.confusableLettersEnabled || false);
+      setConfusablePairs(effective.confusablePairs || ['bd', 'pq', 'mw']);
+      setHighlightModeState(effective.highlightMode || 'word');
     }
   };
 
@@ -108,8 +153,8 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       lastOpened: 'Just now',
       progressPercent: 0,
     };
-    StorageService.saveDocument(newDoc);
-    const updatedList = StorageService.getDocuments();
+    DocumentService.saveDocument(newDoc);
+    const updatedList = DocumentService.getDocuments();
     setDocuments(updatedList);
     setCurrentDocument(newDoc);
     StorageService.setCurrentDocId(newDoc.id);
@@ -117,11 +162,20 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const deleteDocument = (id: string) => {
-    StorageService.deleteDocument(id);
-    const remaining = StorageService.getDocuments();
+    DocumentService.deleteDocument(id);
+    const remaining = DocumentService.getDocuments();
     setDocuments(remaining);
     if (currentDocument?.id === id) {
       setCurrentDocument(remaining[0] || null);
+    }
+  };
+
+  const renameDocument = (id: string, newTitle: string) => {
+    DocumentService.renameDocument(id, newTitle);
+    const updatedList = DocumentService.getDocuments();
+    setDocuments(updatedList);
+    if (currentDocument?.id === id) {
+      setCurrentDocument({ ...currentDocument, title: newTitle });
     }
   };
 
@@ -149,7 +203,7 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       };
 
       setCurrentDocument(updatedDoc);
-      StorageService.saveDocument(updatedDoc);
+      DocumentService.saveDocument(updatedDoc);
       setDocuments((prevDocs) =>
         prevDocs.map((d) => (d.id === updatedDoc.id ? updatedDoc : d))
       );
@@ -168,7 +222,6 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     if (!currentDocument) return;
 
     if (level === 'off') {
-      // Restore translation or original text
       setIsSimplifying(true);
       try {
         const baseText =
@@ -185,7 +238,7 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           processedText: baseText,
         };
         setCurrentDocument(updatedDoc);
-        StorageService.saveDocument(updatedDoc);
+        DocumentService.saveDocument(updatedDoc);
         setDocuments((prevDocs) =>
           prevDocs.map((d) => (d.id === updatedDoc.id ? updatedDoc : d))
         );
@@ -214,7 +267,7 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       };
 
       setCurrentDocument(updatedDoc);
-      StorageService.saveDocument(updatedDoc);
+      DocumentService.saveDocument(updatedDoc);
       setDocuments((prevDocs) =>
         prevDocs.map((d) => (d.id === updatedDoc.id ? updatedDoc : d))
       );
@@ -226,20 +279,29 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   // TTS Read Aloud Handlers
-  const startReadAloud = () => {
+  const startReadAloud = (fromWordIndex: number = 0) => {
     if (!currentDocument) return;
-    const textToRead = viewMode === 'original' ? currentDocument.originalText : currentDocument.processedText;
+    const fullText = viewMode === 'original' ? currentDocument.originalText : currentDocument.processedText;
+    const allWords = fullText.split(/\s+/).filter(Boolean);
+
+    let textToRead = fullText;
+    let baseOffset = 0;
+
+    if (fromWordIndex > 0 && fromWordIndex < allWords.length) {
+      textToRead = allWords.slice(fromWordIndex).join(' ');
+      baseOffset = fromWordIndex;
+    }
 
     setIsPlayingAudio(true);
-    setActiveWordIndex(0);
+    setActiveWordIndex(baseOffset);
 
     TTSService.speak(textToRead, activeLanguage, speechRate, {
       onStart: () => {
         setIsPlayingAudio(true);
-        setActiveWordIndex(0);
+        setActiveWordIndex(baseOffset);
       },
       onWord: (wordIdx) => {
-        setActiveWordIndex(wordIdx);
+        setActiveWordIndex(baseOffset + wordIdx);
       },
       onEnd: () => {
         setIsPlayingAudio(false);
@@ -269,17 +331,60 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setIsPlayingAudio(true);
   };
 
+  const replayReadAloud = () => {
+    stopReadAloud();
+    setTimeout(() => {
+      startReadAloud(0);
+    }, 100);
+  };
+
+  const setSpeechRate = (rate: number) => {
+    setSpeechRateState(rate);
+    updateProfile({ ttsSpeed: rate });
+    if (isPlayingAudio) {
+      // Re-trigger with new rate seamlessly from current word
+      const currentIdx = Math.max(0, activeWordIndex);
+      startReadAloud(currentIdx);
+    }
+  };
+
+  const setFocusMode = (enabled: boolean) => {
+    setFocusModeState(enabled);
+    updateProfile({ focusModeEnabled: enabled });
+  };
+
+  const setConfusableLettersEnabled = (enabled: boolean) => {
+    setConfusableLettersEnabledState(enabled);
+    updateProfile({ confusableLettersEnabled: enabled });
+  };
+
+  const toggleConfusablePair = (pair: ConfusablePair) => {
+    const updated = confusablePairs.includes(pair)
+      ? confusablePairs.filter((p) => p !== pair)
+      : [...confusablePairs, pair];
+    setConfusablePairs(updated);
+    updateProfile({ confusablePairs: updated });
+  };
+
+  const setHighlightMode = (mode: HighlightMode) => {
+    setHighlightModeState(mode);
+    updateProfile({ highlightMode: mode });
+  };
+
   return (
     <ReaderContext.Provider
       value={{
         profile,
         updateProfile,
         resetProfile,
+        saveAsGlobalSettings,
+        saveForCurrentDocumentOnly,
         documents,
         currentDocument,
         setCurrentDocumentId,
         addDocument,
         deleteDocument,
+        renameDocument,
         viewMode,
         setViewMode,
         simplifyLevel,
@@ -296,8 +401,17 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         stopReadAloud,
         pauseReadAloud,
         resumeReadAloud,
+        replayReadAloud,
         readingRulerY,
         setReadingRulerY,
+        focusMode,
+        setFocusMode,
+        confusableLettersEnabled,
+        setConfusableLettersEnabled,
+        confusablePairs,
+        toggleConfusablePair,
+        highlightMode,
+        setHighlightMode,
       }}
     >
       {children}

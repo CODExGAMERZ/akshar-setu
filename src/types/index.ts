@@ -1,45 +1,118 @@
 export type FontFamily =
-  | 'Open Sans'
+  // Purpose-built Dyslexia Fonts
+  | 'OpenDyslexic'
+  | 'Dyslexie'
+  | 'Read Regular'
+  | 'Sylexiad'
+  | 'Lexend'
+  | 'Atkinson Hyperlegible'
+  // Dyslexia-Friendly Standard Sans-Serif Fonts
   | 'Arial'
-  | 'Verdana'
   | 'Tahoma'
+  | 'Verdana'
+  | 'Trebuchet MS'
+  | 'Helvetica'
+  | 'Open Sans'
   | 'Century Gothic'
   | 'Calibri'
-  | 'OpenDyslexic'
-  | 'Lexend'
-  | 'Atkinson Hyperlegible';
+  | 'Comic Sans MS'
+  | 'Inter'
+  | 'Roboto'
+  | 'Lato'
+  | 'Nunito'
+  | 'Nunito Sans'
+  | 'Source Sans 3'
+  | 'Ubuntu'
+  | 'PT Sans';
+
+export type FontCategory =
+  | 'purpose-built'
+  | 'accessibility-focused'
+  | 'humanist-sans'
+  | 'standard-system';
+
+export interface FontOption {
+  id: FontFamily;
+  name: string;
+  category: FontCategory;
+  categoryLabel: string;
+  description: string;
+  cssFamily: string;
+}
 
 export type ThemePreset =
   | 'warm-cream'
+  | 'f4f1ea-cream'
+  | 'soft-yellow'
   | 'soft-peach'
   | 'mint-tint'
+  | 'soft-blue'
   | 'high-contrast-dark'
-  | 'standard-white';
+  | 'yellow-on-black'
+  | 'standard-white'
+  | 'custom';
+
+export type HighlightMode =
+  | 'none'
+  | 'word'
+  | 'phrase'
+  | 'line'
+  | 'selective';
+
+export type ConfusablePair = 'bd' | 'pq' | 'mw';
+
+export interface CustomThemeConfig {
+  backgroundColor: string;
+  textColor: string;
+  highlightColor: string;
+}
 
 export interface ReadingProfile {
   id: string;
   userId?: string | null;
   fontFamily: FontFamily;
-  fontSize: number; // in px, default 18
+  fontSize: number; // in px, minimum 16, default 18
   fontWeight: 400 | 700;
-  lineHeight: number; // multiplier e.g. 1.5, 1.8, 2.0
-  letterSpacing: number; // in em e.g. 0.03, 0.06, 0.1
-  wordSpacing: number; // in em e.g. 0.12, 0.25, 0.4
+  lineHeight: number; // multiplier e.g. 1.5, 1.6, 1.8, 2.0 (WCAG min 1.5)
+  letterSpacing: number; // in em e.g. 0.04, 0.12 (WCAG benchmark 0.12)
+  wordSpacing: number; // in em e.g. 0.16, 0.25 (WCAG benchmark 0.16)
   paragraphSpacing: number; // in px e.g. 24, 32, 40
   backgroundColor: string; // e.g. '#fbf9f8'
   textColor: string; // e.g. '#1b1c1c'
+  highlightColor?: string; // e.g. '#fdbe54'
   themePreset: ThemePreset;
-  textAlign: 'left' | 'justify';
-  maxCharactersPerLine: number; // 60-70 chars
+  customColors?: CustomThemeConfig;
+  textAlign: 'left'; // Strictly left-aligned
+  maxCharactersPerLine: number; // 45-100 chars (default 65)
   readingRulerEnabled: boolean;
-  readingRulerHeight: number; // in px e.g. 40
+  readingRulerHeight: number; // in px e.g. 44
   syllableHighlighting: boolean;
+  highlightMode: HighlightMode;
+  confusableLettersEnabled: boolean;
+  confusablePairs: ConfusablePair[];
+  focusModeEnabled: boolean;
   simplifyLevel: 'off' | 'light' | 'medium' | 'heavy';
+  preferredReadingLanguage: SupportedLanguage;
+  preferredAudioLanguage: SupportedLanguage;
+  ttsSpeed: number;
+  ttsVoice?: string;
+  documentSpecificOverrides?: Record<string, Partial<ReadingProfile>>;
   createdAt?: string;
   updatedAt?: string;
 }
 
-export type SupportedLanguage = 'en' | 'hi' | 'or' | 'bn' | 'ta' | 'te' | 'mr';
+export type SupportedLanguage =
+  | 'en'
+  | 'hi'
+  | 'bn'
+  | 'gu'
+  | 'kn'
+  | 'ml'
+  | 'mr'
+  | 'or'
+  | 'pa'
+  | 'ta'
+  | 'te';
 
 export interface LanguageOption {
   code: SupportedLanguage;
@@ -59,20 +132,37 @@ export interface DocumentItem {
     medium?: string;
     heavy?: string;
   };
-  translations?: Record<SupportedLanguage, string>;
+  translations?: Partial<Record<SupportedLanguage, string>>;
   language: SupportedLanguage;
-  sourceFormat: 'pdf' | 'text';
+  sourceFormat: 'pdf' | 'text' | 'image';
   lastOpened: string;
   progressPercent: number;
   wordCount: number;
   createdAt: string;
+  summary?: string;
+}
+
+export interface DocumentPage {
+  pageNumber: number;
+  text: string;
+  imageUrl?: string;
 }
 
 export interface CalibrationStep {
   id: number;
+  roundNumber: number;
   title: string;
   description: string;
-  variableTested: 'font' | 'lineSpacing' | 'letterSpacing' | 'wordSpacing' | 'backgroundColor' | 'contrast' | 'fontWeight' | 'textWidth';
+  variableTested:
+    | 'font'
+    | 'lineSpacing'
+    | 'letterSpacing'
+    | 'wordSpacing'
+    | 'backgroundColor'
+    | 'contrast'
+    | 'fontWeight'
+    | 'textWidth'
+    | 'highlighting';
   sampleA: {
     label: string;
     text: string;
@@ -85,6 +175,29 @@ export interface CalibrationStep {
     style: Partial<ReadingProfile>;
     icon: string;
   };
+}
+
+export interface CalibrationChoice {
+  stepId: number;
+  roundNumber?: number;
+  choice: 'A' | 'B' | 'SAME';
+}
+
+export interface CalibrationResult {
+  completedAt: string;
+  recommendedProfile: ReadingProfile;
+  choices: CalibrationChoice[];
+}
+
+export interface ReadingSession {
+  sessionId: string;
+  documentId: string;
+  startTime: string;
+  endTime?: string;
+  durationSeconds: number;
+  wordsRead: number;
+  readingSpeedWpm: number;
+  confusableLetterInteractionsCount: number;
 }
 
 export interface UserSession {

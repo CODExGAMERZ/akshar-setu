@@ -1,6 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Lexend:wght@300..700&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -12,6 +9,25 @@
   --safe-top: env(safe-area-inset-top, 0px);
 }
 
+/* Fallback definitions for specialty dyslexia fonts when locally present or served */
+@font-face {
+  font-family: 'Dyslexie';
+  src: local('Dyslexie'), local('Dyslexie Regular'), local('OpenDyslexic');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Read Regular';
+  src: local('Read Regular'), local('Lexend'), local('Open Sans');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Sylexiad';
+  src: local('Sylexiad'), local('OpenDyslexic'), local('Arial');
+  font-display: swap;
+}
+
 html {
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
@@ -20,7 +36,7 @@ html {
 body {
   background-color: var(--bg-main, #fbf9f8);
   color: var(--text-main, #1b1c1c);
-  font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Open Sans', Arial, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   margin: 0;
   padding: 0;
   min-height: 100vh;
@@ -54,13 +70,13 @@ body {
   font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }
 
-/* Touch targets: ensure min 48px on mobile */
+/* Touch targets: ensure min 48px on mobile for accessibility */
 .touch-target {
   min-height: 48px;
   min-width: 48px;
 }
 
-/* Accessible Range Slider styling matching Stitch design */
+/* Accessible Range Slider styling */
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
@@ -119,6 +135,57 @@ input[type="range"]:focus {
   outline: none;
 }
 
+/* Confusable letter visual emphasis markers */
+.confusable-b {
+  font-weight: 700;
+  text-decoration: underline 2px #064192;
+  text-underline-offset: 3px;
+  background-color: rgba(6, 65, 146, 0.08);
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+.confusable-d {
+  font-weight: 700;
+  text-decoration: overline 2px #c2410c;
+  background-color: rgba(194, 65, 12, 0.08);
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+.confusable-p {
+  font-weight: 700;
+  text-decoration: underline 2px #7e22ce;
+  text-underline-offset: 3px;
+  background-color: rgba(126, 34, 206, 0.08);
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+.confusable-q {
+  font-weight: 700;
+  text-decoration: overline 2px #047857;
+  background-color: rgba(4, 120, 87, 0.08);
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+.confusable-m {
+  font-weight: 700;
+  border-bottom: 2px dotted #0369a1;
+  background-color: rgba(3, 105, 161, 0.08);
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+.confusable-w {
+  font-weight: 700;
+  border-top: 2px dotted #b45309;
+  background-color: rgba(180, 83, 9, 0.08);
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
 /* Reading Ruler and Focus tracking */
 .reading-focus-highlight {
   background-color: #ffdead;
@@ -131,6 +198,7 @@ input[type="range"]:focus {
   transition: opacity 0.2s ease;
 }
 
+/* Multisensory Karaoke Word Highlight */
 .karaoke-active-word {
   background-color: #fdbe54 !important;
   color: #1b1c1c !important;
@@ -138,11 +206,27 @@ input[type="range"]:focus {
   box-shadow: 0 0 0 2px #7f5700;
 }
 
+.karaoke-active-phrase {
+  background-color: rgba(253, 190, 84, 0.45) !important;
+  border-radius: 0.25rem;
+}
+
+.karaoke-active-line {
+  background-color: rgba(253, 190, 84, 0.25) !important;
+  border-radius: 0.25rem;
+}
+
 /* Syllable break point visual indicator */
 .syllable-dot {
   opacity: 0.45;
   font-weight: bold;
   padding: 0 1px;
+}
+
+/* Focus Mode distraction reduction */
+.focus-mode-active {
+  max-width: 900px !important;
+  margin: 0 auto !important;
 }
 
 /* Custom Scrollbar */

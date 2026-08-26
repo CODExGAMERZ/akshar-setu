@@ -2,14 +2,14 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useReader } from '@/context/ReaderContext';
-import { AVAILABLE_FONTS, THEME_PRESETS } from '@/lib/constants';
-import { AIProvider, FontFamily, ThemePreset, UserApiConfig } from '@/types';
+import { AIProvider, UserApiConfig } from '@/types';
 import { StorageService } from '@/lib/storage';
 
 export default function SettingsPage() {
   const router = useRouter();
-  const { profile, updateProfile, resetProfile } = useReader();
+  const { profile, resetProfile } = useReader();
 
   // API Config (BYOK)
   const [apiConfig, setApiConfig] = useState<UserApiConfig>({
@@ -27,17 +27,6 @@ export default function SettingsPage() {
     setApiConfig(StorageService.getApiConfig());
   }, []);
 
-  const handleThemeChange = (presetId: ThemePreset) => {
-    const preset = THEME_PRESETS.find((t) => t.id === presetId);
-    if (preset) {
-      updateProfile({
-        themePreset: preset.id,
-        backgroundColor: preset.bg,
-        textColor: preset.text,
-      });
-    }
-  };
-
   const handleSaveApiConfig = (updates: Partial<UserApiConfig>) => {
     const updated = { ...apiConfig, ...updates };
     setApiConfig(updated);
@@ -49,65 +38,41 @@ export default function SettingsPage() {
   return (
     <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 md:px-8 py-6 sm:py-8 md:py-12 pb-32">
       {/* Header */}
-      <div className="mb-6 sm:mb-8">
-        <h2 className="text-headline-lg-mobile md:text-headline-lg font-headline-lg-mobile md:font-headline-lg text-primary font-bold mb-2">
-          Settings and Personalization
-        </h2>
-        <p className="text-sm sm:text-body-md font-body-md text-on-surface-variant">
-          Fine-tune your reading profile and AI services. All changes are saved automatically and applied to every document.
-        </p>
-      </div>
-
-      {/* Live Preview Card */}
-      <div className="mb-6 sm:mb-8 bg-surface-container-low rounded-xl p-4 sm:p-6 border-2 border-surface-container-highest shadow-sm">
-        <div className="flex items-center justify-between mb-3 sm:mb-4 flex-wrap gap-2">
-          <span className="text-xs sm:text-label-md font-label-md font-bold text-primary flex items-center gap-1.5">
-            <span className="material-symbols-outlined text-base sm:text-sm">visibility</span>
-            Live Reading Preview
-          </span>
-          <span className="text-xs text-on-surface-variant font-medium">
-            {profile.fontFamily} • {profile.fontSize}px • {profile.lineHeight}x
-          </span>
-        </div>
-        <div
-          className="p-4 sm:p-6 rounded-lg transition-all duration-200"
-          style={{
-            backgroundColor: profile.backgroundColor,
-            color: profile.textColor,
-            fontFamily: profile.fontFamily,
-            fontSize: `${profile.fontSize}px`,
-            fontWeight: profile.fontWeight,
-            lineHeight: profile.lineHeight,
-            letterSpacing: `${profile.letterSpacing}em`,
-            wordSpacing: `${profile.wordSpacing}em`,
-            textAlign: profile.textAlign,
-            maxWidth: `${profile.maxCharactersPerLine}ch`,
-            margin: '0 auto',
-            border: '1px solid rgba(0,0,0,0.06)',
-          }}
-        >
-          <p>
-            Reading is a bridge to knowledge. When text is adjusted to your unique visual comfort, reading becomes effortless, smooth, and enjoyable.
+      <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-4xl font-extrabold text-primary mb-1">
+            Application Settings
+          </h1>
+          <p className="text-xs sm:text-sm text-on-surface-variant">
+            Manage your AI engine configuration and reading environment preferences.
           </p>
         </div>
+
+        <Link
+          href="/profile"
+          className="px-5 py-2.5 rounded-full bg-primary text-on-primary font-bold text-xs sm:text-sm hover:bg-on-primary-fixed-variant transition-colors flex items-center gap-2 self-start sm:self-auto touch-target shadow-sm"
+        >
+          <span className="material-symbols-outlined text-base">tune</span>
+          Open Reading Profile
+        </Link>
       </div>
 
       <div className="space-y-6 sm:space-y-8">
         {/* Section 1: AI Translation & Simplification Engine (BYOK) */}
-        <section className="bg-surface-bright rounded-xl p-5 sm:p-6 md:p-8 border-2 border-surface-container-highest space-y-5 sm:space-y-6 shadow-sm">
+        <section className="bg-surface-bright rounded-2xl p-5 sm:p-6 md:p-8 border-2 border-surface-container-highest space-y-5 sm:space-y-6 shadow-sm">
           <div className="flex items-center justify-between flex-wrap gap-2">
-            <h3 className="text-lg sm:text-headline-md font-headline-md font-bold text-on-surface flex items-center gap-2">
+            <h2 className="text-lg sm:text-xl font-bold text-on-surface flex items-center gap-2">
               <span className="material-symbols-outlined text-primary">psychology</span>
-              AI Engine & API Keys (BYOK)
-            </h3>
+              AI Translation & Simplification Engine (BYOK)
+            </h2>
             <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-primary/10 text-primary flex items-center gap-1">
               <span className="material-symbols-outlined text-sm">lock</span>
               Zero Leakage Safe
             </span>
           </div>
 
-          <p className="text-xs sm:text-body-md text-on-surface-variant leading-relaxed">
-            Choose whether to use our pre-configured server-side AI or bring your own API key. Keys are safely kept server-side and never exposed to the client bundle.
+          <p className="text-xs sm:text-sm text-on-surface-variant leading-relaxed">
+            Choose whether to use our pre-configured server-side AI or bring your own API key. Keys are safely kept in your local storage and never leaked.
           </p>
 
           {/* Engine Choice Radios */}
@@ -132,7 +97,7 @@ export default function SettingsPage() {
                 )}
               </div>
               <p className="text-xs opacity-80 mt-2">
-                Uses our pre-configured backend endpoints. Fully managed, secure, and ready with zero setup.
+                Uses pre-configured backend endpoints. Fully managed, secure, and ready with zero setup.
               </p>
             </button>
 
@@ -163,9 +128,9 @@ export default function SettingsPage() {
 
           {/* BYOK Custom Key Form */}
           {apiConfig.useCustomKey && (
-            <div className="p-4 sm:p-5 bg-surface-container-low rounded-xl border-2 border-surface-container-highest space-y-4 animate-in fade-in zoom-in-95">
+            <div className="p-4 sm:p-5 bg-surface-container-low rounded-xl border-2 border-surface-container-highest space-y-4 animate-in fade-in">
               <div>
-                <label className="block text-xs sm:text-label-md font-label-md font-bold text-on-surface mb-2">
+                <label className="block text-xs font-bold text-on-surface mb-2">
                   Select AI Provider
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -196,9 +161,9 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              {/* Dynamic Key Input based on provider */}
+              {/* Dynamic Key Input */}
               <div>
-                <label className="block text-xs sm:text-label-md font-label-md font-bold text-on-surface mb-1.5">
+                <label className="block text-xs font-bold text-on-surface mb-1.5">
                   {apiConfig.provider === 'gemini' && 'Google Gemini API Key'}
                   {apiConfig.provider === 'openai' && 'OpenAI API Key'}
                   {apiConfig.provider === 'groq' && 'Groq API Key'}
@@ -237,9 +202,6 @@ export default function SettingsPage() {
                     </span>
                   </button>
                 </div>
-                <p className="text-[11px] text-on-surface-variant mt-1">
-                  Your key is securely stored in your local browser storage and only used during API calls.
-                </p>
               </div>
             </div>
           )}
@@ -252,274 +214,33 @@ export default function SettingsPage() {
           )}
         </section>
 
-        {/* Section 2: Typography */}
-        <section className="bg-surface-bright rounded-xl p-5 sm:p-6 md:p-8 border-2 border-surface-container-highest space-y-5 sm:space-y-6 shadow-sm">
-          <h3 className="text-lg sm:text-headline-md font-headline-md font-bold text-on-surface flex items-center gap-2">
-            <span className="material-symbols-outlined text-primary">text_fields</span>
-            Typography & Font
-          </h3>
-
-          {/* Font Family */}
+        {/* Section 2: Quick Links to Profile & Calibration */}
+        <section className="bg-surface-bright rounded-2xl p-5 sm:p-6 border-2 border-surface-container-highest flex flex-col sm:flex-row justify-between items-center gap-4 shadow-sm">
           <div>
-            <label className="block text-xs sm:text-label-md font-label-md font-bold text-on-surface mb-2">
-              Font Family
-            </label>
-            <select
-              value={profile.fontFamily}
-              onChange={(e) => updateProfile({ fontFamily: e.target.value as FontFamily })}
-              className="w-full p-3.5 bg-surface-container-lowest border-2 border-surface-container-highest rounded-xl text-sm sm:text-body-md font-medium text-on-background focus:border-primary focus:ring-0 cursor-pointer touch-target"
+            <h3 className="font-bold text-sm sm:text-base text-on-surface">
+              Visual Preferences & 22 Dyslexia Fonts
+            </h3>
+            <p className="text-xs text-on-surface-variant">
+              Adjust character spacing, line height (min 1.5×), and anti-glare color palettes.
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Link
+              href="/profile"
+              className="px-5 py-2.5 rounded-full bg-primary text-on-primary font-bold text-xs hover:bg-on-primary-fixed-variant transition-colors flex items-center gap-1.5 touch-target"
             >
-              {AVAILABLE_FONTS.map((font) => (
-                <option key={font.id} value={font.id}>
-                  {font.name} — {font.description}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Font Size Slider */}
-          <div>
-            <div className="flex justify-between items-center mb-2">
-              <label className="text-xs sm:text-label-md font-label-md font-bold text-on-surface">
-                Font Size
-              </label>
-              <span className="text-sm sm:text-body-md font-bold text-primary">{profile.fontSize}px</span>
-            </div>
-            <input
-              type="range"
-              min="14"
-              max="32"
-              step="1"
-              value={profile.fontSize}
-              onChange={(e) => updateProfile({ fontSize: parseInt(e.target.value, 10) })}
-              className="w-full"
-            />
-            <div className="flex justify-between text-xs text-on-surface-variant mt-1">
-              <span>14px</span>
-              <span>18px (Standard)</span>
-              <span>32px</span>
-            </div>
-          </div>
-
-          {/* Font Weight */}
-          <div>
-            <label className="block text-xs sm:text-label-md font-label-md font-bold text-on-surface mb-2">
-              Contrast Weight
-            </label>
-            <div className="grid grid-cols-2 gap-3 sm:gap-4">
-              <button
-                type="button"
-                onClick={() => updateProfile({ fontWeight: 400 })}
-                className={`py-3 px-4 rounded-xl border-2 font-label-md text-xs sm:text-label-md transition-all touch-target ${
-                  profile.fontWeight === 400
-                    ? 'border-primary bg-secondary-container text-on-secondary-container font-bold shadow-sm'
-                    : 'border-surface-container-highest bg-surface-container-lowest text-on-surface hover:bg-surface-container-low'
-                }`}
-              >
-                Regular (400)
-              </button>
-              <button
-                type="button"
-                onClick={() => updateProfile({ fontWeight: 700 })}
-                className={`py-3 px-4 rounded-xl border-2 font-label-md text-xs sm:text-label-md transition-all touch-target ${
-                  profile.fontWeight === 700
-                    ? 'border-primary bg-secondary-container text-on-secondary-container font-bold shadow-sm'
-                    : 'border-surface-container-highest bg-surface-container-lowest text-on-surface hover:bg-surface-container-low'
-                }`}
-              >
-                Bold (700)
-              </button>
-            </div>
-          </div>
-        </section>
-
-        {/* Section 3: Spacing & Rhythm */}
-        <section className="bg-surface-bright rounded-xl p-5 sm:p-6 md:p-8 border-2 border-surface-container-highest space-y-5 sm:space-y-6 shadow-sm">
-          <h3 className="text-lg sm:text-headline-md font-headline-md font-bold text-on-surface flex items-center gap-2">
-            <span className="material-symbols-outlined text-primary">format_line_spacing</span>
-            Spacing & Rhythm
-          </h3>
-
-          {/* Line Spacing */}
-          <div>
-            <div className="flex justify-between items-center mb-2">
-              <label className="text-xs sm:text-label-md font-label-md font-bold text-on-surface">
-                Line Spacing (Leading)
-              </label>
-              <span className="text-sm sm:text-body-md font-bold text-primary">{profile.lineHeight}x</span>
-            </div>
-            <input
-              type="range"
-              min="1.2"
-              max="2.4"
-              step="0.1"
-              value={profile.lineHeight}
-              onChange={(e) => updateProfile({ lineHeight: parseFloat(e.target.value) })}
-              className="w-full"
-            />
-          </div>
-
-          {/* Letter Spacing */}
-          <div>
-            <div className="flex justify-between items-center mb-2">
-              <label className="text-xs sm:text-label-md font-label-md font-bold text-on-surface">
-                Letter Spacing (Tracking)
-              </label>
-              <span className="text-sm sm:text-body-md font-bold text-primary">{profile.letterSpacing}em</span>
-            </div>
-            <input
-              type="range"
-              min="0"
-              max="0.12"
-              step="0.01"
-              value={profile.letterSpacing}
-              onChange={(e) => updateProfile({ letterSpacing: parseFloat(e.target.value) })}
-              className="w-full"
-            />
-          </div>
-
-          {/* Word Spacing */}
-          <div>
-            <div className="flex justify-between items-center mb-2">
-              <label className="text-xs sm:text-label-md font-label-md font-bold text-on-surface">
-                Word Spacing
-              </label>
-              <span className="text-sm sm:text-body-md font-bold text-primary">{profile.wordSpacing}em</span>
-            </div>
-            <input
-              type="range"
-              min="0"
-              max="0.40"
-              step="0.02"
-              value={profile.wordSpacing}
-              onChange={(e) => updateProfile({ wordSpacing: parseFloat(e.target.value) })}
-              className="w-full"
-            />
-          </div>
-
-          {/* Max Characters Per Line */}
-          <div>
-            <div className="flex justify-between items-center mb-2">
-              <label className="text-xs sm:text-label-md font-label-md font-bold text-on-surface">
-                Line Length Cap (CPL)
-              </label>
-              <span className="text-sm sm:text-body-md font-bold text-primary">{profile.maxCharactersPerLine} chars</span>
-            </div>
-            <input
-              type="range"
-              min="45"
-              max="85"
-              step="5"
-              value={profile.maxCharactersPerLine}
-              onChange={(e) => updateProfile({ maxCharactersPerLine: parseInt(e.target.value, 10) })}
-              className="w-full"
-            />
-          </div>
-        </section>
-
-        {/* Section 4: Colors & Accessibility Tints */}
-        <section className="bg-surface-bright rounded-xl p-5 sm:p-6 md:p-8 border-2 border-surface-container-highest space-y-5 sm:space-y-6 shadow-sm">
-          <h3 className="text-lg sm:text-headline-md font-headline-md font-bold text-on-surface flex items-center gap-2">
-            <span className="material-symbols-outlined text-primary">palette</span>
-            Color & Glare Reduction
-          </h3>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
-            {THEME_PRESETS.map((t) => {
-              const isSelected = profile.themePreset === t.id;
-              return (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => handleThemeChange(t.id)}
-                  className={`p-4 rounded-xl border-2 text-left transition-all flex flex-col justify-between min-h-[90px] touch-target ${
-                    isSelected
-                      ? 'border-primary ring-2 ring-primary/30 shadow-md'
-                      : 'border-surface-container-highest hover:border-outline-variant'
-                  }`}
-                  style={{ backgroundColor: t.bg, color: t.text }}
-                >
-                  <span className="font-bold text-sm">{t.name}</span>
-                  <span className="text-xs opacity-80 mt-1">{t.description}</span>
-                </button>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* Section 5: Reading Tools & Helpers */}
-        <section className="bg-surface-bright rounded-xl p-5 sm:p-6 md:p-8 border-2 border-surface-container-highest space-y-5 sm:space-y-6 shadow-sm">
-          <h3 className="text-lg sm:text-headline-md font-headline-md font-bold text-on-surface flex items-center gap-2">
-            <span className="material-symbols-outlined text-primary">tune</span>
-            Reading Assistance Tools
-          </h3>
-
-          {/* Reading Focus Ruler Toggle */}
-          <div className="flex items-center justify-between p-4 bg-surface-container-lowest rounded-xl border border-surface-container-highest gap-4">
-            <div>
-              <p className="font-label-md text-xs sm:text-label-md font-bold text-on-surface">Digital Reading Ruler</p>
-              <p className="text-xs sm:text-body-md text-on-surface-variant mt-0.5">
-                Highlight the active line and softly dim surrounding lines to avoid visual crowding.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => updateProfile({ readingRulerEnabled: !profile.readingRulerEnabled })}
-              className={`w-14 h-8 flex items-center rounded-full p-1 transition-colors shrink-0 ${
-                profile.readingRulerEnabled ? 'bg-primary' : 'bg-surface-container-highest'
-              }`}
+              <span>Edit Profile</span>
+              <span className="material-symbols-outlined text-sm">arrow_forward</span>
+            </Link>
+            <Link
+              href="/calibrate"
+              className="px-5 py-2.5 rounded-full bg-surface-container-high text-on-surface font-bold text-xs hover:bg-surface-container-highest transition-colors flex items-center gap-1.5 touch-target"
             >
-              <div
-                className={`bg-white w-6 h-6 rounded-full shadow-md transform transition-transform ${
-                  profile.readingRulerEnabled ? 'translate-x-6' : 'translate-x-0'
-                }`}
-              />
-            </button>
-          </div>
-
-          {/* Syllable Highlight Toggle */}
-          <div className="flex items-center justify-between p-4 bg-surface-container-lowest rounded-xl border border-surface-container-highest gap-4">
-            <div>
-              <p className="font-label-md text-xs sm:text-label-md font-bold text-on-surface">Syllable Breakpoints</p>
-              <p className="text-xs sm:text-body-md text-on-surface-variant mt-0.5">
-                Insert subtle visual middle-dots (·) inside multi-syllable words to ease phonics decoding.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => updateProfile({ syllableHighlighting: !profile.syllableHighlighting })}
-              className={`w-14 h-8 flex items-center rounded-full p-1 transition-colors shrink-0 ${
-                profile.syllableHighlighting ? 'bg-primary' : 'bg-surface-container-highest'
-              }`}
-            >
-              <div
-                className={`bg-white w-6 h-6 rounded-full shadow-md transform transition-transform ${
-                  profile.syllableHighlighting ? 'translate-x-6' : 'translate-x-0'
-                }`}
-              />
-            </button>
+              <span>Recalibrate</span>
+              <span className="material-symbols-outlined text-sm">autorenew</span>
+            </Link>
           </div>
         </section>
-
-        {/* Section 6: Calibration & Reset */}
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-2">
-          <button
-            type="button"
-            onClick={() => router.push('/calibrate')}
-            className="flex-1 py-3.5 px-6 rounded-full bg-primary text-on-primary font-label-md text-sm sm:text-label-md font-bold hover:bg-on-primary-fixed-variant transition-colors flex items-center justify-center gap-2 shadow-sm touch-target"
-          >
-            <span className="material-symbols-outlined text-lg">autorenew</span>
-            Re-run Calibration Test
-          </button>
-          <button
-            type="button"
-            onClick={resetProfile}
-            className="py-3.5 px-6 rounded-full bg-surface-container-high text-on-surface font-label-md text-sm sm:text-label-md font-bold hover:bg-surface-container-highest transition-colors flex items-center justify-center gap-2 touch-target"
-          >
-            <span className="material-symbols-outlined text-lg">restart_alt</span>
-            Reset to Default
-          </button>
-        </div>
       </div>
     </div>
   );

@@ -51,11 +51,15 @@ export class TTSService {
     const map: Record<SupportedLanguage, string> = {
       en: 'en-IN',
       hi: 'hi-IN',
-      or: 'or-IN',
       bn: 'bn-IN',
+      gu: 'gu-IN',
+      kn: 'kn-IN',
+      ml: 'ml-IN',
+      mr: 'mr-IN',
+      or: 'or-IN',
+      pa: 'pa-IN',
       ta: 'ta-IN',
       te: 'te-IN',
-      mr: 'mr-IN',
     };
     return map[lang] || 'en-IN';
   }

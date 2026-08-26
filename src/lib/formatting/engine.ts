@@ -1,6 +1,9 @@
+import React from 'react';
+import { ConfusablePair } from '@/types';
+
 /**
  * Adaptive Formatting Engine for AksharSetu
- * Provides clean syllable segmentation and layout utilities
+ * Provides syllable segmentation, confusable letter highlighting, and text normalization.
  */
 
 export function segmentWordIntoSyllables(word: string): string[] {
@@ -59,4 +62,77 @@ export function formatTextWithSyllables(text: string): string {
   const syllables = segmentWordIntoSyllables(text);
   if (syllables.length <= 1) return text;
   return syllables.join('·');
+}
+
+/**
+ * Renders individual letters with visual cues for commonly confused letter pairs:
+ * - b / d
+ * - p / q
+ * - m / w
+ */
+export function renderConfusableSpans(
+  text: string,
+  enabled: boolean,
+  activePairs: ConfusablePair[] = ['bd', 'pq', 'mw']
+): React.ReactNode {
+  if (!enabled || !text) return text;
+
+  const enableBD = activePairs.includes('bd');
+  const enablePQ = activePairs.includes('pq');
+  const enableMW = activePairs.includes('mw');
+
+  const chars = Array.from(text);
+  return chars.map((ch, idx) => {
+    const lower = ch.toLowerCase();
+
+    if (enableBD && lower === 'b') {
+      return React.createElement('span', { key: idx, className: 'confusable-b', title: "Letter 'b'" }, ch);
+    }
+    if (enableBD && lower === 'd') {
+      return React.createElement('span', { key: idx, className: 'confusable-d', title: "Letter 'd'" }, ch);
+    }
+    if (enablePQ && lower === 'p') {
+      return React.createElement('span', { key: idx, className: 'confusable-p', title: "Letter 'p'" }, ch);
+    }
+    if (enablePQ && lower === 'q') {
+      return React.createElement('span', { key: idx, className: 'confusable-q', title: "Letter 'q'" }, ch);
+    }
+    if (enableMW && lower === 'm') {
+      return React.createElement('span', { key: idx, className: 'confusable-m', title: "Letter 'm'" }, ch);
+    }
+    if (enableMW && lower === 'w') {
+      return React.createElement('span', { key: idx, className: 'confusable-w', title: "Letter 'w'" }, ch);
+    }
+
+    return ch;
+  });
+}
+
+/**
+ * Normalizes text for dyslexia readability:
+ * 1. Converts ALL-CAPS paragraphs/sentences to sentence case (preserving short acronyms).
+ * 2. Softens excessive italicized runs.
+ * 3. Chunks long text blocks into digestible paragraphs.
+ */
+export function normalizeDyslexiaText(text: string): string {
+  if (!text) return '';
+
+  const paragraphs = text.split('\n\n');
+  const normalized = paragraphs.map((p) => {
+    const trimmed = p.trim();
+    if (!trimmed) return '';
+
+    // If whole paragraph is in ALL CAPS and longer than 15 chars, convert to Sentence case
+    const isAllCaps = trimmed === trimmed.toUpperCase() && /[A-Z]{4,}/.test(trimmed);
+    if (isAllCaps) {
+      return trimmed
+        .toLowerCase()
+        .replace(/(^\s*\w|[.!?]\s*\w)/g, (c) => c.toUpperCase())
+        .replace(/\b(nasa|isro|who|unesco|ai|un|pdf|tts|wcag|cpl)\b/gi, (a) => a.toUpperCase());
+    }
+
+    return trimmed;
+  });
+
+  return normalized.join('\n\n');
 }

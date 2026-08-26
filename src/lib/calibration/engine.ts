@@ -1,193 +1,174 @@
-import { CalibrationStep, ReadingProfile } from '@/types';
-import { DEFAULT_READING_PROFILE } from '../constants';
+import { CalibrationChoice, CalibrationResult, CalibrationStep, ReadingProfile } from '@/types';
+import { DEFAULT_READING_PROFILE } from '@/lib/constants';
+import { StorageService } from '@/lib/storage';
 
-export const CALIBRATION_STEPS: CalibrationStep[] = [
+export type { CalibrationChoice, CalibrationResult, CalibrationStep };
+
+export const CALIBRATION_ROUNDS_DATA: CalibrationStep[] = [
+  // Round 1: Typography Selection
   {
     id: 1,
-    title: 'Font Letterforms',
-    description: 'Which font makes the letter shapes clearer for you?',
+    roundNumber: 1,
+    title: 'Round 1: Letterform Clarity',
+    description: 'Which font makes individual letter shapes and characters distinct without confusion?',
     variableTested: 'font',
     sampleA: {
-      label: 'Sample A (Open Sans)',
-      text: 'The quick brown fox jumps over the lazy dog. Clear shapes and open apertures help letters stay distinct.',
-      style: { fontFamily: 'Open Sans', fontWeight: 400 },
+      label: 'Sample A (OpenDyslexic)',
+      text: 'The quick brown fox jumps over the lazy dog. Heavy bottoms and open counters prevent letter flipping and rotation.',
+      style: { fontFamily: 'OpenDyslexic', fontWeight: 400 },
       icon: 'font_download',
     },
     sampleB: {
-      label: 'Sample B (Lexend)',
-      text: 'The quick brown fox jumps over the lazy dog. Clear shapes and open apertures help letters stay distinct.',
-      style: { fontFamily: 'Lexend', fontWeight: 400 },
-      icon: 'text_format',
+      label: 'Sample B (Atkinson Hyperlegible)',
+      text: 'The quick brown fox jumps over the lazy dog. Unmistakable forms distinguish tricky letters like capital I, lowercase l, and number 1.',
+      style: { fontFamily: 'Atkinson Hyperlegible', fontWeight: 400 },
+      icon: 'accessibility_new',
     },
   },
   {
     id: 2,
-    title: 'Line Spacing (Leading)',
-    description: 'Which spacing prevents lines from blurring or overlapping into each other?',
+    roundNumber: 1,
+    title: 'Round 1b: Modern High-Legibility Sans',
+    description: 'Do you prefer modern tall x-height letterforms or classic wide geometric curves?',
+    variableTested: 'font',
+    sampleA: {
+      label: 'Sample A (Inter)',
+      text: 'Clear structure and generous spacing allow smooth horizontal tracking across dense lines of text.',
+      style: { fontFamily: 'Inter', fontWeight: 400 },
+      icon: 'text_format',
+    },
+    sampleB: {
+      label: 'Sample B (Verdana)',
+      text: 'Clear structure and generous spacing allow smooth horizontal tracking across dense lines of text.',
+      style: { fontFamily: 'Verdana', fontWeight: 400 },
+      icon: 'text_fields',
+    },
+  },
+
+  // Round 2: Spacing & Rhythm (WCAG Benchmarks)
+  {
+    id: 3,
+    roundNumber: 2,
+    title: 'Round 2: Line Spacing (Leading)',
+    description: 'Which spacing prevents lines from overlapping or blurring into each other as you read?',
     variableTested: 'lineSpacing',
     sampleA: {
-      label: 'Sample A (Standard 1.4×)',
-      text: 'Reading should feel comfortable and natural. Adequate line height prevents line-skipping and helps the eye return smoothly to the left margin.',
-      style: { lineHeight: 1.4 },
+      label: 'Sample A (WCAG Recommended 1.6×)',
+      text: 'Generous line height gives your eyes plenty of breathing room to track smoothly and return to the start of the next line.',
+      style: { lineHeight: 1.6 },
       icon: 'format_line_spacing',
     },
     sampleB: {
-      label: 'Sample B (Relaxed 1.9×)',
-      text: 'Reading should feel comfortable and natural. Adequate line height prevents line-skipping and helps the eye return smoothly to the left margin.',
+      label: 'Sample B (Expanded 1.9×)',
+      text: 'Generous line height gives your eyes plenty of breathing room to track smoothly and return to the start of the next line.',
       style: { lineHeight: 1.9 },
       icon: 'format_line_spacing',
     },
   },
   {
-    id: 3,
-    title: 'Letter Spacing (Tracking)',
-    description: 'Which spacing keeps individual characters distinct without crowding?',
-    variableTested: 'letterSpacing',
+    id: 4,
+    roundNumber: 2,
+    title: 'Round 2b: Letter & Word Spacing',
+    description: 'Which character spacing prevents crowding between adjacent words?',
+    variableTested: 'wordSpacing',
     sampleA: {
-      label: 'Sample A (Standard Spacing)',
-      text: 'Each letter in a word stands out clearly when given comfortable room to breathe.',
-      style: { letterSpacing: 0.01 },
-      icon: 'text_fields',
+      label: 'Sample A (WCAG 0.12em / 0.16em)',
+      text: 'Clear gaps between characters and words make it easier to decode syllables in unfamiliar vocabulary.',
+      style: { letterSpacing: 0.08, wordSpacing: 0.16 },
+      icon: 'space_bar',
     },
     sampleB: {
-      label: 'Sample B (Wide Spacing +0.06em)',
-      text: 'Each letter in a word stands out clearly when given comfortable room to breathe.',
-      style: { letterSpacing: 0.06 },
-      icon: 'format_letter_spacing',
+      label: 'Sample B (Standard Density)',
+      text: 'Clear gaps between characters and words make it easier to decode syllables in unfamiliar vocabulary.',
+      style: { letterSpacing: 0.02, wordSpacing: 0.10 },
+      icon: 'space_bar',
     },
   },
+
+  // Round 3: Anti-Glare Color Themes
   {
-    id: 4,
-    title: 'Background Tint & Glare',
-    description: 'Which background feels calmer and reduces visual stress or shimmering?',
+    id: 5,
+    roundNumber: 3,
+    title: 'Round 3: Color Tone & Contrast',
+    description: 'Which background feels calmest and reduces visual vibration or glare on your screen?',
     variableTested: 'backgroundColor',
     sampleA: {
       label: 'Sample A (Warm Ivory Cream)',
-      text: 'Soft off-white backgrounds absorb harsh screen glare, helping your eyes focus calmly without fatigue.',
+      text: 'Soft off-white cream absorbs harsh blue screen light, easing visual strain during extended reading.',
       style: { backgroundColor: '#fbf9f8', textColor: '#1b1c1c', themePreset: 'warm-cream' },
       icon: 'palette',
     },
     sampleB: {
-      label: 'Sample B (Soft Peach Tint)',
-      text: 'Soft off-white backgrounds absorb harsh screen glare, helping your eyes focus calmly without fatigue.',
-      style: { backgroundColor: '#fff5ee', textColor: '#2d2424', themePreset: 'soft-peach' },
+      label: 'Sample B (Soft Sage / Mint)',
+      text: 'Soft off-white cream absorbs harsh blue screen light, easing visual strain during extended reading.',
+      style: { backgroundColor: '#f0f7f2', textColor: '#1c2826', themePreset: 'mint-tint' },
       icon: 'palette',
-    },
-  },
-  {
-    id: 5,
-    title: 'Word Spacing',
-    description: 'Which gap between words makes word boundaries easier to spot?',
-    variableTested: 'wordSpacing',
-    sampleA: {
-      label: 'Sample A (Standard Gap 0.10em)',
-      text: 'Clear spaces between words prevent sentences from looking like one continuous block of text.',
-      style: { wordSpacing: 0.10 },
-      icon: 'space_bar',
-    },
-    sampleB: {
-      label: 'Sample B (Extended Gap 0.25em)',
-      text: 'Clear spaces between words prevent sentences from looking like one continuous block of text.',
-      style: { wordSpacing: 0.25 },
-      icon: 'space_bar',
     },
   },
   {
     id: 6,
-    title: 'Text Contrast & Weight',
-    description: 'Which contrast weight helps you decode words with less eye strain?',
-    variableTested: 'fontWeight',
-    sampleA: {
-      label: 'Sample A (Regular Weight)',
-      text: 'Balanced contrast gives letters crisp structure without causing strong glare or halos around characters.',
-      style: { fontWeight: 400 },
-      icon: 'format_bold',
-    },
-    sampleB: {
-      label: 'Sample B (Bold Accentuated)',
-      text: 'Balanced contrast gives letters crisp structure without causing strong glare or halos around characters.',
-      style: { fontWeight: 700 },
-      icon: 'format_bold',
-    },
-  },
-  {
-    id: 7,
-    title: 'Alternative High-Accessibility Font',
-    description: 'Do you prefer high-distinction letterforms or standard clean shapes?',
-    variableTested: 'font',
-    sampleA: {
-      label: 'Sample A (Atkinson Hyperlegible)',
-      text: 'Distinct loops, tails, and ascenders prevent confusing characters like capital I, lowercase l, and number 1.',
-      style: { fontFamily: 'Atkinson Hyperlegible' },
-      icon: 'accessibility_new',
-    },
-    sampleB: {
-      label: 'Sample B (Verdana)',
-      text: 'Distinct loops, tails, and ascenders prevent confusing characters like capital I, lowercase l, and number 1.',
-      style: { fontFamily: 'Verdana' },
-      icon: 'font_download',
-    },
-  },
-  {
-    id: 8,
-    title: 'Cool vs. Warm Canvas',
-    description: 'Which tone feels more relaxing for extended reading sessions?',
+    roundNumber: 3,
+    title: 'Round 3b: Dark Mode vs Soft Yellow',
+    description: 'Do you prefer dark low-illumination canvas or soothing soft yellow tint?',
     variableTested: 'backgroundColor',
     sampleA: {
-      label: 'Sample A (Mint Green Tint)',
-      text: 'Subtle green spectral filters can reduce reading visual stress and perceptual distortion.',
-      style: { backgroundColor: '#f2f8f5', textColor: '#1c2826', themePreset: 'mint-tint' },
-      icon: 'format_paint',
+      label: 'Sample A (Dark Charcoal)',
+      text: 'Dark background eliminates ambient screen glow in dim light environments.',
+      style: { backgroundColor: '#1e1e1e', textColor: '#f3f0f0', themePreset: 'high-contrast-dark' },
+      icon: 'dark_mode',
     },
     sampleB: {
-      label: 'Sample B (Warm Cream Base)',
-      text: 'Subtle green spectral filters can reduce reading visual stress and perceptual distortion.',
-      style: { backgroundColor: '#fbf9f8', textColor: '#1b1c1c', themePreset: 'warm-cream' },
-      icon: 'format_paint',
+      label: 'Sample B (Soft Yellow)',
+      text: 'Pale yellow spectral tint reduces glare and visual stress on light screens.',
+      style: { backgroundColor: '#fcf8e3', textColor: '#24211a', themePreset: 'soft-yellow' },
+      icon: 'light_mode',
     },
   },
+
+  // Round 4: Highlighting & Focus Tools
   {
-    id: 9,
-    title: 'Line Length (Characters Per Line)',
-    description: 'Which column width is easier to track from line to line?',
+    id: 7,
+    roundNumber: 4,
+    title: 'Round 4: Focus & Highlighting Assistance',
+    description: 'Which visual cue helps you maintain your place in the text most effectively?',
+    variableTested: 'highlighting',
+    sampleA: {
+      label: 'Sample A (Digital Reading Ruler)',
+      text: 'A soft horizontal ruler guides your eye across the active line while gently dimming surrounding lines.',
+      style: { readingRulerEnabled: true, highlightMode: 'line' },
+      icon: 'highlight',
+    },
+    sampleB: {
+      label: 'Sample B (Word Synchronized Highlighting)',
+      text: 'A soft horizontal ruler guides your eye across the active line while gently dimming surrounding lines.',
+      style: { readingRulerEnabled: false, highlightMode: 'word' },
+      icon: 'auto_awesome',
+    },
+  },
+
+  // Round 5: Final Converged Comparison
+  {
+    id: 8,
+    roundNumber: 5,
+    title: 'Round 5: Final Reading Comfort Comparison',
+    description: 'Confirm the combined typography, spacing, and contrast settings that feel easiest to read.',
     variableTested: 'textWidth',
     sampleA: {
-      label: 'Sample A (Optimal 60 CPL)',
-      text: 'Shorter lines keep your eye from wandering or skipping lines when returning to the start of the next line.',
-      style: { maxCharactersPerLine: 55 },
+      label: 'Sample A (Optimized 60 CPL Column)',
+      text: 'Shorter lines keep your eyes from wandering and eliminate line skipping when moving down the page.',
+      style: { maxCharactersPerLine: 60 },
       icon: 'view_column',
     },
     sampleB: {
-      label: 'Sample B (Standard 75 CPL)',
-      text: 'Shorter lines keep your eye from wandering or skipping lines when returning to the start of the next line.',
-      style: { maxCharactersPerLine: 75 },
+      label: 'Sample B (Standard 80 CPL Column)',
+      text: 'Shorter lines keep your eyes from wandering and eliminate line skipping when moving down the page.',
+      style: { maxCharactersPerLine: 80 },
       icon: 'view_column',
-    },
-  },
-  {
-    id: 10,
-    title: 'Font Size & Scale',
-    description: 'Which font size feels most comfortable without having to zoom in?',
-    variableTested: 'lineSpacing',
-    sampleA: {
-      label: 'Sample A (Medium 18px)',
-      text: 'Comfortable text scale allows quick decoding with minimal cognitive load.',
-      style: { fontSize: 18 },
-      icon: 'format_size',
-    },
-    sampleB: {
-      label: 'Sample B (Large 22px)',
-      text: 'Comfortable text scale allows quick decoding with minimal cognitive load.',
-      style: { fontSize: 22 },
-      icon: 'format_size',
     },
   },
 ];
 
-export interface CalibrationChoice {
-  stepId: number;
-  choice: 'A' | 'B' | 'SAME';
-}
+export const CALIBRATION_STEPS = CALIBRATION_ROUNDS_DATA;
 
 export function computeCalibratedProfile(
   choices: CalibrationChoice[],
@@ -200,7 +181,7 @@ export function computeCalibratedProfile(
   };
 
   choices.forEach((c) => {
-    const step = CALIBRATION_STEPS.find((s) => s.id === c.stepId);
+    const step = CALIBRATION_ROUNDS_DATA.find((s) => s.id === c.stepId);
     if (!step) return;
 
     if (c.choice === 'A') {
@@ -208,7 +189,6 @@ export function computeCalibratedProfile(
     } else if (c.choice === 'B') {
       Object.assign(result, step.sampleB.style);
     }
-    // If 'SAME', leave default / previous converged value intact
   });
 
   return result;
