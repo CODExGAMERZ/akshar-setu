@@ -9,6 +9,12 @@ const LANG_NAMES: Record<string, string> = {
   ta: 'Tamil (தமிழ்)',
   te: 'Telugu (తెలుగు)',
   mr: 'Marathi (मराठी)',
+  gu: 'Gujarati (ગુજરાતી)',
+  kn: 'Kannada (ಕನ್ನಡ)',
+  ml: 'Malayalam (മലയാളം)',
+  pa: 'Punjabi (ਪੰਜਾਬੀ)',
+  es: 'Spanish (Español)',
+  fr: 'French (Français)',
 };
 
 const SARVAM_LANG_CODES: Record<string, string> = {
@@ -19,6 +25,10 @@ const SARVAM_LANG_CODES: Record<string, string> = {
   te: 'te-IN',
   mr: 'mr-IN',
   or: 'od-IN',
+  gu: 'gu-IN',
+  kn: 'kn-IN',
+  ml: 'ml-IN',
+  pa: 'pa-IN',
 };
 
 // Server-side translation memory cache
@@ -39,7 +49,7 @@ async function translateChunkWithMyMemory(text: string, targetLang: string): Pro
     if (res.ok) {
       const data = await res.json();
       const translated = data.responseData?.translatedText;
-      if (translated && !translated.startsWith('INVALID') && !translated.startsWith('QUERY LENGTH')) {
+      if (translated && !translated.startsWith('INVALID') && !translated.startsWith('QUERY LENGTH') && !translated.startsWith('MYMEMORY WARNING')) {
         serverTranslationCache.set(cacheKey, translated);
         return translated;
       }
@@ -58,20 +68,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing text or target language' }, { status: 400 });
     }
 
-    if (targetLang === 'en') {
+    const cleanTargetLang = targetLang.split('-')[0].toLowerCase();
+
+    if (cleanTargetLang === 'en') {
       return NextResponse.json({ translatedText: text, status: 'success' });
     }
 
-    const langName = LANG_NAMES[targetLang] || targetLang;
+    const langName = LANG_NAMES[cleanTargetLang] || targetLang;
     const sarvamKey = (provider === 'sarvam' && apiKey) || process.env.SARVAM_API_KEY;
 
     // 1. Try Sarvam AI Mayura Translation if Sarvam key is provided
     if (sarvamKey) {
       try {
-        const sarvamTargetCode = SARVAM_LANG_CODES[targetLang] || `${targetLang}-IN`;
+        const sarvamTargetCode = SARVAM_LANG_CODES[cleanTargetLang] || `${cleanTargetLang}-IN`;
         const paragraphs = text.split('\n\n').filter((p: string) => p.trim().length > 0);
 
-        // Run in parallel batches of 5
         const translatedParagraphs: string[] = await Promise.all(
           paragraphs.map(async (p: string) => {
             try {
@@ -95,7 +106,7 @@ export async function POST(req: NextRequest) {
                 if (data.translated_text) return data.translated_text;
               }
             } catch {
-              // fallback to original paragraph
+              // fallback
             }
             return p;
           })
@@ -141,13 +152,12 @@ ${text.slice(0, 8000)}`;
       });
     }
 
-    // 3. High-Speed Parallel MyMemory Translation for all 7 Indic Languages
+    // 3. High-Speed Parallel MyMemory Translation for all languages
     try {
       const paragraphs = text.split('\n\n').filter((p: string) => p.trim().length > 0);
 
       const translatedParagraphs = await Promise.all(
         paragraphs.map(async (para: string) => {
-          // Group sentences into chunks <= 350 chars
           const sentences = para.match(/[^.!?\n]+[.!?\n]+|[^.!?\n]+$/g) || [para];
           const chunks: string[] = [];
           let cur = '';
@@ -163,13 +173,13 @@ ${text.slice(0, 8000)}`;
           if (cur) chunks.push(cur);
 
           const translatedChunks = await Promise.all(
-            chunks.map((chunk) => translateChunkWithMyMemory(chunk, targetLang))
+            chunks.map((chunk) => translateChunkWithMyMemory(chunk, cleanTargetLang))
           );
           return translatedChunks.join(' ');
         })
       );
 
-      if (translatedParagraphs.length > 0) {
+      if (translatedParagraphs.length > 0 && translatedParagraphs.some((tp) => tp.trim().length > 0)) {
         return NextResponse.json({
           translatedText: translatedParagraphs.join('\n\n'),
           status: 'success',

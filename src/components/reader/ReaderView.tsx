@@ -46,19 +46,44 @@ export const ReaderView: React.FC = () => {
   const [isLeftNavOpen, setIsLeftNavOpen] = useState<boolean>(true);
   const [isRightControlsOpen, setIsRightControlsOpen] = useState<boolean>(true);
 
+  const { setIsUploadModalOpen, setCurrentRoute } = useApp();
+
+  React.useEffect(() => {
+    if (!activeDocument && documents.length > 0) {
+      selectDocument(documents[0].id);
+    }
+  }, [activeDocument, documents, selectDocument]);
+
   if (!activeDocument) {
     return (
       <div className="min-h-[calc(100vh-70px)] bg-[#FEF9EB] flex items-center justify-center p-6 text-center">
-        <div className="p-8 bg-[#FAF3E0] border border-[#E7DFCA] rounded-2xl max-w-md space-y-4">
+        <div className="p-8 bg-[#FAF3E0] border border-[#E7DFCA] rounded-2xl max-w-md space-y-4 shadow-sm">
           <BookOpen className="w-10 h-10 text-[#D97706] mx-auto" />
           <h2 className="text-xl font-bold text-[#1E1B18]">No Document Selected</h2>
           <p className="text-xs text-[#706655]">
-            Please choose a textbook lesson or practice story from your library.
+            Please choose a lesson from your library or upload a new PDF/image to start reading.
           </p>
+          <div className="flex items-center justify-center gap-3 pt-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentRoute('library')}
+            >
+              Go to Library
+            </Button>
+            <Button
+              variant="accent"
+              size="sm"
+              onClick={() => setIsUploadModalOpen(true)}
+            >
+              Upload Document
+            </Button>
+          </div>
         </div>
       </div>
     );
   }
+
 
   const currentPage = activeDocument.pages.find(p => p.pageNumber === activePageNumber) || activeDocument.pages[0];
   const totalPages = activeDocument.pages.length;

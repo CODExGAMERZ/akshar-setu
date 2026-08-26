@@ -1,8 +1,7 @@
-import { Document } from '../types';
+import { Document, DocumentPage } from '../types';
 import { MOCK_DOCUMENTS } from '../data/mockDocuments';
 
 const STORAGE_KEY = 'aksharsetu_documents_v1';
-
 
 class DocumentService {
   private documents: Document[] = [];
@@ -44,13 +43,13 @@ class DocumentService {
 
   public async getDocuments(): Promise<Document[]> {
     this.ensureInitialized();
-    await new Promise(r => setTimeout(r, 60));
+    await new Promise(r => setTimeout(r, 40));
     return [...this.documents];
   }
 
   public async getDocument(id: string): Promise<Document | null> {
     this.ensureInitialized();
-    await new Promise(r => setTimeout(r, 40));
+    await new Promise(r => setTimeout(r, 30));
     const doc = this.documents.find(d => d.id === id);
     return doc ? JSON.parse(JSON.stringify(doc)) : null;
   }
@@ -88,52 +87,121 @@ class DocumentService {
     this.ensureInitialized();
     const docId = `doc_${Date.now()}`;
     const cleanTitle = file.name.replace(/\.[^/.]+$/, "");
-    
-    const sampleBody = ('textContent' in file && typeof file.textContent === 'string') 
-      ? file.textContent 
-      : `In natural biology, pollination is the vital ecological process by which pollen grains are transferred from the male anther of a flower to the female stigma.
+    let extractedText = '';
+    let detectedLanguage = 'en-IN';
+
+    // 1. Try server OCR extraction if File instance
+    if (typeof window !== 'undefined' && file instanceof File) {
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const res = await fetch('/api/documents/upload', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.text && data.text.trim().length > 0) {
+            extractedText = data.text;
+            if (data.language) {
+              detectedLanguage = data.language;
+            }
+          }
+        }
+      } catch (uploadErr) {
+        console.warn('Server upload OCR failed, trying local extraction:', uploadErr);
+      }
+
+      // If text file and server extraction wasn't used
+      if (!extractedText && (file.type.includes('text') || file.name.endsWith('.txt') || file.name.endsWith('.md'))) {
+        try {
+          extractedText = await file.text();
+        } catch {
+          // fallback
+        }
+      }
+    }
+
+    // 2. Fallback sample educational text if empty
+    if (!extractedText || extractedText.trim().length === 0) {
+      if ('textContent' in file && typeof file.textContent === 'string' && file.textContent.trim()) {
+        extractedText = file.textContent;
+      } else {
+        extractedText = `In natural biology, pollination is the vital ecological process by which pollen grains are transferred from the male anther of a flower to the female stigma.
 
 Insects like honeybees, bumblebees, and butterflies are among the most effective animal pollinators on Earth. As they forage for sweet floral nectar, tiny pollen particles adhere to their fuzzy bodies and are gently deposited onto neighboring blooms.
 
 Without healthy pollinator populations, more than one-third of our global food supply—including crunchy apples, sweet berries, almonds, and colorful garden vegetables—would fail to produce fruit. Protecting natural biodiversity and avoiding chemical insecticides ensures our agricultural systems stay resilient.`;
+      }
+    }
 
-    const paragraphs = sampleBody.split(/\n\s*\n/).filter(p => p.trim().length > 0);
-    const wordCount = sampleBody.trim().split(/\s+/).length;
+    // 3. Paginate text into comfortable accessible pages (approx 180 words per page)
+    const allParagraphs = extractedText.split(/\n\s*\n/).filter(p => p.trim().length > 0);
+    const pages: DocumentPage[] = [];
+    let currentPageParagraphs: string[] = [];
+    let currentWordCount = 0;
+    let pageNumber = 1;
+
+    for (const para of allParagraphs) {
+      const wordsInPara = para.trim().split(/\s+/).length;
+      if (currentWordCount > 0 && currentWordCount + wordsInPara > 220) {
+        // flush page
+        const pageContent = currentPageParagraphs.join('\n\n');
+        pages.push({
+          pageNumber,
+          content: pageContent,
+          paragraphs: [...currentPageParagraphs],
+          keyTerms: [
+            { term: 'Key Concept', definition: 'Important educational term extracted for study review.' }
+          ]
+        });
+        pageNumber++;
+        currentPageParagraphs = [para];
+        currentWordCount = wordsInPara;
+      } else {
+        currentPageParagraphs.push(para);
+        currentWordCount += wordsInPara;
+      }
+    }
+
+    if (currentPageParagraphs.length > 0) {
+      const pageContent = currentPageParagraphs.join('\n\n');
+      pages.push({
+        pageNumber,
+        content: pageContent,
+        paragraphs: [...currentPageParagraphs],
+        keyTerms: [
+          { term: 'Key Concept', definition: 'Important educational term extracted for study review.' }
+        ]
+      });
+    }
+
+    const totalWordCount = extractedText.trim().split(/\s+/).length;
 
     const newDoc: Document = {
       id: docId,
       title: cleanTitle,
       category: 'Science',
-      language: 'en-IN',
+      language: detectedLanguage,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       progressPercent: 0,
-      totalWords: wordCount,
-      estimatedReadTimeMinutes: Math.max(1, Math.ceil(wordCount / 120)),
+      totalWords: totalWordCount,
+      estimatedReadTimeMinutes: Math.max(1, Math.ceil(totalWordCount / 120)),
       originalViewStyle: {
         headerColor: '#1E40AF',
         chapterNumber: 'EXTRACTED OCR',
         subheading: 'Digitized Educational Document',
         accentColor: '#3B82F6'
       },
-      pages: [
+      pages: pages.length > 0 ? pages : [
         {
           pageNumber: 1,
-          content: sampleBody,
-          paragraphs: paragraphs,
-          simplifiedContent: `Pollination is how flowers make seeds and fruits.
-
-Bees and butterflies fly to flowers to drink sweet nectar. When they land, yellow pollen dust sticks to their bodies and moves to other flowers.
-
-We need bees to help grow yummy foods like apples, strawberries, and nuts. Taking care of gardens helps our bees stay safe.`,
-          keyTerms: [
-            { term: 'Pollination', definition: 'The transfer of pollen from an anther to a stigma enabling plant reproduction.' },
-            { term: 'Stigma', definition: 'The receptive surface of the female organ of a flower.' },
-            { term: 'Biodiversity', definition: 'The essential variety of living animals and plants in nature.' }
-          ],
-          translations: {
-            'hi-IN': `परागण वह महत्वपूर्ण प्रक्रिया है जिसके द्वारा परागकणों को फूल के नर भाग से मादा भाग में स्थानांतरित किया जाता है। मधुमक्खियां और तितलियां सबसे महत्वपूर्ण परागणकर्ता हैं।`
-          }
+          content: extractedText,
+          paragraphs: allParagraphs,
+          keyTerms: []
         }
       ],
       status: 'completed'

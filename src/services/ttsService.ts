@@ -25,13 +25,21 @@ class TTSService {
     }
   }
 
+  private getSynth(): SpeechSynthesis | null {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      this.synth = window.speechSynthesis;
+    }
+    return this.synth;
+  }
+
   public isSupported(): boolean {
-    return !!this.synth;
+    return !!this.getSynth();
   }
 
   public getVoices(): SpeechSynthesisVoice[] {
-    if (!this.synth) return [];
-    return this.synth.getVoices();
+    const synth = this.getSynth();
+    if (!synth) return [];
+    return synth.getVoices();
   }
 
   public setRate(rate: number) {
@@ -45,33 +53,58 @@ class TTSService {
     text: string, 
     options: TTSOptions = {}
   ): void {
-    if (typeof window === 'undefined' || !this.synth) {
-      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-        this.synth = window.speechSynthesis;
-      } else {
-        console.warn('SpeechSynthesis is not supported on this browser/environment.');
-        options.onError?.('TTS not supported');
-        return;
-      }
+    const synth = this.getSynth();
+    if (!synth) {
+      console.warn('SpeechSynthesis is not supported on this browser/environment.');
+      options.onError?.('TTS not supported');
+      return;
     }
 
+    // Clear previous speech state & stuck audio queues
     this.stop();
+    try {
+      synth.cancel();
+      if (synth.paused) {
+        synth.resume();
+      }
+    } catch {
+      // ignore
+    }
 
-    // Prepare tokens for DOM synchronized mapping
-    this.currentTokens = text.match(/\S+/g) || [];
+    // Clean text of markdown artefacts for natural speech
+    const speechCleanText = text
+      .replace(/[*#_~`>•\-]/g, ' ')
+      .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (!speechCleanText) {
+      options.onEnd?.();
+      return;
+    }
+
+    // Prepare token array matching reading canvas
+    this.currentTokens = text.match(/\S+/g) || speechCleanText.match(/\S+/g) || [];
     this.currentTokenIndex = 0;
     this.currentRate = options.rate || this.currentRate || 1.0;
 
-    const utterance = new SpeechSynthesisUtterance(text);
+    const utterance = new SpeechSynthesisUtterance(speechCleanText);
     this.currentUtterance = utterance;
     utterance.rate = this.currentRate;
     utterance.pitch = options.pitch || 1.0;
-    utterance.lang = options.lang || 'en-IN';
+    
+    // Set language (e.g. 'hi-IN', 'ta-IN', 'en-IN')
+    const targetLang = options.lang || 'en-IN';
+    utterance.lang = targetLang;
 
-    // Select voice if requested
+    // Select the best matching voice
+    const voices = this.getVoices();
     if (options.voiceName) {
-      const voices = this.getVoices();
-      const matched = voices.find(v => v.name === options.voiceName || v.lang.startsWith(options.lang || 'en'));
+      const explicit = voices.find(v => v.name === options.voiceName);
+      if (explicit) utterance.voice = explicit;
+    } else if (voices.length > 0) {
+      const primaryLangCode = targetLang.split('-')[0].toLowerCase();
+      const matched = voices.find(v => v.lang.toLowerCase().replace('_', '-').startsWith(primaryLangCode));
       if (matched) utterance.voice = matched;
     }
 
@@ -81,8 +114,8 @@ class TTSService {
       this.isSpeakingInternal = true;
       this.isPausedInternal = false;
 
-      // Start fallback pacing timer in case boundary events are not fired by the browser engine
-      const estimatedMsPerWord = (60000 / (160 * this.currentRate));
+      // Start fallback pacing timer in case the browser does not emit boundary events
+      const estimatedMsPerWord = Math.max(120, Math.round(60000 / (150 * this.currentRate)));
       this.startFallbackTimer(estimatedMsPerWord, options.onWordBoundary, () => {
         return hasReceivedBoundary;
       });
@@ -92,10 +125,9 @@ class TTSService {
       hasReceivedBoundary = true;
       this.clearFallbackTimer();
 
-      if (event.name === 'word') {
+      if (event.name === 'word' || event.charIndex !== undefined) {
         const charIndex = event.charIndex;
-        // Compute word index from charIndex
-        const textUpToChar = text.substring(0, charIndex);
+        const textUpToChar = speechCleanText.substring(0, charIndex);
         const wordIndex = (textUpToChar.match(/\S+/g) || []).length;
         const currentWord = this.currentTokens[wordIndex] || '';
 
@@ -115,7 +147,12 @@ class TTSService {
       options.onError?.(e);
     };
 
-    this.synth.speak(utterance);
+    try {
+      synth.speak(utterance);
+    } catch (err) {
+      console.warn('Error initiating synth.speak:', err);
+      options.onError?.(err);
+    }
   }
 
   private startFallbackTimer(
@@ -126,7 +163,7 @@ class TTSService {
     this.clearFallbackTimer();
     if (typeof window === 'undefined') return;
 
-    const interval = window.setInterval(() => {
+    this.fallbackTimer = window.setInterval(() => {
       if (hasRealBoundary && hasRealBoundary()) {
         this.clearFallbackTimer();
         return;
@@ -141,9 +178,7 @@ class TTSService {
       } else {
         this.clearFallbackTimer();
       }
-    }, Math.max(120, msPerWord));
-
-    this.fallbackTimer = interval as unknown as number;
+    }, msPerWord);
   }
 
   private clearFallbackTimer() {
@@ -154,23 +189,37 @@ class TTSService {
   }
 
   public pause(): void {
-    if (this.synth && this.isSpeakingInternal && !this.isPausedInternal) {
-      this.synth.pause();
+    const synth = this.getSynth();
+    if (synth && this.isSpeakingInternal && !this.isPausedInternal) {
+      try {
+        synth.pause();
+      } catch {
+        // ignore
+      }
       this.isPausedInternal = true;
     }
   }
 
   public resume(): void {
-    if (this.synth && this.isPausedInternal) {
-      this.synth.resume();
+    const synth = this.getSynth();
+    if (synth && this.isPausedInternal) {
+      try {
+        synth.resume();
+      } catch {
+        // ignore
+      }
       this.isPausedInternal = false;
     }
   }
 
   public stop(): void {
-    this.clearFallbackTimer();
-    if (this.synth) {
-      this.synth.cancel();
+    const synth = this.getSynth();
+    if (synth) {
+      try {
+        synth.cancel();
+      } catch {
+        // ignore
+      }
     }
     this.cleanup();
   }
@@ -180,15 +229,6 @@ class TTSService {
     this.isSpeakingInternal = false;
     this.isPausedInternal = false;
     this.currentUtterance = null;
-    this.currentTokenIndex = 0;
-  }
-
-  public isPlaying(): boolean {
-    return this.isSpeakingInternal && !this.isPausedInternal;
-  }
-
-  public isPaused(): boolean {
-    return this.isPausedInternal;
   }
 }
 
