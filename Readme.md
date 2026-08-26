@@ -59,25 +59,25 @@ Reading difficulty is neither rare nor one-size-fits-all:
 
 ```mermaid
 graph TD
-    User([User / Student]) --> Client[Next.js 14 Frontend Canvas]
-    Client --> Calibration[8-Step Calibration Engine]
-    Client --> ReaderContext[Reader & Profile Context]
-    Client --> Storage[(LocalStorage Persistence)]
+    User(["User / Student"]) --> Client["Next.js 14 Frontend Canvas"]
+    Client --> Calibration["8-Step Calibration Engine"]
+    Client --> ReaderContext["Reader & Profile Context"]
+    Client --> Storage[("LocalStorage Persistence")]
     
-    ReaderContext --> TTS[SpeechSynthesis & Karaoke Service]
-    ReaderContext --> APIRoutes[Next.js Server API Routes]
+    ReaderContext --> TTS["SpeechSynthesis & Karaoke Service"]
+    ReaderContext --> APIRoutes["Next.js Server API Routes"]
     
-    APIRoutes --> UploadAPI[/api/documents/upload - PDF/TXT Extract]
-    APIRoutes --> TranslateAPI[/api/translate - Multilingual Engine]
-    APIRoutes --> SimplifyAPI[/api/simplify - Multi-Level AI Simplifier]
+    APIRoutes --> UploadAPI["/api/documents/upload (PDF/TXT Extract)"]
+    APIRoutes --> TranslateAPI["/api/translate (Multilingual Engine)"]
+    APIRoutes --> SimplifyAPI["/api/simplify (Multi-Level AI Simplifier)"]
     
-    TranslateAPI --> Gemini[Google Gemini 1.5/2.0 Flash]
-    TranslateAPI --> OpenAI[OpenAI GPT-4o-mini]
-    TranslateAPI --> Sarvam[Sarvam Indic AI]
+    TranslateAPI --> Gemini["Google Gemini 1.5/2.0 Flash"]
+    TranslateAPI --> OpenAI["OpenAI GPT-4o-mini"]
+    TranslateAPI --> Sarvam["Sarvam Indic AI"]
     
     SimplifyAPI --> Gemini
     SimplifyAPI --> OpenAI
-    SimplifyAPI --> Groq[Groq Llama 3]
+    SimplifyAPI --> Groq["Groq Llama 3"]
 ```
 
 ---
