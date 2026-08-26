@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useReader } from '@/context/ReaderContext';
 import { PDFService } from '@/services/pdf.service';
+import { StorageService } from '@/lib/storage';
 
 export default function UploadPage() {
   const router = useRouter();
@@ -57,9 +58,16 @@ export default function UploadPage() {
     const formData = new FormData();
     formData.append('file', file);
 
+    const apiConfig = StorageService.getApiConfig();
+    const userApiKey = apiConfig.geminiKey || apiConfig.openaiKey || apiConfig.groqKey || '';
+
     try {
       const res = await fetch('/api/documents/upload', {
         method: 'POST',
+        headers: {
+          'x-user-api-key': userApiKey,
+          'x-ai-provider': apiConfig.provider || 'server-default',
+        },
         body: formData,
       });
 
