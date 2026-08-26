@@ -18,8 +18,7 @@ export class TTSService {
   private static currentAudioElement: HTMLAudioElement | null = null;
   private static audioPlaylist: string[] = [];
   private static currentPlaylistIndex: number = 0;
-  private static activeCallbacks: TTSEventCallbacks | null = null;
-  private static isServerAudioPlaying: boolean = false;
+  private static lastReportedWordIndex: number = -1;
 
   private static initSynth(): SpeechSynthesis | null {
     if (typeof window === 'undefined') return null;
@@ -89,7 +88,7 @@ export class TTSService {
       if (match) return match;
     }
 
-    // 5. For Indic languages without specific regional voice: match Indian voice if available
+    // 5. For Indic languages: match Indian voice if available
     if (['hi', 'mr', 'or', 'bn', 'ta', 'te'].includes(lang)) {
       match = voices.find(
         (v) =>
@@ -126,7 +125,7 @@ export class TTSService {
     }
 
     this.stop();
-    this.activeCallbacks = callbacks || null;
+    this.lastReportedWordIndex = -1;
 
     // Retrieve active API config (BYOK or server default)
     const apiConfig = StorageService.getApiConfig();
@@ -171,7 +170,7 @@ export class TTSService {
   }
 
   /**
-   * Plays audio data streams with synced karaoke word tracking
+   * Plays audio data streams with smooth, non-jumping monotonic word tracking
    */
   private static playAudioPlaylist(
     playlist: string[],
@@ -186,12 +185,11 @@ export class TTSService {
 
     this.audioPlaylist = playlist;
     this.currentPlaylistIndex = 0;
-    this.isServerAudioPlaying = true;
     this.isPausedState = false;
+    this.lastReportedWordIndex = -1;
 
     const words = fullText.split(/\s+/).filter(Boolean);
     const totalWords = words.length;
-    let wordIndex = 0;
 
     const playNextTrack = (trackIndex: number) => {
       if (trackIndex >= this.audioPlaylist.length) {
@@ -204,29 +202,33 @@ export class TTSService {
       audio.playbackRate = Math.max(0.6, Math.min(1.6, rate));
       this.currentAudioElement = audio;
 
+      const chunkWordCount = Math.ceil(totalWords / this.audioPlaylist.length);
+      const baseIndex = trackIndex * chunkWordCount;
+
       audio.onplay = () => {
         this.isPausedState = false;
         if (trackIndex === 0) {
           callbacks?.onStart?.();
-          callbacks?.onWord?.(0, 0);
-          wordIndex = 1;
+          this.dispatchWordIndex(0, callbacks);
         }
 
         this.clearWordTimer();
-        // Dynamic time-based tracking
-        this.wordTimerInterval = setInterval(() => {
-          if (this.isPausedState || !audio.duration || isNaN(audio.duration)) return;
 
-          const progress = audio.currentTime / audio.duration;
-          const chunkWordCount = Math.ceil(totalWords / this.audioPlaylist.length);
-          const baseIndex = trackIndex * chunkWordCount;
+        // Smooth time-based monotonic tracking
+        this.wordTimerInterval = setInterval(() => {
+          if (this.isPausedState || !audio.duration || isNaN(audio.duration) || audio.duration <= 0) return;
+
+          const progress = Math.max(0, Math.min(1, audio.currentTime / audio.duration));
           const currentTrackWord = Math.floor(progress * chunkWordCount);
           const calculatedIndex = Math.min(totalWords - 1, baseIndex + currentTrackWord);
 
           if (calculatedIndex >= 0 && calculatedIndex < totalWords) {
-            callbacks?.onWord?.(calculatedIndex, 0);
+            // Strictly advance monotonically
+            if (calculatedIndex >= this.lastReportedWordIndex) {
+              this.dispatchWordIndex(calculatedIndex, callbacks);
+            }
           }
-        }, 120);
+        }, 80);
       };
 
       audio.onended = () => {
@@ -243,7 +245,6 @@ export class TTSService {
       audio.onerror = (e) => {
         console.warn('Audio playback error on track:', e);
         this.cleanUp();
-        // If first track fails, try client Web Speech API fallback
         if (trackIndex === 0) {
           this.speakWithWebSpeech(fullText, 'en', rate, callbacks);
         } else {
@@ -261,8 +262,17 @@ export class TTSService {
   }
 
   /**
-   * Client-side Web Speech API implementation with utterance slicing
-   * to bypass browser 15s freeze bug and maintain synchronized word highlights.
+   * Dispatches word updates only when the index actually changes
+   */
+  private static dispatchWordIndex(index: number, callbacks?: TTSEventCallbacks): void {
+    if (index !== this.lastReportedWordIndex) {
+      this.lastReportedWordIndex = index;
+      callbacks?.onWord?.(index, 0);
+    }
+  }
+
+  /**
+   * Client-side Web Speech API implementation with accurate charIndex to word mapping
    */
   private static speakWithWebSpeech(
     text: string,
@@ -287,8 +297,8 @@ export class TTSService {
 
       const words = text.split(/\s+/).filter(Boolean);
       const totalWords = words.length;
-      let wordIndex = 0;
       let boundaryFired = false;
+      this.lastReportedWordIndex = -1;
 
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = voice ? voice.lang : langCode;
@@ -302,13 +312,14 @@ export class TTSService {
 
       const startWordTimer = () => {
         this.clearWordTimer();
-        const msPerWord = Math.max(120, Math.round(320 / utterance.rate));
+        const msPerWord = Math.max(140, Math.round(340 / utterance.rate));
+        let timerWordIdx = 0;
         this.wordTimerInterval = setInterval(() => {
           if (this.isPausedState) return;
-          if (!boundaryFired && wordIndex < totalWords) {
-            callbacks?.onWord?.(wordIndex, 0);
-            wordIndex++;
-          } else if (wordIndex >= totalWords) {
+          if (!boundaryFired && timerWordIdx < totalWords) {
+            this.dispatchWordIndex(timerWordIdx, callbacks);
+            timerWordIdx++;
+          } else if (timerWordIdx >= totalWords) {
             this.clearWordTimer();
           }
         }, msPerWord);
@@ -317,8 +328,7 @@ export class TTSService {
       utterance.onstart = () => {
         this.isPausedState = false;
         callbacks?.onStart?.();
-        callbacks?.onWord?.(0, 0);
-        wordIndex = 1;
+        this.dispatchWordIndex(0, callbacks);
         startWordTimer();
 
         // Browser keep-alive pulse
@@ -335,7 +345,15 @@ export class TTSService {
         if (event.name === 'word' || event.name === '') {
           boundaryFired = true;
           this.clearWordTimer();
-          callbacks?.onWord?.(wordIndex++, event.charIndex);
+          // Accurately map charIndex to exact word index in text
+          if (typeof event.charIndex === 'number' && event.charIndex >= 0) {
+            const textBefore = text.slice(0, event.charIndex).trim();
+            const calculatedWordIdx = textBefore ? textBefore.split(/\s+/).length : 0;
+            const safeIdx = Math.min(totalWords - 1, Math.max(0, calculatedWordIdx));
+            if (safeIdx >= this.lastReportedWordIndex) {
+              this.dispatchWordIndex(safeIdx, callbacks);
+            }
+          }
         }
       };
 
@@ -433,11 +451,11 @@ export class TTSService {
   private static cleanUp(): void {
     this.currentUtterance = null;
     this.isPausedState = false;
-    this.isServerAudioPlaying = false;
     this.clearWordTimer();
     this.clearKeepAlive();
     this.audioPlaylist = [];
     this.currentPlaylistIndex = 0;
+    this.lastReportedWordIndex = -1;
     if (this.currentAudioElement) {
       this.currentAudioElement = null;
     }

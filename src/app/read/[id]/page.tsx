@@ -102,14 +102,14 @@ export default function ReadingViewPage() {
     const displayText =
       profile.syllableHighlighting && viewMode === 'personalized'
         ? formatTextWithSyllables(cleanWord)
-        : cleanWord;
+      : cleanWord;
 
     return (
       <span
         key={currentWordGlobalIndex}
-        className={`inline-block transition-all duration-100 mr-1 ${
+        className={`inline transition-colors duration-100 rounded-xs px-0.5 mr-0.5 ${
           isBold ? 'font-bold text-primary' : ''
-        } ${isCurrentKaraokeWord ? 'karaoke-active-word scale-105' : ''}`}
+        } ${isCurrentKaraokeWord ? 'karaoke-active-word' : ''}`}
       >
         {displayText}
       </span>

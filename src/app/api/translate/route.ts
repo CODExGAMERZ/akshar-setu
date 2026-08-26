@@ -11,6 +11,35 @@ const LANG_NAMES: Record<string, string> = {
   mr: 'Marathi (मराठी)',
 };
 
+const SARVAM_LANG_CODES: Record<string, string> = {
+  en: 'en-IN',
+  hi: 'hi-IN',
+  bn: 'bn-IN',
+  ta: 'ta-IN',
+  te: 'te-IN',
+  mr: 'mr-IN',
+  or: 'od-IN',
+};
+
+async function translateChunkWithMyMemory(text: string, targetLang: string): Promise<string | null> {
+  try {
+    const clean = text.trim();
+    if (!clean) return '';
+    const res = await fetch(
+      `https://api.mymemory.translated.net/get?q=${encodeURIComponent(clean)}&langpair=en|${targetLang}`
+    );
+    if (res.ok) {
+      const data = await res.json();
+      if (data.responseData?.translatedText && !data.responseData.translatedText.startsWith('INVALID')) {
+        return data.responseData.translatedText;
+      }
+    }
+  } catch (err) {
+    console.warn('MyMemory translation chunk exception:', err);
+  }
+  return null;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { text, targetLang, apiKey, provider } = await req.json();
@@ -25,7 +54,57 @@ export async function POST(req: NextRequest) {
 
     const langName = LANG_NAMES[targetLang] || targetLang;
 
-    // 1. Try real Generative AI Translation (Gemini / OpenAI / Groq via BYOK or Safe Server Key)
+    // 1. Try Sarvam AI Mayura Translation if provider is sarvam or key is available
+    const sarvamKey = (provider === 'sarvam' && apiKey) || process.env.SARVAM_API_KEY;
+    if (sarvamKey) {
+      try {
+        const sarvamTargetCode = SARVAM_LANG_CODES[targetLang] || `${targetLang}-IN`;
+        // Split long text into paragraphs / chunks under 800 chars
+        const paragraphs = text.split('\n\n').filter((p: string) => p.trim().length > 0);
+        const translatedParagraphs: string[] = [];
+
+        for (const p of paragraphs) {
+          const res = await fetch('https://api.sarvam.ai/translate', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'api-subscription-key': sarvamKey,
+            },
+            body: JSON.stringify({
+              input: p.trim().slice(0, 1000),
+              source_language_code: 'en-IN',
+              target_language_code: sarvamTargetCode,
+              speaker_gender: 'Female',
+              mode: 'formal',
+              model: 'mayura:v1',
+            }),
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            if (data.translated_text) {
+              translatedParagraphs.push(data.translated_text);
+            } else {
+              translatedParagraphs.push(p);
+            }
+          } else {
+            translatedParagraphs.push(p);
+          }
+        }
+
+        if (translatedParagraphs.length > 0) {
+          return NextResponse.json({
+            translatedText: translatedParagraphs.join('\n\n'),
+            status: 'success',
+            provider: 'sarvam',
+          });
+        }
+      } catch (sarvamErr) {
+        console.warn('Sarvam translation failed, falling back:', sarvamErr);
+      }
+    }
+
+    // 2. Try Generative AI Translation (Gemini / OpenAI / Groq)
     const prompt = `You are a high-accuracy translator and linguistic accessibility expert.
 Translate the following text faithfully into ${langName}.
 Instructions:
@@ -45,7 +124,7 @@ ${text}`;
       provider: provider || 'server-default',
     });
 
-    if (aiResult && aiResult.trim().length > 0) {
+    if (aiResult && aiResult.trim().length > 0 && aiResult.trim() !== text.trim()) {
       return NextResponse.json({
         translatedText: aiResult.trim(),
         status: 'success',
@@ -53,38 +132,35 @@ ${text}`;
       });
     }
 
-    // 2. Check Sarvam AI if configured
-    const sarvamKey = (provider === 'sarvam' && apiKey) || process.env.SARVAM_API_KEY;
-    if (sarvamKey) {
-      try {
-        const response = await fetch('https://api.sarvam.ai/translate', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'api-subscription-key': sarvamKey,
-          },
-          body: JSON.stringify({
-            input: text,
-            source_language_code: 'en-IN',
-            target_language_code: `${targetLang}-IN`,
-          }),
-        });
-        if (response.ok) {
-          const data = await response.json();
-          if (data.translated_text) {
-            return NextResponse.json({
-              translatedText: data.translated_text,
-              status: 'success',
-              provider: 'sarvam',
-            });
-          }
+    // 3. Fallback to Free Neural MyMemory API for all 7 Indic Languages
+    try {
+      const paragraphs = text.split('\n\n').filter((p: string) => p.trim().length > 0);
+      const translatedList: string[] = [];
+
+      for (const para of paragraphs) {
+        const sentences = para.match(/[^.!?\n]+[.!?\n]+|[^.!?\n]+$/g) || [para];
+        const translatedSentences: string[] = [];
+
+        for (const s of sentences) {
+          const res = await translateChunkWithMyMemory(s, targetLang);
+          translatedSentences.push(res || s);
         }
-      } catch (sarvamErr) {
-        console.warn('Sarvam API call failed:', sarvamErr);
+
+        translatedList.push(translatedSentences.join(' '));
       }
+
+      if (translatedList.length > 0) {
+        return NextResponse.json({
+          translatedText: translatedList.join('\n\n'),
+          status: 'success',
+          provider: 'mymemory-fallback',
+        });
+      }
+    } catch (fallbackErr) {
+      console.warn('MyMemory fallback failed:', fallbackErr);
     }
 
-    // 3. Fallback response
+    // 4. Return original text if all methods fail
     return NextResponse.json({
       translatedText: text,
       status: 'fallback',

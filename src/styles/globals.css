@@ -135,10 +135,7 @@ input[type="range"]:focus {
   background-color: #fdbe54 !important;
   color: #1b1c1c !important;
   border-radius: 0.25rem;
-  padding: 0.1rem 0.3rem;
-  font-weight: 700;
   box-shadow: 0 0 0 2px #7f5700;
-  transition: all 0.1s ease-in-out;
 }
 
 /* Syllable break point visual indicator */
