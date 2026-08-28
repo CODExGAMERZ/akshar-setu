@@ -34,32 +34,50 @@ Reading difficulty is neither rare nor one-size-fits-all:
 - **Confusable Letter Markers**: Differentiates mirror pairs like `b/d`, `p/q`, `m/w`, and `n/u` with custom typographic weights, distinct amber/green cues, underlines, or under-dots.
 - **Bionic Reading Fixations**: Automatically bolds initial word phonemes to guide eye saccades smoothly across sentences.
 
-### 3. 📄 Universal Document & PDF Digitization Engine
-- **Textbook & Lesson Ingestion**: Upload any textbook PDF, worksheet, image, or text file.
-- **Multimodal AI OCR**: Integrated with Google Gemini 3.0/Flash for scanned image PDFs and `pdf-parse` for digital documents.
+### 3. 📄 Universal Document & Multimodal Vision OCR Engine
+- **Full Ingestion Support**: Upload any digital textbook PDF, scanned worksheet, image (`.png`, `.jpg`, `.jpeg`, `.webp`), or plain text file.
+- **Multimodal Vision OCR**: Integrated with Google Gemini (2.5/1.5 Flash) and OpenAI Vision to transcribe physical textbook photos and low-contrast scanned worksheets.
+- **Visual Extraction Pipeline**: Multi-stage animated pipeline (`Upload` ➔ `OCR` ➔ `Extract` ➔ `Reflow`) with real-time extracted preview snippet and direct 1-click reader opening.
 - **Automatic Classification**: Intelligently categorizes uploaded material into `Science`, `History`, `English`, `Mathematics`, or `General`.
 
 ### 4. 🌐 Multilingual Indian & Global Language Support (13 Languages)
 Native script rendering, contextual translations, and phonetic integrity across:
 - **Indic Languages (11)**: Hindi (हिन्दी), Marathi (मराठी), Bengali (বাংলা), Tamil (தமிழ்), Telugu (తెలుగు), Odia (ଓଡ଼ିଆ), Gujarati (ગુજરાતી), Kannada (ಕನ್ನಡ), Malayalam (മലയാളം), Punjabi (ਪੰਜਾਬੀ), English.
 - **Global Languages (2)**: Spanish (Español), French (Français).
-- **Hybrid NLP Backend**: Powered by Sarvam AI Mayura Translation with parallel MyMemory caching.
+- **Sarvam AI Mayura Integration**: Dedicated translation pipeline powered by Sarvam AI (`mayura:v1`) with fallback AI completions and instant zero-latency pre-computed translations.
+- **Auto-Bound Accent Tracking**: Switching the document language automatically updates the speech synthesis engine to use native Indic accents.
 
-### 5. 🧠 WCAG Plain Language AI Text Simplification
+### 5. 🎙️ Real-time Speech Dictation & Voice Translation
+- **Voice-to-Text Ingestion**: Speak in any language using microphone dictation with real-time streaming transcripts.
+- **Cross-Lingual Voice Translation**: One-click translation of spoken voice into any target Indic or global language.
+- **Dual Voice Playback**: Listen to both source spoken transcripts and translated speech with synchronized audio.
+- **Save as Document**: Directly export spoken notes or lectures into an accessible reading document in the user library.
+
+### 6. 🔊 Dual-Engine High-Fidelity Audio Dock & Karaoke Tracking
+- **High-Fidelity Server Audio**: Routes through `/api/tts/synthesize` (Sarvam Bulbul Indic Audio & Google TTS) for natural human-like pronunciation in all supported languages.
+- **15-Second Cutoff Prevention**: Custom sentence chunking and synthetic boundary heartbeats in Web Speech API to guarantee continuous, uninterrupted speech on all browsers.
+- **Token-Accurate Click-to-Play**: Clicking any word starts audio playback from that exact position (`wordOffset`), maintaining 100% visual highlight synchronization.
+- **Persistent Floating Audio Dock**:
+  - Play / Pause / Stop controls
+  - Sentence navigation buttons (`SkipBack` and `SkipForward`)
+  - Speech playback rate cycler (`0.75x`, `1.0x`, `1.25x`, `1.5x`, `2.0x`)
+  - Live animated equalizer soundwave and real-time word counter (`Word X of Y`).
+
+### 7. 🎯 Active Line Focus Section & Optical Reading Ruler
+- **Active Line Highlighting**: Select `highlightMode: 'line'` to spotlight the currently spoken sentence with an amber indicator badge and clear borders.
+- **Focus Mode Spotlight Mask**: Dims non-active background paragraphs during playback to reduce cognitive overload and saccadic disorientation.
+- **Optical Reading Ruler Guide**: Smoothly tracks mouse movement or synchronizes with active spoken text, with customizable ruler heights (40px–140px).
+
+### 8. 🧠 WCAG Plain Language AI Text Simplification
 - **Light Simplification**: Swaps archaic and multi-syllabic vocabulary with everyday conversational terms.
 - **Medium Simplification**: Shortens compound sentences into clear statements under 14 words each.
 - **Heavy Simplification**: Restructures dense paragraphs into clean, bulleted key takeaways (`•`).
 - **Zero-Key Local Algorithmic Engine**: Includes a 60+ vocabulary simplifier and sentence breaker that operates fully offline even without external API keys.
 
-### 6. 🔊 Dual-Engine High-Fidelity Audio Dock & Karaoke Tracking
-- **High-Fidelity Server Audio**: Routes through `/api/tts/synthesize` (Google TTS, Sarvam Bulbul, OpenAI) for natural human pronunciation in all 13 languages.
-- **Synchronized Word Boundary Tracker**: Highlights active words on the canvas in real time as they are spoken.
-- **Fail-Safe Web Speech API**: Client-side browser synthesis fallback for uninterrupted offline playback.
-
-### 7. 🛡️ Clinical Assessment & IEP Ingestion
+### 9. 🛡️ Clinical Assessment & IEP Ingestion
 - Upload optometric contrast recommendations, school IEPs, or psychoeducational evaluation PDFs to automatically pre-tune reading comfort settings.
 
-### 8. 🎨 Ivory Clarity Design System
+### 10. 🎨 Ivory Clarity Design System
 - Built on calming, scientifically tested anti-glare palettes:
   - **Warm Cream** (`#FEF9EB` / `#26231E`) — Primary Anti-Glare
   - **Soft Mint** (`#EDF5EC` / `#1E3A2F`) — Calming Contrast
@@ -75,31 +93,33 @@ graph TD
     User(["Student / Educator / Parent"]) --> NextApp["Next.js 14 Web Application"]
     
     subgraph Client Layer
-        NextApp --> ReaderCanvas["Accessible Reading Canvas (Reflow Engine)"]
+        NextApp --> ReaderCanvas["Accessible Reading Canvas (Tokenized Reflow Engine)"]
+        NextApp --> ActiveLineFocus["Active Line & Focus Dimming Spotlight"]
         NextApp --> CalibrationEngine["8-Step Visual Calibration Diagnostic"]
-        NextApp --> AudioDock["Persistent Audio Dock & Word Tracker"]
+        NextApp --> AudioDock["Persistent Audio Dock (Skip, Waveform & Tracker)"]
+        NextApp --> DictationModal["Speech Dictation & Voice Translation Modal"]
         NextApp --> AppContext["AppContext State (localStorage Persistence)"]
     end
 
     subgraph API Route Layer
-        AppContext --> UploadAPI["/api/documents/upload"]
-        AppContext --> SimplifyAPI["/api/simplify"]
-        AppContext --> TranslateAPI["/api/translate"]
-        AppContext --> TTSAPI["/api/tts/synthesize"]
+        AppContext --> UploadAPI["/api/documents/upload (Vision OCR & PDF)"]
+        AppContext --> SimplifyAPI["/api/simplify (Plain Language AI)"]
+        AppContext --> TranslateAPI["/api/translate (Sarvam Mayura & AI)"]
+        AppContext --> TTSAPI["/api/tts/synthesize (Sarvam Bulbul & Google)"]
     end
 
     subgraph AI & Service Integrations
-        UploadAPI --> PDFParser["pdf-parse (Layer Extractor)"]
-        UploadAPI --> GeminiVision["Gemini 3.0 Flash (Multimodal OCR)"]
+        UploadAPI --> GeminiVision["Gemini 2.5/1.5 Flash (Multimodal Vision OCR)"]
+        UploadAPI --> PDFParser["pdf-parse (Digital Layer Extractor)"]
         
-        SimplifyAPI --> GeminiNLP["Gemini 3.0 Flash (Plain Language Simplifier)"]
+        SimplifyAPI --> GeminiNLP["Gemini NLP (Plain Language Simplifier)"]
         SimplifyAPI --> LocalEngine["Local Algorithmic Simplifier (Offline Fallback)"]
         
         TranslateAPI --> SarvamMayura["Sarvam AI Mayura (Indic Engine)"]
         TranslateAPI --> MyMemoryCache["Parallel Translation Memory"]
         
-        TTSAPI --> GoogleTTS["High-Fidelity Server Google TTS"]
         TTSAPI --> SarvamBulbul["Sarvam Bulbul (Indic Audio)"]
+        TTSAPI --> GoogleTTS["High-Fidelity Server Audio Proxy"]
         TTSAPI --> WebSpeech["Browser Web Speech API (Client Fallback)"]
     end
 ```
