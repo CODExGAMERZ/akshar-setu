@@ -10,7 +10,8 @@ import {
   TTSState, 
   User, 
   ActiveViewMode, 
-  CalibrationResult 
+  CalibrationResult,
+  AppNotification
 } from '../types';
 
 import { DEFAULT_READING_PREFERENCES } from '../data/themes';
@@ -82,6 +83,11 @@ export interface AppContextType {
   changeReadingLanguage: (langCode: string) => Promise<void>;
   activeTranslatedText: string | null;
 
+  // Notifications
+  notifications: AppNotification[];
+  showNotification: (message: string, type?: 'success' | 'error' | 'info' | 'warning', title?: string, duration?: number) => void;
+  removeNotification: (id: string) => void;
+
   // Modals & Popups
   isUploadModalOpen: boolean;
   setIsUploadModalOpen: (open: boolean) => void;
@@ -144,6 +150,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [currentLanguage, setCurrentLanguage] = useState<string>('en-IN');
   const [isTranslating, setIsTranslating] = useState<boolean>(false);
   const [activeTranslatedText, setActiveTranslatedText] = useState<string | null>(null);
+
+  // Notifications
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+
+  const removeNotification = useCallback((id: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  }, []);
+
+  const showNotification = useCallback((
+    message: string, 
+    type: 'success' | 'error' | 'info' | 'warning' = 'info', 
+    title?: string, 
+    duration = 4000
+  ) => {
+    const id = `notif_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const newNotif: AppNotification = { id, message, type, title, duration };
+    setNotifications(prev => [...prev.slice(-4), newNotif]);
+
+    if (duration > 0) {
+      setTimeout(() => {
+        setNotifications(prev => prev.filter(n => n.id !== id));
+      }, duration);
+    }
+  }, []);
 
   // Modals
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -570,7 +600,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     isHowItWorksOpen,
     setIsHowItWorksOpen,
     isDictationModalOpen,
-    setIsDictationModalOpen
+    setIsDictationModalOpen,
+    notifications,
+    showNotification,
+    removeNotification
   }), [
     currentRoute,
     setCurrentRoute,
@@ -617,7 +650,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     isSimplificationModalOpen,
     isSessionSummaryOpen,
     isHowItWorksOpen,
-    isDictationModalOpen
+    isDictationModalOpen,
+    notifications,
+    showNotification,
+    removeNotification
   ]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

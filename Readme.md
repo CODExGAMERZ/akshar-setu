@@ -253,14 +253,18 @@ Vercel will compile all static pages and serverless API functions automatically 
 
 ---
 
-## 👥 Contributors & Acknowledgements
+## 👥 Team & Contributors
 
-Built with ❤️ for the **Smart India Hackathon** to foster inclusive educational technology:
+Built with ❤️ for the **Smart India Hackathon** to foster inclusive, accessible education for neurodivergent and regional language learners:
 
-| # | Contributor | Role & Specialization | GitHub |
+| # | Member | Role & Contribution | GitHub Profile |
 | :-: | :--- | :--- | :--- |
 | 1 | **Chiraag Agarwal** | Team Lead • Architecture & System Design | [@chiraagagarwal](https://github.com/chiraagagarwal) |
-| 2 | **CODExGAMERZ** | AI Engineering • Indic NLP & Speech Systems | [@CODExGAMERZ](https://github.com/CODExGAMERZ) |
+| 2 | **Aryan** | AI Engineering • Indic NLP & Speech Systems | [@CODExGAMERZ](https://github.com/CODExGAMERZ) |
+| 3 | **Katyayani Pandit** | UI/UX Design & Pedagogical Research | [@katyayanip1001-byte](https://github.com/katyayanip1001-byte) |
+| 4 | **Sneha Nandi** | Project Planning & Accessibility Research | [@25156124-cmd](https://github.com/25156124-cmd) |
+| 5 | **Sanjana Pathak** | Frontend Engineering & Research | [@PathakSanjana](https://github.com/PathakSanjana) |
+| 6 | **Kundan Kumar** | UI/UX Design & User Research | [@Kundan840](https://github.com/Kundan840) |
 
 ---
 

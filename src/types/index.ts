@@ -161,3 +161,12 @@ export interface User {
 
 export type ActiveViewMode = 'original' | 'personalized';
 export type AppRoute = 'landing' | 'library' | 'reader' | 'calibration' | 'profile' | 'login' | 'assessment';
+
+export interface AppNotification {
+  id: string;
+  type: 'success' | 'error' | 'info' | 'warning';
+  title?: string;
+  message: string;
+  duration?: number;
+}
+

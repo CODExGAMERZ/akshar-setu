@@ -163,7 +163,7 @@ function extractKeyTerms(text: string): Array<{ term: string; explanation: strin
 class SimplificationService {
   private cache = new Map<string, SimplifiedResult>();
 
-  public async simplify(text: string): Promise<SimplifiedResult> {
+  public async simplify(text: string, level: 'light' | 'medium' | 'heavy' = 'medium'): Promise<SimplifiedResult> {
     if (!text || !text.trim()) {
       return {
         originalText: text,
@@ -174,7 +174,7 @@ class SimplificationService {
       };
     }
 
-    const cacheKey = `${text.length}_${text.slice(0, 50)}`;
+    const cacheKey = `${level}_${text.length}_${text.slice(0, 50)}`;
     if (this.cache.has(cacheKey)) {
       return this.cache.get(cacheKey)!;
     }
@@ -184,7 +184,7 @@ class SimplificationService {
       const res = await fetch('/api/simplify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, level: 'medium' })
+        body: JSON.stringify({ text, level })
       });
 
       if (res.ok) {
@@ -194,7 +194,7 @@ class SimplificationService {
           const result: SimplifiedResult = {
             originalText: text,
             simplifiedText: data.simplifiedText,
-            readingGradeReduction: 'Advanced → Plain Language (AI)',
+            readingGradeReduction: `${level.toUpperCase()} Plain Language (AI)`,
             keyVocabulary: extractKeyTerms(text),
             bulletSummary: bullets.length > 0 ? bullets : ['Key ideas restructured for accessible reading.']
           };
