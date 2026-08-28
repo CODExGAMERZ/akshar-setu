@@ -25,6 +25,7 @@ const SARVAM_LANG_CODES: Record<string, string> = {
   te: 'te-IN',
   mr: 'mr-IN',
   or: 'od-IN',
+  od: 'od-IN',
   gu: 'gu-IN',
   kn: 'kn-IN',
   ml: 'ml-IN',
