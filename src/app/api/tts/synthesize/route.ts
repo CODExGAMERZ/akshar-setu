@@ -270,11 +270,11 @@ export async function POST(req: NextRequest) {
     // 3. High-Fidelity Server-side Google TTS Proxy (Parallel chunk fetch < 500ms)
     try {
       const googleLangCode = GOOGLE_LANG_CODES[normalizedLang] || GOOGLE_LANG_CODES[normalizedLang.split('-')[0]] || 'en';
-      const chunks = chunkText(cleanText, 180);
+      const chunks = chunkText(cleanText, 90);
 
       // Fetch all chunks simultaneously in parallel
       const bufferResults = await Promise.all(
-        chunks.slice(0, 20).map((chunk) => fetchGoogleTTSChunk(chunk, googleLangCode))
+        chunks.slice(0, 30).map((chunk) => fetchGoogleTTSChunk(chunk, googleLangCode))
       );
 
       const validBuffers = bufferResults.filter((b): b is Buffer => b !== null && b.length > 0);
