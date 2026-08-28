@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { 
   BookOpen, 
@@ -10,12 +10,15 @@ import {
   User as UserIcon, 
   HelpCircle,
   FileText,
-  Volume2
+  Volume2,
+  Menu,
+  X
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Button } from '../common/Button';
 
 export const Header: React.FC = () => {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { 
     currentRoute, 
     setCurrentRoute, 
@@ -31,7 +34,7 @@ export const Header: React.FC = () => {
   return (
     <header 
       id="main-app-header"
-      className="sticky top-0 z-40 bg-[#FEF9EB]/90 backdrop-blur-md border-b border-[#E7DFCA] px-4 lg:px-8 py-3 transition-colors"
+      className="fixed top-0 left-0 right-0 w-full z-50 bg-[#FEF9EB]/90 backdrop-blur-md border-b border-[#E7DFCA] px-4 lg:px-8 py-3 transition-colors"
     >
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
         {/* Brand & Logo */}
@@ -198,8 +201,84 @@ export const Header: React.FC = () => {
               Login
             </Button>
           )}
+
+          {/* Mobile Menu Toggle */}
+          <button
+            className="md:hidden p-2 rounded-xl text-[#786E5E] hover:text-[#26231E] hover:bg-[#FAF3E0] transition-colors border border-transparent hover:border-[#E7DFCA]"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            aria-label="Toggle mobile menu"
+          >
+            {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
         </div>
       </div>
+
+      {/* Mobile Menu Drawer */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden absolute top-full left-0 w-full bg-[#FEF9EB] border-b border-[#E7DFCA] shadow-lg flex flex-col p-4 gap-2 z-50">
+          <Link
+            href="/"
+            onClick={() => setIsMobileMenuOpen(false)}
+            className={`px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
+              currentRoute === 'landing' 
+                ? 'bg-[#26231E] text-[#FEF9EB]' 
+                : 'text-[#4A4338] hover:text-[#26231E] hover:bg-[#EFE8D6]'
+            }`}
+          >
+            Overview
+          </Link>
+          <Link
+            href="/library"
+            onClick={() => setIsMobileMenuOpen(false)}
+            className={`px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all ${
+              currentRoute === 'library' 
+                ? 'bg-[#26231E] text-[#FEF9EB]' 
+                : 'text-[#4A4338] hover:text-[#26231E] hover:bg-[#EFE8D6]'
+            }`}
+          >
+            <BookOpen className="w-4 h-4" />
+            Library
+          </Link>
+          {activeDocument && (
+            <Link
+              href={`/read/${activeDocument.id}`}
+              onClick={() => setIsMobileMenuOpen(false)}
+              className={`px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all ${
+                currentRoute === 'reader' 
+                  ? 'bg-[#26231E] text-[#FEF9EB]' 
+                  : 'text-[#4A4338] hover:text-[#26231E] hover:bg-[#EFE8D6]'
+              }`}
+            >
+              <FileText className="w-4 h-4" />
+              Reader
+            </Link>
+          )}
+          <Link
+            href="/calibrate"
+            onClick={() => setIsMobileMenuOpen(false)}
+            className={`px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all ${
+              currentRoute === 'calibration' 
+                ? 'bg-[#26231E] text-[#FEF9EB]' 
+                : 'text-[#4A4338] hover:text-[#26231E] hover:bg-[#EFE8D6]'
+            }`}
+          >
+            <Sparkles className="w-4 h-4 text-[#D97706]" />
+            Calibration
+          </Link>
+          <Link
+            href="/profile"
+            onClick={() => setIsMobileMenuOpen(false)}
+            className={`px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all ${
+              currentRoute === 'profile' 
+                ? 'bg-[#26231E] text-[#FEF9EB]' 
+                : 'text-[#4A4338] hover:text-[#26231E] hover:bg-[#EFE8D6]'
+            }`}
+          >
+            <Sliders className="w-4 h-4" />
+            Profile
+          </Link>
+        </div>
+      )}
     </header>
   );
 };

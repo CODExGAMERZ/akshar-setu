@@ -44,7 +44,7 @@ export const AudioDock: React.FC = () => {
   return (
     <div 
       id="audio-dock-persistent"
-      className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 bg-[#26231E] text-[#FEF9EB] px-4 py-2.5 rounded-2xl shadow-2xl border border-white/10 flex items-center gap-3 max-w-lg w-[92%] sm:w-auto transition-all animate-in fade-in slide-in-from-bottom-4"
+      className="fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-40 bg-[#26231E] text-[#FEF9EB] px-4 py-2.5 rounded-2xl shadow-2xl border border-white/10 flex items-center gap-3 max-w-lg w-[92%] sm:w-auto transition-all animate-in fade-in slide-in-from-bottom-4"
     >
       {/* Speaker indicator */}
       <div className="flex items-center gap-2 pr-2 border-r border-white/15 shrink-0">

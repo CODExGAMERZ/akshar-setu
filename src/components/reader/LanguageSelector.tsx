@@ -21,7 +21,7 @@ export const LanguageSelector: React.FC = () => {
           value={currentLanguage}
           disabled={isTranslating}
           onChange={(e) => changeReadingLanguage(e.target.value)}
-          className="bg-transparent text-xs font-bold text-[#1E1B18] focus:outline-none cursor-pointer pr-2"
+          className="bg-transparent text-xs font-bold text-[#1E1B18] focus:outline-none cursor-pointer pr-2 max-w-[100px] sm:max-w-[160px] truncate"
         >
           {SUPPORTED_LANGUAGES.map(lang => (
             <option key={lang.code} value={lang.code} className="bg-[#FEF9EB] text-[#26231E]">

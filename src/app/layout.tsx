@@ -44,7 +44,7 @@ export default function RootLayout({
       <body className="min-h-screen bg-[#FEF9EB] text-[#26231E] flex flex-col font-sans selection:bg-[#FDE047] selection:text-[#1E1B18] antialiased">
         <AppProvider>
           <Header />
-          <main className="flex-1 flex flex-col">
+          <main className="flex-1 flex flex-col pt-[65px]">
             {children}
           </main>
           <HowItWorksModal />

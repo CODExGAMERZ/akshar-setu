@@ -46,6 +46,13 @@ export const ReaderView: React.FC = () => {
   const [isLeftNavOpen, setIsLeftNavOpen] = useState<boolean>(true);
   const [isRightControlsOpen, setIsRightControlsOpen] = useState<boolean>(true);
 
+  React.useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      setIsLeftNavOpen(false);
+      setIsRightControlsOpen(false);
+    }
+  }, []);
+
   const { setIsUploadModalOpen, setCurrentRoute } = useApp();
 
   React.useEffect(() => {
@@ -95,6 +102,7 @@ export const ReaderView: React.FC = () => {
   };
 
   const handleNextPage = () => {
+    if (!activeDocument) return;
     if (activePageNumber < totalPages) {
       const nextPage = activePageNumber + 1;
       setActivePageNumber(nextPage);
@@ -104,20 +112,22 @@ export const ReaderView: React.FC = () => {
   };
 
   return (
-    <div className="relative min-h-[calc(100vh-70px)] bg-[#FEF9EB] text-[#26231E] flex flex-col">
+    <div className="relative flex-1 h-[calc(100dvh-65px)] bg-[#FEF9EB] text-[#26231E] flex flex-col overflow-hidden">
       {/* Visual reading ruler / mask overlay if active */}
       <FocusModeOverlay />
 
       {/* Top Reader Utility Bar */}
-      <div className="bg-[#FAF3E0] border-b border-[#E7DFCA] px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 sticky top-[65px] z-30 transition-colors">
-        {/* Left: Left nav toggle & document title */}
-        <div className="flex items-center gap-2">
-          {!preferences.focusMode && (
+      <div className="bg-[#FAF3E0] border-b border-[#E7DFCA] px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 z-30 transition-colors">
+        <div className="flex items-center flex-wrap gap-4">
+          {/* Left: Left nav toggle & document title */}
+          <div className="flex items-center gap-2">
+            {!preferences.focusMode && (
             <button
+              type="button"
               id="reader-toggle-left-nav"
               onClick={() => setIsLeftNavOpen(!isLeftNavOpen)}
               title={isLeftNavOpen ? "Hide document navigator" : "Show document navigator"}
-              className="p-1.5 rounded-lg text-[#706655] hover:text-[#1E1B18] hover:bg-[#EFE8D6] transition-colors hidden lg:block"
+              className="p-1.5 rounded-lg text-[#706655] hover:text-[#1E1B18] hover:bg-[#EFE8D6] transition-colors"
             >
               {isLeftNavOpen ? <PanelLeftClose className="w-4 h-4" /> : <PanelLeftOpen className="w-4 h-4" />}
             </button>
@@ -134,10 +144,11 @@ export const ReaderView: React.FC = () => {
         </div>
 
         {/* Center: View Mode Toggle (Original vs Reflowed) */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {/* Original vs Personalized Toggle */}
           <div className="flex items-center bg-[#FEF9EB] p-1 rounded-xl border border-[#D8CEB9] shadow-2xs">
             <button
+              type="button"
               id="reader-view-original-btn"
               onClick={() => setViewMode('original')}
               className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
@@ -149,6 +160,7 @@ export const ReaderView: React.FC = () => {
               Original View
             </button>
             <button
+              type="button"
               id="reader-view-personalized-btn"
               onClick={() => setViewMode('personalized')}
               className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
@@ -165,9 +177,10 @@ export const ReaderView: React.FC = () => {
           {/* Multilingual Selector */}
           <LanguageSelector />
         </div>
+        </div>
 
         {/* Right: Actions (Focus mode, Simplify, Metrics, Controls Drawer) */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2 ml-auto">
           {/* Simplify Button */}
           <Button
             id="reader-simplify-btn"
@@ -181,6 +194,7 @@ export const ReaderView: React.FC = () => {
 
           {/* Focus Mode Toggle */}
           <button
+            type="button"
             id="reader-focus-mode-btn"
             onClick={() => updatePreferences({ focusMode: !preferences.focusMode })}
             title={preferences.focusMode ? "Exit Focus Mode" : "Enter Distraction-Free Focus Mode"}
@@ -198,6 +212,7 @@ export const ReaderView: React.FC = () => {
 
           {/* Reading Session Summary */}
           <button
+            type="button"
             id="reader-session-metrics-btn"
             onClick={() => setIsSessionSummaryOpen(true)}
             title="View reading pace and session metrics"
@@ -225,7 +240,13 @@ export const ReaderView: React.FC = () => {
       <div className="flex-1 flex overflow-hidden">
         {/* LEFT COLUMN: Document Navigator (Collapsible) */}
         {!preferences.focusMode && isLeftNavOpen && (
-          <aside className="w-64 bg-[#FAF3E0] border-r border-[#E7DFCA] p-4 hidden lg:flex flex-col justify-between shrink-0 overflow-y-auto">
+          <>
+            {/* Mobile Backdrop */}
+            <div 
+              className="lg:hidden fixed inset-0 bg-[#1E1B18]/20 backdrop-blur-sm z-40" 
+              onClick={() => setIsLeftNavOpen(false)} 
+            />
+            <aside className="fixed lg:static top-[65px] lg:top-0 left-0 bottom-0 z-50 w-72 lg:w-64 bg-[#FAF3E0] border-r border-[#E7DFCA] p-4 flex flex-col justify-between shrink-0 overflow-y-auto shadow-2xl lg:shadow-none animate-in slide-in-from-left-8 lg:animate-none">
             <div className="space-y-4">
               <div className="space-y-1">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-[#706655]">
@@ -284,7 +305,8 @@ export const ReaderView: React.FC = () => {
               <p className="font-semibold text-[#1E1B18]">Personal Sweet Spot</p>
               <p>Adjust font, line height, or warm tints anytime on the right panel.</p>
             </div>
-          </aside>
+            </aside>
+          </>
         )}
 
         {/* CENTER COLUMN: Reading Canvas Area (Dominant) */}
@@ -348,9 +370,16 @@ export const ReaderView: React.FC = () => {
 
         {/* RIGHT COLUMN: Personalization Controls Panel (Collapsible) */}
         {!preferences.focusMode && isRightControlsOpen && (
-          <aside className="w-80 bg-[#FAF3E0] border-l border-[#E7DFCA] hidden lg:block shrink-0 h-full overflow-hidden">
-            <ReadingControls onClose={() => setIsRightControlsOpen(false)} />
-          </aside>
+          <>
+            {/* Mobile Backdrop */}
+            <div 
+              className="lg:hidden fixed inset-0 bg-[#1E1B18]/20 backdrop-blur-sm z-40" 
+              onClick={() => setIsRightControlsOpen(false)} 
+            />
+            <aside className="fixed lg:static top-[65px] lg:top-0 right-0 bottom-0 z-50 w-80 bg-[#FAF3E0] border-l border-[#E7DFCA] shrink-0 overflow-y-auto shadow-2xl lg:shadow-none animate-in slide-in-from-right-8 lg:animate-none">
+              <ReadingControls onClose={() => setIsRightControlsOpen(false)} />
+            </aside>
+          </>
         )}
       </div>
 
