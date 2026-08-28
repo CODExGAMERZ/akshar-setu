@@ -4,12 +4,9 @@ export interface TTSOptions {
   voiceName?: string;
   speaker?: string;
   lang?: string;
-<<<<<<< HEAD
   wordOffset?: number;
-=======
   provider?: string;
   apiKey?: string;
->>>>>>> origin/main
   onWordBoundary?: (wordIndex: number, charIndex: number, word: string) => void;
   onSentenceBoundary?: (sentenceIndex: number) => void;
   onEnd?: () => void;
@@ -28,12 +25,9 @@ class TTSService {
   private currentTokenIndex = 0;
   private currentRate = 1.0;
   private activeMode: 'audio' | 'synth' | 'idle' = 'idle';
-<<<<<<< HEAD
   private wordOffset = 0;
-=======
   private audioPlaylist: string[] = [];
   private playlistIndex = 0;
->>>>>>> origin/main
 
   constructor() {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
@@ -70,11 +64,7 @@ class TTSService {
 
   /**
    * Speak text with Dual Engine:
-<<<<<<< HEAD
-   * 1. High-Fidelity Server Audio (Sarvam Bulbul Indic / OpenAI / Google TTS) via HTML5 Audio
-=======
-   * 1. High-Fidelity Server Audio (Sarvam Bulbul / Google TTS / OpenAI) via HTML5 Audio with multi-chunk chaining
->>>>>>> origin/main
+   * 1. High-Fidelity Server Audio (Sarvam Bulbul Indic / OpenAI / Google TTS) via HTML5 Audio with multi-chunk chaining
    * 2. Web Speech API client fallback
    */
   public async speak(
@@ -104,11 +94,7 @@ class TTSService {
     this.isSpeakingInternal = true;
     this.isPausedInternal = false;
 
-<<<<<<< HEAD
-    // 1. Try High-Fidelity Server Audio Synthesis (Sarvam / OpenAI / Google)
-=======
     // 1. Try High-Fidelity Server Audio Synthesis (Sarvam AI Bulbul Indic Audio & Server TTS)
->>>>>>> origin/main
     try {
       const res = await fetch('/api/tts/synthesize', {
         method: 'POST',
