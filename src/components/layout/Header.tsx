@@ -12,7 +12,8 @@ import {
   FileText,
   Volume2,
   Menu,
-  X
+  X,
+  Mic
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Button } from '../common/Button';
@@ -26,6 +27,7 @@ export const Header: React.FC = () => {
     currentUser, 
     setIsUploadModalOpen,
     setIsHowItWorksOpen,
+    setIsDictationModalOpen,
     ttsState,
     startTTS,
     stopTTS
@@ -154,6 +156,18 @@ export const Header: React.FC = () => {
             </Button>
           )}
 
+          {/* Voice Dictation Button */}
+          <Button
+            id="header-dictation-btn"
+            variant="outline"
+            size="sm"
+            icon={<Mic className="w-4 h-4 text-[#D97706]" />}
+            onClick={() => setIsDictationModalOpen(true)}
+            title="Speech Dictation & Voice Translation"
+          >
+            <span className="hidden sm:inline">Voice Dictation</span>
+          </Button>
+
           {/* Upload Button */}
           <Button
             id="header-upload-btn"
@@ -174,7 +188,6 @@ export const Header: React.FC = () => {
           >
             <HelpCircle className="w-4 h-4" />
           </button>
-
 
           {/* User Profile / Mock Login Badge */}
           {currentUser ? (

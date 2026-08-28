@@ -154,55 +154,71 @@ export const ReadingContent: React.FC<ReadingContentProps> = ({
           maxWidth: `${preferences.textWidth}ch`
         }}
       >
-        {tokenizedParagraphs.map(({ pIdx, elements }) => (
-          <p
-            key={pIdx}
-            className="transition-all rounded-lg p-1.5 -m-1.5"
-            style={{
-              marginBottom: `${preferences.paragraphSpacing}rem`
-            }}
-          >
-            {elements.map((elem, eIdx) => {
-              if (elem.isSpace) {
-                return <span key={eIdx}>{elem.text}</span>;
-              }
+        {tokenizedParagraphs.map(({ pIdx, elements }) => {
+          const paraWordIndices = elements.filter(e => !e.isSpace && e.wordIndex !== undefined).map(e => e.wordIndex!);
+          const isParagraphActive = ttsState.isPlaying && paraWordIndices.includes(ttsState.currentWordIndex);
+          const isDimmedInFocus = preferences.focusMode && ttsState.isPlaying && !isParagraphActive;
 
-              const wordIdx = elem.wordIndex ?? -1;
-              const isCurrentSpokenWord = ttsState.isPlaying && ttsState.currentWordIndex === wordIdx;
-              const isCurrentSpokenPhrase = ttsState.isPlaying && 
-                preferences.highlightMode === 'phrase' && 
-                wordIdx >= ttsState.currentWordIndex - 2 && 
-                wordIdx <= ttsState.currentWordIndex + 2;
+          return (
+            <p
+              key={pIdx}
+              id={`reading-para-${pIdx}`}
+              className={`transition-all rounded-xl p-3 -m-3 ${
+                isDimmedInFocus ? 'opacity-30 blur-[0.3px] hover:opacity-100 transition-opacity' : 'opacity-100'
+              } ${
+                isParagraphActive && preferences.highlightMode === 'line'
+                  ? 'bg-[#FAF1DA]/80 shadow-xs border-l-4 border-[#D97706] pl-4'
+                  : ''
+              }`}
+              style={{
+                marginBottom: `${preferences.paragraphSpacing}rem`
+              }}
+            >
+              {elements.map((elem, eIdx) => {
+                if (elem.isSpace) {
+                  return <span key={eIdx}>{elem.text}</span>;
+                }
 
-              let highlightClass = '';
-              if (isCurrentSpokenWord && preferences.highlightMode === 'word') {
-                highlightClass = 'rounded-md shadow-xs px-1 -mx-0.5 font-bold transition-all scale-105 inline-block';
-              } else if (isCurrentSpokenPhrase) {
-                highlightClass = 'rounded-xs px-0.5 bg-[#FDE047]/60';
-              }
+                const wordIdx = elem.wordIndex ?? -1;
+                const isCurrentSpokenWord = ttsState.isPlaying && ttsState.currentWordIndex === wordIdx;
+                const isCurrentSpokenPhrase = ttsState.isPlaying && 
+                  preferences.highlightMode === 'phrase' && 
+                  wordIdx >= ttsState.currentWordIndex - 2 && 
+                  wordIdx <= ttsState.currentWordIndex + 2;
+                const isCurrentSpokenLine = ttsState.isPlaying && preferences.highlightMode === 'line' && isParagraphActive;
 
-              return (
-                <span
-                  key={eIdx}
-                  id={`word-span-${wordIdx}`}
-                  onClick={() => onWordClick && onWordClick(wordIdx, elem.text)}
-                  className={`cursor-pointer transition-colors duration-100 ${highlightClass}`}
-                  style={{
-                    backgroundColor: isCurrentSpokenWord && preferences.highlightMode === 'word' 
-                      ? preferences.highlightColor 
-                      : undefined,
-                    color: isCurrentSpokenWord && preferences.highlightMode === 'word' 
-                      ? '#111827' 
-                      : undefined
-                  }}
-                  title="Click to start speech from this word"
-                >
-                  {formatWordContent(elem.text)}
-                </span>
-              );
-            })}
-          </p>
-        ))}
+                let highlightClass = '';
+                if (isCurrentSpokenWord && preferences.highlightMode === 'word') {
+                  highlightClass = 'rounded-md shadow-xs px-1 -mx-0.5 font-bold transition-all scale-105 inline-block';
+                } else if (isCurrentSpokenPhrase) {
+                  highlightClass = 'rounded-xs px-0.5 bg-[#FDE047]/60';
+                } else if (isCurrentSpokenWord && preferences.highlightMode === 'line') {
+                  highlightClass = 'font-bold underline decoration-[#D97706] decoration-2';
+                }
+
+                return (
+                  <span
+                    key={eIdx}
+                    id={`word-span-${wordIdx}`}
+                    onClick={() => onWordClick && onWordClick(wordIdx, elem.text)}
+                    className={`cursor-pointer transition-colors duration-100 ${highlightClass}`}
+                    style={{
+                      backgroundColor: isCurrentSpokenWord && preferences.highlightMode === 'word' 
+                        ? preferences.highlightColor 
+                        : undefined,
+                      color: isCurrentSpokenWord && preferences.highlightMode === 'word' 
+                        ? '#111827' 
+                        : undefined
+                    }}
+                    title="Click to start speech from this word"
+                  >
+                    {formatWordContent(elem.text)}
+                  </span>
+                );
+              })}
+            </p>
+          );
+        })}
 
         {/* Key Educational Terms Glossary in Reader */}
         {page.keyTerms && page.keyTerms.length > 0 && !translatedText && (

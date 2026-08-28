@@ -407,10 +407,23 @@ export const ReadingControls: React.FC<ReadingControlsProps> = ({ onClose }) => 
               onChange={(checked) => updatePreferences({ readingRuler: checked })}
             />
 
+            {preferences.readingRuler && (
+              <Slider
+                label="Reading Ruler Height"
+                value={preferences.rulerHeight || 70}
+                min={40}
+                max={140}
+                step={5}
+                unit="px"
+                description="Height of optical ruler focus band"
+                onChange={(val) => updatePreferences({ rulerHeight: val })}
+              />
+            )}
+
             <ToggleSwitch
               label="Distraction-Free Focus Mode"
               checked={preferences.focusMode}
-              description="Collapses sidebars and centers the reading canvas"
+              description="Collapses sidebars and dims inactive sentences"
               onChange={(checked) => updatePreferences({ focusMode: checked })}
             />
 

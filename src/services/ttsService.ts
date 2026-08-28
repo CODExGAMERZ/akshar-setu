@@ -3,6 +3,7 @@ export interface TTSOptions {
   pitch?: number;
   voiceName?: string;
   lang?: string;
+  wordOffset?: number;
   onWordBoundary?: (wordIndex: number, charIndex: number, word: string) => void;
   onSentenceBoundary?: (sentenceIndex: number) => void;
   onEnd?: () => void;
@@ -21,6 +22,7 @@ class TTSService {
   private currentTokenIndex = 0;
   private currentRate = 1.0;
   private activeMode: 'audio' | 'synth' | 'idle' = 'idle';
+  private wordOffset = 0;
 
   constructor() {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
@@ -57,7 +59,7 @@ class TTSService {
 
   /**
    * Speak text with Dual Engine:
-   * 1. High-Fidelity Server Audio (Google TTS / Sarvam / OpenAI) via HTML5 Audio
+   * 1. High-Fidelity Server Audio (Sarvam Bulbul Indic / OpenAI / Google TTS) via HTML5 Audio
    * 2. Web Speech API client fallback
    */
   public async speak(
@@ -79,6 +81,7 @@ class TTSService {
 
     this.currentTokens = text.match(/\S+/g) || speechCleanText.match(/\S+/g) || [];
     this.currentTokenIndex = 0;
+    this.wordOffset = options.wordOffset || 0;
     this.currentRate = options.rate || this.currentRate || 1.0;
     const targetLang = options.lang || 'en-IN';
     const langCode = targetLang.split('-')[0].toLowerCase();
@@ -86,7 +89,7 @@ class TTSService {
     this.isSpeakingInternal = true;
     this.isPausedInternal = false;
 
-    // 1. Try High-Fidelity Server Audio Synthesis (Works 100% on all browsers & languages)
+    // 1. Try High-Fidelity Server Audio Synthesis (Sarvam / OpenAI / Google)
     try {
       const res = await fetch('/api/tts/synthesize', {
         method: 'POST',
@@ -121,7 +124,8 @@ class TTSService {
               if (wordIdx !== this.currentTokenIndex) {
                 this.currentTokenIndex = wordIdx;
                 const currentWord = this.currentTokens[wordIdx] || '';
-                options.onWordBoundary?.(wordIdx, 0, currentWord);
+                const actualWordIndex = this.wordOffset + wordIdx;
+                options.onWordBoundary?.(actualWordIndex, 0, currentWord);
               }
             }
 
@@ -133,7 +137,7 @@ class TTSService {
             this.isPausedInternal = false;
             // Emit initial word
             if (this.currentTokens.length > 0) {
-              options.onWordBoundary?.(0, 0, this.currentTokens[0]);
+              options.onWordBoundary?.(this.wordOffset, 0, this.currentTokens[0]);
             }
             this.animFrameId = requestAnimationFrame(trackProgress);
           };
@@ -219,7 +223,8 @@ class TTSService {
         const currentWord = this.currentTokens[wordIndex] || '';
 
         this.currentTokenIndex = wordIndex;
-        options.onWordBoundary?.(wordIndex, charIndex, currentWord);
+        const actualWordIndex = this.wordOffset + wordIndex;
+        options.onWordBoundary?.(actualWordIndex, charIndex, currentWord);
       }
     };
 
@@ -261,7 +266,8 @@ class TTSService {
 
       if (this.currentTokenIndex < this.currentTokens.length) {
         const word = this.currentTokens[this.currentTokenIndex] || '';
-        onWordBoundary?.(this.currentTokenIndex, 0, word);
+        const actualWordIndex = this.wordOffset + this.currentTokenIndex;
+        onWordBoundary?.(actualWordIndex, 0, word);
         this.currentTokenIndex++;
       } else {
         this.clearFallbackTimer();

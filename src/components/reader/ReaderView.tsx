@@ -21,7 +21,8 @@ import {
   Minimize2, 
   PanelLeftClose, 
   PanelLeftOpen, 
-  BarChart2
+  BarChart2,
+  Mic
 } from 'lucide-react';
 
 export const ReaderView: React.FC = () => {
@@ -38,6 +39,7 @@ export const ReaderView: React.FC = () => {
     activeTranslatedText, 
     setIsSimplificationModalOpen, 
     setIsSessionSummaryOpen, 
+    setIsDictationModalOpen,
     documents, 
     selectDocument, 
     updateDocumentProgress 
@@ -179,8 +181,20 @@ export const ReaderView: React.FC = () => {
         </div>
         </div>
 
-        {/* Right: Actions (Focus mode, Simplify, Metrics, Controls Drawer) */}
+        {/* Right: Actions (Focus mode, Simplify, Dictation, Metrics, Controls Drawer) */}
         <div className="flex flex-wrap items-center justify-end gap-2 ml-auto">
+          {/* Voice Dictation Button */}
+          <Button
+            id="reader-dictation-btn"
+            variant="outline"
+            size="sm"
+            icon={<Mic className="w-3.5 h-3.5 text-[#D97706]" />}
+            onClick={() => setIsDictationModalOpen(true)}
+            title="Speech Dictation & Voice Translation"
+          >
+            <span className="hidden md:inline">Voice Dictation</span>
+          </Button>
+
           {/* Simplify Button */}
           <Button
             id="reader-simplify-btn"

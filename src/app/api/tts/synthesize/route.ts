@@ -9,6 +9,10 @@ const SARVAM_LANG_CODES: Record<string, string> = {
   te: 'te-IN',
   mr: 'mr-IN',
   or: 'od-IN',
+  gu: 'gu-IN',
+  kn: 'kn-IN',
+  ml: 'ml-IN',
+  pa: 'pa-IN',
 };
 
 // Language code mappings for Google Translate Server TTS
@@ -20,6 +24,12 @@ const GOOGLE_LANG_CODES: Record<string, string> = {
   te: 'te',
   mr: 'mr',
   or: 'or',
+  gu: 'gu',
+  kn: 'kn',
+  ml: 'ml',
+  pa: 'pa',
+  es: 'es',
+  fr: 'fr',
 };
 
 // Server-side Audio Cache

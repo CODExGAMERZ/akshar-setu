@@ -5,6 +5,7 @@ import { Header } from '@/components/layout/Header';
 import { HowItWorksModal } from '@/components/landing/HowItWorksModal';
 import { DocumentUploaderModal } from '@/components/documents/DocumentUploaderModal';
 import { AssessmentUploadModal } from '@/components/documents/AssessmentUploadModal';
+import { SpeechDictationModal } from '@/components/reader/SpeechDictationModal';
 
 export const metadata: Metadata = {
   title: 'AksharSetu — Personalized Multisensory Reading Assistant',
@@ -50,6 +51,7 @@ export default function RootLayout({
           <HowItWorksModal />
           <DocumentUploaderModal />
           <AssessmentUploadModal />
+          <SpeechDictationModal />
         </AppProvider>
       </body>
     </html>

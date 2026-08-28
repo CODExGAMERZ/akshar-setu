@@ -66,13 +66,15 @@ export interface AppContextType {
 
   // TTS & Read-Along State
   ttsState: TTSState;
-  startTTS: (textToSpeak?: string) => void;
+  startTTS: (textToSpeak?: string, wordOffset?: number) => void;
   pauseTTS: () => void;
   resumeTTS: () => void;
   stopTTS: () => void;
   setTTSSpeed: (speed: number) => void;
   setTTSVoice: (voiceName: string) => void;
   seekToWord: (wordIndex: number) => void;
+  skipSentenceForward: () => void;
+  skipSentenceBackward: () => void;
 
   // Translation State
   currentLanguage: string;
@@ -91,6 +93,8 @@ export interface AppContextType {
   setIsSessionSummaryOpen: (open: boolean) => void;
   isHowItWorksOpen: boolean;
   setIsHowItWorksOpen: (open: boolean) => void;
+  isDictationModalOpen: boolean;
+  setIsDictationModalOpen: (open: boolean) => void;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -147,6 +151,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isSimplificationModalOpen, setIsSimplificationModalOpen] = useState(false);
   const [isSessionSummaryOpen, setIsSessionSummaryOpen] = useState(false);
   const [isHowItWorksOpen, setIsHowItWorksOpen] = useState(false);
+  const [isDictationModalOpen, setIsDictationModalOpen] = useState(false);
 
   const router = useRouter();
   const pathname = usePathname();
@@ -185,7 +190,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       router.push(targetPath);
     }
   }, [pathname, router]);
-
 
   // Initial Load
   useEffect(() => {
@@ -316,7 +320,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     router.push(`/read/${documentId}`);
   }, [selectDocument, router]);
 
-
   const deleteDocument = useCallback(async (id: string) => {
     await documentService.deleteDocument(id);
     await refreshDocuments();
@@ -364,17 +367,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return page?.content || '';
   }, [activeDocument, activePageNumber, activeTranslatedText]);
 
-  const startTTS = useCallback((textToSpeak?: string) => {
-    const content = textToSpeak || getCurrentPageText();
+  const startTTS = useCallback((textToSpeak?: string, wordOffset = 0) => {
+    const fullContent = getCurrentPageText();
+    const content = textToSpeak || fullContent;
     if (!content) return;
 
+    const allWords = fullContent.match(/\S+/g) || [];
     const words = content.match(/\S+/g) || [];
     setTtsState(prev => ({
       ...prev,
       isPlaying: true,
       isPaused: false,
-      currentWordIndex: 0,
-      totalWords: words.length,
+      currentWordIndex: wordOffset,
+      totalWords: allWords.length,
       playbackRate: preferences.ttsSpeed
     }));
 
@@ -382,6 +387,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       rate: preferences.ttsSpeed,
       lang: preferences.audioLanguage || currentLanguage || 'en-IN',
       voiceName: preferences.ttsVoice,
+      wordOffset: wordOffset,
       onWordBoundary: (wordIdx, _, word) => {
         setTtsState(prev => ({
           ...prev,
@@ -448,15 +454,45 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const fullText = getCurrentPageText();
     const words = fullText.match(/\S+/g) || [];
     const remainingText = words.slice(wordIndex).join(' ');
-    startTTS(remainingText);
-    setTtsState(prev => ({ ...prev, currentWordIndex: wordIndex }));
+    startTTS(remainingText, wordIndex);
   }, [getCurrentPageText, startTTS]);
+
+  const skipSentenceForward = useCallback(() => {
+    const fullText = getCurrentPageText();
+    const words = fullText.match(/\S+/g) || [];
+    const currentIndex = Math.max(0, ttsState.currentWordIndex);
+    // Find next sentence punctuation after current index
+    let nextIndex = Math.min(words.length - 1, currentIndex + 8);
+    for (let i = currentIndex + 1; i < words.length; i++) {
+      if (/[.!?।]$/.test(words[i])) {
+        nextIndex = Math.min(words.length - 1, i + 1);
+        break;
+      }
+    }
+    seekToWord(nextIndex);
+  }, [getCurrentPageText, ttsState.currentWordIndex, seekToWord]);
+
+  const skipSentenceBackward = useCallback(() => {
+    const fullText = getCurrentPageText();
+    const words = fullText.match(/\S+/g) || [];
+    const currentIndex = Math.max(0, ttsState.currentWordIndex);
+    // Find previous sentence start before current index
+    let prevIndex = 0;
+    for (let i = currentIndex - 2; i >= 0; i--) {
+      if (/[.!?।]$/.test(words[i])) {
+        prevIndex = i + 1;
+        break;
+      }
+    }
+    seekToWord(prevIndex);
+  }, [getCurrentPageText, ttsState.currentWordIndex, seekToWord]);
 
   // Translation
   const changeReadingLanguage = useCallback(async (targetLang: string) => {
     if (!activeDocument) return;
     setIsTranslating(true);
     setCurrentLanguage(targetLang);
+    updatePreferences({ audioLanguage: targetLang });
     try {
       const page = activeDocument.pages.find(p => p.pageNumber === activePageNumber) || activeDocument.pages[0];
       if (!page) return;
@@ -475,7 +511,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } finally {
       setIsTranslating(false);
     }
-  }, [activeDocument, activePageNumber]);
+  }, [activeDocument, activePageNumber, updatePreferences]);
 
   const value = useMemo(() => ({
     currentRoute,
@@ -516,6 +552,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setTTSSpeed,
     setTTSVoice,
     seekToWord,
+    skipSentenceForward,
+    skipSentenceBackward,
     currentLanguage,
     isTranslating,
     changeReadingLanguage,
@@ -529,7 +567,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     isSessionSummaryOpen,
     setIsSessionSummaryOpen,
     isHowItWorksOpen,
-    setIsHowItWorksOpen
+    setIsHowItWorksOpen,
+    isDictationModalOpen,
+    setIsDictationModalOpen
   }), [
     currentRoute,
     setCurrentRoute,
@@ -565,6 +605,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setTTSSpeed,
     setTTSVoice,
     seekToWord,
+    skipSentenceForward,
+    skipSentenceBackward,
     currentLanguage,
     isTranslating,
     changeReadingLanguage,
@@ -573,7 +615,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     isAssessmentModalOpen,
     isSimplificationModalOpen,
     isSessionSummaryOpen,
-    isHowItWorksOpen
+    isHowItWorksOpen,
+    isDictationModalOpen
   ]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

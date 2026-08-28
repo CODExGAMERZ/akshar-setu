@@ -84,7 +84,7 @@ export const DocumentUploaderModal: React.FC = () => {
             >
               <input
                 type="file"
-                accept=".pdf,.png,.jpg,.jpeg,.txt"
+                accept=".pdf,.png,.jpg,.jpeg,.webp,.txt"
                 onChange={(e) => e.target.files?.[0] && handleFileChange(e.target.files[0])}
                 className="hidden"
               />
@@ -94,14 +94,14 @@ export const DocumentUploaderModal: React.FC = () => {
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm font-bold text-[#1E1B18]">
-                    Drop your document here
+                    Drop your document or image here
                   </p>
                   <p className="text-xs text-[#706655]">
                     or <span className="text-[#D97706] font-semibold underline">Choose File</span> from your computer
                   </p>
                 </div>
                 <div className="flex items-center gap-2 pt-1">
-                  {['PDF', 'JPG', 'PNG', 'JPEG', 'TXT'].map(fmt => (
+                  {['PDF', 'JPG', 'PNG', 'WEBP', 'TXT'].map(fmt => (
                     <span key={fmt} className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-[#FAF1DA] text-[#8C6D23] border border-[#E4D5AD]">
                       {fmt}
                     </span>

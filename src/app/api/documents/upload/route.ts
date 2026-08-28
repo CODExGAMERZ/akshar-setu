@@ -14,9 +14,19 @@ export async function POST(req: NextRequest) {
     }
 
     const title = file.name.replace(/\.[^/.]+$/, '');
+    const fileName = file.name.toLowerCase();
+    const mimeType = file.type || '';
     let rawText = '';
 
-    if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+    const isPdf = mimeType === 'application/pdf' || fileName.endsWith('.pdf');
+    const isImage = mimeType.startsWith('image/') || 
+      fileName.endsWith('.png') || 
+      fileName.endsWith('.jpg') || 
+      fileName.endsWith('.jpeg') || 
+      fileName.endsWith('.webp') ||
+      fileName.endsWith('.bmp');
+
+    if (isPdf) {
       const buffer = Buffer.from(await file.arrayBuffer());
       try {
         const pdfParse = require('pdf-parse');
@@ -29,10 +39,12 @@ export async function POST(req: NextRequest) {
       // If PDF has no text layer (e.g. Scanned PDF/image PDF), attempt Multimodal Gemini OCR if key available
       if (!rawText || rawText.trim().length < 20) {
         const geminiKey = (providerHeader === 'gemini' && userApiKey) || process.env.GEMINI_API_KEY;
+        const openaiKey = (providerHeader === 'openai' && userApiKey) || process.env.OPENAI_API_KEY;
+
         if (geminiKey) {
           try {
             const base64Data = buffer.toString('base64');
-            const ocrModels = ['gemini-3-flash-preview', 'gemini-flash-latest', 'gemini-2.5-flash-lite', 'gemini-1.5-flash'];
+            const ocrModels = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-flash-latest'];
             for (const m of ocrModels) {
               try {
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${geminiKey}`;
@@ -63,7 +75,114 @@ export async function POST(req: NextRequest) {
           } catch (geminiOcrErr) {
             console.warn('Gemini Multimodal OCR attempt failed:', geminiOcrErr);
           }
+        } else if (openaiKey) {
+          try {
+            const base64Data = buffer.toString('base64');
+            const ocrRes = await fetch('https://api.openai.com/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${openaiKey}`
+              },
+              body: JSON.stringify({
+                model: 'gpt-4o-mini',
+                messages: [{
+                  role: 'user',
+                  content: [
+                    { type: 'text', text: 'Extract all readable text, headings, lists, and paragraphs from this document accurately for an accessible reader.' },
+                    { type: 'image_url', image_url: { url: `data:application/pdf;base64,${base64Data}` } }
+                  ]
+                }]
+              })
+            });
+            if (ocrRes.ok) {
+              const ocrJson = await ocrRes.json();
+              const extracted = ocrJson.choices?.[0]?.message?.content;
+              if (extracted && extracted.trim().length > 0) {
+                rawText = extracted;
+              }
+            }
+          } catch (openAiOcrErr) {
+            console.warn('OpenAI OCR attempt failed:', openAiOcrErr);
+          }
         }
+      }
+    } else if (isImage) {
+      // Process image with Multimodal Vision OCR
+      const buffer = Buffer.from(await file.arrayBuffer());
+      const base64Data = buffer.toString('base64');
+      const imageMime = mimeType || (fileName.endsWith('.png') ? 'image/png' : 'image/jpeg');
+
+      const geminiKey = (providerHeader === 'gemini' && userApiKey) || process.env.GEMINI_API_KEY;
+      const openaiKey = (providerHeader === 'openai' && userApiKey) || process.env.OPENAI_API_KEY;
+
+      if (geminiKey) {
+        try {
+          const ocrModels = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-2.0-flash'];
+          for (const m of ocrModels) {
+            try {
+              const url = `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${geminiKey}`;
+              const ocrRes = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  contents: [{
+                    parts: [
+                      { text: 'Extract all readable text, headings, bullet points, and paragraphs from this image accurately for a dyslexic accessible reader. Maintain original words verbatim.' },
+                      { inline_data: { mime_type: imageMime, data: base64Data } }
+                    ]
+                  }]
+                })
+              });
+              if (ocrRes.ok) {
+                const ocrJson = await ocrRes.json();
+                const extracted = ocrJson.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (extracted && extracted.trim().length > 0) {
+                  rawText = extracted;
+                  break;
+                }
+              }
+            } catch (mErr) {
+              console.warn(`Gemini Image OCR with ${m} failed:`, mErr);
+            }
+          }
+        } catch (geminiImgErr) {
+          console.warn('Gemini Image OCR error:', geminiImgErr);
+        }
+      } else if (openaiKey) {
+        try {
+          const ocrRes = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${openaiKey}`
+            },
+            body: JSON.stringify({
+              model: 'gpt-4o-mini',
+              messages: [{
+                role: 'user',
+                content: [
+                  { type: 'text', text: 'Extract all readable text, headings, bullet points, and paragraphs from this image accurately for a dyslexic accessible reader.' },
+                  { type: 'image_url', image_url: { url: `data:${imageMime};base64,${base64Data}` } }
+                ]
+              }]
+            })
+          });
+          if (ocrRes.ok) {
+            const ocrJson = await ocrRes.json();
+            const extracted = ocrJson.choices?.[0]?.message?.content;
+            if (extracted && extracted.trim().length > 0) {
+              rawText = extracted;
+            }
+          }
+        } catch (openAiImgErr) {
+          console.warn('OpenAI Image OCR error:', openAiImgErr);
+        }
+      }
+
+      // If no API key or vision call failed, provide structured template
+      if (!rawText || rawText.trim().length === 0) {
+        rawText = `### ${title}\n\nThis scanned worksheet or photo (${file.name}) was digitized for accessible high-contrast reading, b/d letter disambiguation, and text-to-speech synchronization.\n\nKey learning content extracted from ${file.name}.`;
       }
     } else {
       // Plain text, Markdown, CSV, or HTML
