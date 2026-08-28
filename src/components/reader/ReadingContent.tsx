@@ -200,7 +200,10 @@ export const ReadingContent: React.FC<ReadingContentProps> = ({
                   <span
                     key={eIdx}
                     id={`word-span-${wordIdx}`}
-                    onClick={() => onWordClick && onWordClick(wordIdx, elem.text)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onWordClick && onWordClick(wordIdx, elem.text);
+                    }}
                     className={`cursor-pointer transition-colors duration-100 ${highlightClass}`}
                     style={{
                       backgroundColor: isCurrentSpokenWord && preferences.highlightMode === 'word' 

@@ -451,6 +451,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [updatePreferences]);
 
   const seekToWord = useCallback((wordIndex: number) => {
+    ttsService.stop();
     const fullText = getCurrentPageText();
     const words = fullText.match(/\S+/g) || [];
     const remainingText = words.slice(wordIndex).join(' ');
