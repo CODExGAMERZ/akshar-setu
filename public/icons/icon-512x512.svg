@@ -1,20 +1,47 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
-    <linearGradient id="bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#0b57d0" />
-      <stop offset="100%" stop-color="#042e6f" />
+    <linearGradient id="akshar-bg-512" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#26231E" />
+      <stop offset="100%" stop-color="#141210" />
     </linearGradient>
-    <linearGradient id="accent-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#fdbe54" />
-      <stop offset="100%" stop-color="#ea8600" />
+    <linearGradient id="akshar-gold-512" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FCD34D" />
+      <stop offset="50%" stop-color="#F59E0B" />
+      <stop offset="100%" stop-color="#D97706" />
     </linearGradient>
+    <linearGradient id="akshar-cream-512" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="100%" stop-color="#FEF9EB" />
+    </linearGradient>
+    <filter id="glow-512" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="12" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
   </defs>
-  <rect width="512" height="512" rx="112" fill="url(#bg-grad)" />
-  <path d="M 96 350 C 180 200, 332 200, 416 350" fill="none" stroke="url(#accent-grad)" stroke-width="28" stroke-linecap="round" />
-  <g fill="#ffffff" transform="translate(136, 170) scale(10)">
-    <path d="M 4 5 C 7 4, 11 5, 11 18 C 8 17, 4 17, 2 18 L 2 6 C 2 5.5, 3 5, 4 5 Z" fill="#ffffff"/>
-    <path d="M 20 5 C 17 4, 13 5, 13 18 C 16 17, 20 17, 22 18 L 22 6 C 22 5.5, 21 5, 20 5 Z" fill="#ffffff"/>
-    <rect x="11.2" y="4.5" width="1.6" height="14" fill="url(#accent-grad)" rx="0.8"/>
-  </g>
-  <circle cx="256" cy="130" r="18" fill="url(#accent-grad)" />
+
+  <rect width="512" height="512" rx="128" fill="url(#akshar-bg-512)" />
+  <rect x="6" y="6" width="500" height="500" rx="122" fill="none" stroke="#FAF1DA" stroke-width="4" stroke-opacity="0.15" />
+
+  <path d="M 80 340 C 140 180, 372 180, 432 340" fill="none" stroke="url(#akshar-gold-512)" stroke-width="28" stroke-linecap="round" filter="url(#glow-512)" opacity="0.95" />
+
+  <line x1="160" y1="230" x2="160" y2="350" stroke="url(#akshar-gold-512)" stroke-width="8" stroke-linecap="round" opacity="0.4" />
+  <line x1="208" y1="200" x2="208" y2="360" stroke="url(#akshar-gold-512)" stroke-width="8" stroke-linecap="round" opacity="0.6" />
+  <line x1="256" y1="188" x2="256" y2="366" stroke="url(#akshar-gold-512)" stroke-width="10" stroke-linecap="round" opacity="0.8" />
+  <line x1="304" y1="200" x2="304" y2="360" stroke="url(#akshar-gold-512)" stroke-width="8" stroke-linecap="round" opacity="0.6" />
+  <line x1="352" y1="230" x2="352" y2="350" stroke="url(#akshar-gold-512)" stroke-width="8" stroke-linecap="round" opacity="0.4" />
+
+  <path d="M 244 380 C 180 360, 110 375, 84 395 C 84 270, 120 250, 244 260 Z" fill="url(#akshar-cream-512)" opacity="0.98" />
+  <path d="M 268 380 C 332 360, 402 375, 428 395 C 428 270, 392 250, 268 260 Z" fill="url(#akshar-cream-512)" opacity="0.98" />
+
+  <rect x="248" y="248" width="16" height="144" rx="8" fill="url(#akshar-gold-512)" />
+
+  <path d="M 148 295 Q 165 295 165 310 Q 165 325 145 325 M 145 325 Q 170 325 170 345 Q 170 365 145 365 M 156 345 L 180 345 M 180 300 L 180 365 M 138 295 L 188 295" 
+        fill="none" stroke="#26231E" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
+
+  <path d="M 335 365 L 355 300 L 375 365 M 342 346 L 368 346" 
+        fill="none" stroke="#26231E" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
+
+  <circle cx="256" cy="130" r="22" fill="url(#akshar-gold-512)" filter="url(#glow-512)" />
+  <circle cx="256" cy="130" r="12" fill="#FEF9EB" />
+  <circle cx="256" cy="130" r="5" fill="#047857" />
 </svg>

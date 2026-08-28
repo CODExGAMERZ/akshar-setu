@@ -52,8 +52,12 @@ export const Header: React.FC = () => {
             href="/"
             className="flex items-center gap-2.5 group text-left focus:outline-none"
           >
-            <div className="w-10 h-10 rounded-xl bg-[#26231E] text-[#FEF9EB] flex items-center justify-center font-bold text-lg shadow-xs group-hover:scale-105 transition-transform">
-              <span className="font-serif">A</span>
+            <div className="w-10 h-10 rounded-xl overflow-hidden shadow-xs group-hover:scale-105 transition-transform flex items-center justify-center bg-[#26231E]">
+              <img 
+                src="/icons/icon.svg" 
+                alt="AksharSetu Brand Logo" 
+                className="w-full h-full object-cover" 
+              />
             </div>
             <div>
               <div className="flex items-center gap-1.5">

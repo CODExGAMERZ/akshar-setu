@@ -1,32 +1,66 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
-    <linearGradient id="bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#0b57d0" />
-      <stop offset="100%" stop-color="#042e6f" />
+    <!-- Background Gradient -->
+    <linearGradient id="akshar-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#26231E" />
+      <stop offset="100%" stop-color="#141210" />
     </linearGradient>
-    <linearGradient id="accent-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#fdbe54" />
-      <stop offset="100%" stop-color="#ea8600" />
-    </linearGradient>
-  </defs>
-  
-  <!-- Rounded App Tile Background -->
-  <rect width="512" height="512" rx="112" fill="url(#bg-grad)" />
-  
-  <!-- Glow Bridge Arc -->
-  <path d="M 96 350 C 180 200, 332 200, 416 350" fill="none" stroke="url(#accent-grad)" stroke-width="28" stroke-linecap="round" />
-  
-  <!-- Open Book Symbol -->
-  <g fill="#ffffff" transform="translate(136, 170) scale(10)">
-    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" opacity="0"/>
-    <!-- Book Left Page -->
-    <path d="M 4 5 C 7 4, 11 5, 11 18 C 8 17, 4 17, 2 18 L 2 6 C 2 5.5, 3 5, 4 5 Z" fill="#ffffff"/>
-    <!-- Book Right Page -->
-    <path d="M 20 5 C 17 4, 13 5, 13 18 C 16 17, 20 17, 22 18 L 22 6 C 22 5.5, 21 5, 20 5 Z" fill="#ffffff"/>
-    <!-- Center Spine & Bookmark Ribbon -->
-    <rect x="11.2" y="4.5" width="1.6" height="14" fill="url(#accent-grad)" rx="0.8"/>
-  </g>
 
-  <!-- Indic Akshar Letter 'अ' stylized subtle crest -->
-  <circle cx="256" cy="130" r="18" fill="url(#accent-grad)" />
+    <!-- Golden Bridge Gradient -->
+    <linearGradient id="akshar-gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FCD34D" />
+      <stop offset="50%" stop-color="#F59E0B" />
+      <stop offset="100%" stop-color="#D97706" />
+    </linearGradient>
+
+    <!-- Warm Cream Gradient -->
+    <linearGradient id="akshar-cream" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="100%" stop-color="#FEF9EB" />
+    </linearGradient>
+
+    <!-- Glow Filter -->
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="12" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Squircle Rounded App Tile -->
+  <rect width="512" height="512" rx="128" fill="url(#akshar-bg)" />
+  <rect x="6" y="6" width="500" height="500" rx="122" fill="none" stroke="#FAF1DA" stroke-width="4" stroke-opacity="0.15" />
+
+  <!-- The "Setu" (Bridge of Light & Sound) -->
+  <path d="M 80 340 C 140 180, 372 180, 432 340" fill="none" stroke="url(#akshar-gold)" stroke-width="28" stroke-linecap="round" filter="url(#glow)" opacity="0.95" />
+
+  <!-- Bridge Pillars / Soundwave Rays -->
+  <line x1="160" y1="230" x2="160" y2="350" stroke="url(#akshar-gold)" stroke-width="8" stroke-linecap="round" opacity="0.4" />
+  <line x1="208" y1="200" x2="208" y2="360" stroke="url(#akshar-gold)" stroke-width="8" stroke-linecap="round" opacity="0.6" />
+  <line x1="256" y1="188" x2="256" y2="366" stroke="url(#akshar-gold)" stroke-width="10" stroke-linecap="round" opacity="0.8" />
+  <line x1="304" y1="200" x2="304" y2="360" stroke="url(#akshar-gold)" stroke-width="8" stroke-linecap="round" opacity="0.6" />
+  <line x1="352" y1="230" x2="352" y2="350" stroke="url(#akshar-gold)" stroke-width="8" stroke-linecap="round" opacity="0.4" />
+
+  <!-- The Open Pages of Knowledge -->
+  <!-- Left Page (Curving toward bridge) -->
+  <path d="M 244 380 C 180 360, 110 375, 84 395 C 84 270, 120 250, 244 260 Z" fill="url(#akshar-cream)" opacity="0.98" />
+  
+  <!-- Right Page (Curving toward bridge) -->
+  <path d="M 268 380 C 332 360, 402 375, 428 395 C 428 270, 392 250, 268 260 Z" fill="url(#akshar-cream)" opacity="0.98" />
+
+  <!-- Spine Center Gem -->
+  <rect x="248" y="248" width="16" height="144" rx="8" fill="url(#akshar-gold)" />
+
+  <!-- Floating 'अ' and 'A' Synthesis Seal -->
+  <!-- Devanagari Akshar 'अ' Stylized Motif in Left Wing -->
+  <path d="M 148 295 Q 165 295 165 310 Q 165 325 145 325 M 145 325 Q 170 325 170 345 Q 170 365 145 365 M 156 345 L 180 345 M 180 300 L 180 365 M 138 295 L 188 295" 
+        fill="none" stroke="#26231E" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
+
+  <!-- Latin Letter 'A' Stylized Motif in Right Wing -->
+  <path d="M 335 365 L 355 300 L 375 365 M 342 346 L 368 346" 
+        fill="none" stroke="#26231E" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
+
+  <!-- Focus Beacon (The Eye / Cognitive Spark) -->
+  <circle cx="256" cy="130" r="22" fill="url(#akshar-gold)" filter="url(#glow)" />
+  <circle cx="256" cy="130" r="12" fill="#FEF9EB" />
+  <circle cx="256" cy="130" r="5" fill="#047857" />
 </svg>

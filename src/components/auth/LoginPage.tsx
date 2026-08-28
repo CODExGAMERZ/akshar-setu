@@ -62,8 +62,12 @@ export const LoginPage: React.FC = () => {
       <div className="w-full max-w-md bg-[#FAF3E0] border border-[#E7DFCA] rounded-2xl p-6 sm:p-8 shadow-sm space-y-6">
         {/* Header */}
         <div className="text-center space-y-2">
-          <div className="w-12 h-12 rounded-2xl bg-[#26231E] text-[#FEF9EB] flex items-center justify-center font-bold text-xl mx-auto shadow-xs">
-            A
+          <div className="w-14 h-14 rounded-2xl overflow-hidden mx-auto shadow-md border border-[#E7DFCA] bg-[#26231E]">
+            <img 
+              src="/icons/icon.svg" 
+              alt="AksharSetu Logo" 
+              className="w-full h-full object-cover" 
+            />
           </div>
           <h2 className="text-2xl font-bold text-[#1E1B18]">Welcome to AksharSetu</h2>
           <p className="text-xs text-[#706655]">
