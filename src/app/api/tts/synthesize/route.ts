@@ -1,19 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Language code mappings for Sarvam Bulbul TTS
+// Comprehensive language code mappings for Sarvam Bulbul Indic TTS
 const SARVAM_LANG_CODES: Record<string, string> = {
   en: 'en-IN',
+  'en-in': 'en-IN',
   hi: 'hi-IN',
+  'hi-in': 'hi-IN',
   bn: 'bn-IN',
+  'bn-in': 'bn-IN',
   ta: 'ta-IN',
+  'ta-in': 'ta-IN',
   te: 'te-IN',
+  'te-in': 'te-IN',
   mr: 'mr-IN',
+  'mr-in': 'mr-IN',
   or: 'od-IN',
+  od: 'od-IN',
+  'or-in': 'od-IN',
+  'od-in': 'od-IN',
   gu: 'gu-IN',
+  'gu-in': 'gu-IN',
   kn: 'kn-IN',
+  'kn-in': 'kn-IN',
   ml: 'ml-IN',
+  'ml-in': 'ml-IN',
   pa: 'pa-IN',
+  'pa-in': 'pa-IN',
 };
+
+// Valid Sarvam Bulbul speaker voices
+const VALID_SARVAM_SPEAKERS = new Set(['meera', 'pavithra', 'maitreyi', 'arvind', 'amartya']);
 
 // Language code mappings for Google Translate Server TTS
 const GOOGLE_LANG_CODES: Record<string, string> = {
@@ -33,12 +49,12 @@ const GOOGLE_LANG_CODES: Record<string, string> = {
 };
 
 // Server-side Audio Cache
-const audioCache = new Map<string, string>();
+const audioCache = new Map<string, { audioData: string; allAudios?: string[] }>();
 
 /**
  * Splits text into sentence/phrase chunks <= maxChunkLength
  */
-function chunkText(text: string, maxChunkLength: number = 180): string[] {
+function chunkText(text: string, maxChunkLength: number = 400): string[] {
   const clean = text.replace(/\s+/g, ' ').trim();
   if (clean.length <= maxChunkLength) return [clean];
 
@@ -107,7 +123,15 @@ async function fetchGoogleTTSChunk(textChunk: string, langCode: string): Promise
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { text, lang = 'en', rate = 1.0, apiKey, provider } = body;
+    const { 
+      text, 
+      lang = 'en', 
+      rate = 1.0, 
+      speaker = 'meera', 
+      voiceName, 
+      apiKey, 
+      provider 
+    } = body;
 
     if (!text || typeof text !== 'string' || text.trim().length === 0) {
       return NextResponse.json({ error: 'Missing text for TTS' }, { status: 400 });
@@ -124,10 +148,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Empty text after cleaning' }, { status: 400 });
     }
 
-    const cacheKey = `tts_${lang}_${rate}_${cleanText.length}_${cleanText.slice(0, 50)}`;
+    const normalizedLang = lang.toLowerCase().trim();
+    const chosenSpeaker = (voiceName && VALID_SARVAM_SPEAKERS.has(voiceName.toLowerCase()))
+      ? voiceName.toLowerCase()
+      : (speaker && VALID_SARVAM_SPEAKERS.has(speaker.toLowerCase()))
+      ? speaker.toLowerCase()
+      : 'meera';
+
+    const cacheKey = `tts_${normalizedLang}_${rate}_${chosenSpeaker}_${cleanText.length}_${cleanText.slice(0, 60)}`;
     if (audioCache.has(cacheKey)) {
+      const cached = audioCache.get(cacheKey)!;
       return NextResponse.json({
-        audioData: audioCache.get(cacheKey)!,
+        audioData: cached.audioData,
+        allAudios: cached.allAudios,
         provider: 'cache',
         status: 'success',
       });
@@ -136,10 +169,12 @@ export async function POST(req: NextRequest) {
     const sarvamKey = (provider === 'sarvam' && apiKey) || process.env.SARVAM_API_KEY;
     const openaiKey = (provider === 'openai' && apiKey) || process.env.OPENAI_API_KEY;
 
-    // 1. Try Sarvam AI TTS (Bulbul) if Sarvam key is provided
-    if (sarvamKey) {
+    // Check if the requested language is supported by Sarvam Indic TTS
+    const targetSarvamLangCode = SARVAM_LANG_CODES[normalizedLang] || SARVAM_LANG_CODES[normalizedLang.split('-')[0]];
+
+    // 1. Try Sarvam AI TTS (Bulbul) if Sarvam key is provided and language is supported
+    if (sarvamKey && targetSarvamLangCode) {
       try {
-        const targetLangCode = SARVAM_LANG_CODES[lang] || 'en-IN';
         const chunks = chunkText(cleanText, 450);
 
         // Fetch Sarvam chunks in parallel
@@ -154,10 +189,10 @@ export async function POST(req: NextRequest) {
                 },
                 body: JSON.stringify({
                   inputs: [chunk],
-                  target_language_code: targetLangCode,
-                  speaker: 'meera',
+                  target_language_code: targetSarvamLangCode,
+                  speaker: chosenSpeaker,
                   pitch: 0,
-                  pace: Math.max(0.7, Math.min(1.4, rate)),
+                  pace: Math.max(0.5, Math.min(2.0, rate)),
                   loudness: 1.5,
                   speech_sample_rate: 22050,
                   enable_preprocessing: true,
@@ -166,23 +201,30 @@ export async function POST(req: NextRequest) {
               });
               if (res.ok) {
                 const data = await res.json();
-                return data.audios?.[0] || null;
+                const audioResult = data.audios?.[0] || data.audio;
+                return typeof audioResult === 'string' ? audioResult : null;
+              } else {
+                const errBody = await res.text();
+                console.warn('Sarvam TTS API response not ok:', res.status, errBody);
               }
-            } catch {
-              // fallback
+            } catch (err) {
+              console.warn('Sarvam TTS fetch error for chunk:', err);
             }
             return null;
           })
         );
 
-        const validAudios = sarvamAudios.filter(Boolean);
+        const validAudios = sarvamAudios.filter((a): a is string => Boolean(a && a.trim().length > 0));
         if (validAudios.length > 0) {
           const firstAudio = `data:audio/wav;base64,${validAudios[0]}`;
-          audioCache.set(cacheKey, firstAudio);
+          const allAudioUris = validAudios.map((a) => `data:audio/wav;base64,${a}`);
+          audioCache.set(cacheKey, { audioData: firstAudio, allAudios: allAudioUris });
           return NextResponse.json({
             audioData: firstAudio,
-            allAudios: validAudios.map((a) => `data:audio/wav;base64,${a}`),
+            allAudios: allAudioUris,
             provider: 'sarvam',
+            speaker: chosenSpeaker,
+            targetLanguage: targetSarvamLangCode,
             status: 'success',
           });
         }
@@ -213,7 +255,7 @@ export async function POST(req: NextRequest) {
           const arrayBuffer = await res.arrayBuffer();
           const base64 = Buffer.from(arrayBuffer).toString('base64');
           const audioData = `data:audio/mp3;base64,${base64}`;
-          audioCache.set(cacheKey, audioData);
+          audioCache.set(cacheKey, { audioData });
           return NextResponse.json({
             audioData,
             provider: 'openai',
@@ -227,7 +269,7 @@ export async function POST(req: NextRequest) {
 
     // 3. High-Fidelity Server-side Google TTS Proxy (Parallel chunk fetch < 500ms)
     try {
-      const googleLangCode = GOOGLE_LANG_CODES[lang] || 'en';
+      const googleLangCode = GOOGLE_LANG_CODES[normalizedLang] || GOOGLE_LANG_CODES[normalizedLang.split('-')[0]] || 'en';
       const chunks = chunkText(cleanText, 180);
 
       // Fetch all chunks simultaneously in parallel
@@ -241,7 +283,7 @@ export async function POST(req: NextRequest) {
         const combined = Buffer.concat(validBuffers);
         const base64 = combined.toString('base64');
         const audioData = `data:audio/mp3;base64,${base64}`;
-        audioCache.set(cacheKey, audioData);
+        audioCache.set(cacheKey, { audioData });
         return NextResponse.json({
           audioData,
           provider: 'server-google-tts-parallel',

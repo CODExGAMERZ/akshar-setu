@@ -2,8 +2,14 @@ export interface TTSOptions {
   rate?: number;
   pitch?: number;
   voiceName?: string;
+  speaker?: string;
   lang?: string;
+<<<<<<< HEAD
   wordOffset?: number;
+=======
+  provider?: string;
+  apiKey?: string;
+>>>>>>> origin/main
   onWordBoundary?: (wordIndex: number, charIndex: number, word: string) => void;
   onSentenceBoundary?: (sentenceIndex: number) => void;
   onEnd?: () => void;
@@ -22,7 +28,12 @@ class TTSService {
   private currentTokenIndex = 0;
   private currentRate = 1.0;
   private activeMode: 'audio' | 'synth' | 'idle' = 'idle';
+<<<<<<< HEAD
   private wordOffset = 0;
+=======
+  private audioPlaylist: string[] = [];
+  private playlistIndex = 0;
+>>>>>>> origin/main
 
   constructor() {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
@@ -59,7 +70,11 @@ class TTSService {
 
   /**
    * Speak text with Dual Engine:
+<<<<<<< HEAD
    * 1. High-Fidelity Server Audio (Sarvam Bulbul Indic / OpenAI / Google TTS) via HTML5 Audio
+=======
+   * 1. High-Fidelity Server Audio (Sarvam Bulbul / Google TTS / OpenAI) via HTML5 Audio with multi-chunk chaining
+>>>>>>> origin/main
    * 2. Web Speech API client fallback
    */
   public async speak(
@@ -89,71 +104,103 @@ class TTSService {
     this.isSpeakingInternal = true;
     this.isPausedInternal = false;
 
+<<<<<<< HEAD
     // 1. Try High-Fidelity Server Audio Synthesis (Sarvam / OpenAI / Google)
+=======
+    // 1. Try High-Fidelity Server Audio Synthesis (Sarvam AI Bulbul Indic Audio & Server TTS)
+>>>>>>> origin/main
     try {
       const res = await fetch('/api/tts/synthesize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           text: speechCleanText,
-          lang: langCode,
+          lang: targetLang,
           rate: this.currentRate,
+          speaker: options.speaker || options.voiceName,
+          voiceName: options.voiceName,
+          provider: options.provider || 'sarvam',
+          apiKey: options.apiKey,
         })
       });
 
       if (res.ok) {
         const data = await res.json();
-        if (data.audioData && data.status === 'success') {
+        const playlist: string[] = (Array.isArray(data.allAudios) && data.allAudios.length > 0)
+          ? data.allAudios
+          : (data.audioData ? [data.audioData] : []);
+
+        if (playlist.length > 0 && data.status === 'success') {
           this.activeMode = 'audio';
-          const audio = new Audio(data.audioData);
-          this.audioElement = audio;
-          audio.playbackRate = this.currentRate;
+          this.audioPlaylist = playlist;
+          this.playlistIndex = 0;
 
-          // Word boundary progress tracking synchronized with audio playback
           const totalWords = this.currentTokens.length;
+          const wordsPerChunk = Math.max(1, Math.ceil(totalWords / playlist.length));
 
-          const trackProgress = () => {
-            if (!this.isSpeakingInternal || this.isPausedInternal || !audio || audio.paused) return;
+          const playNextChunk = async (index: number) => {
+            if (index >= playlist.length || !this.isSpeakingInternal) {
+              this.cleanup();
+              options.onEnd?.();
+              return;
+            }
 
-            if (audio.duration && audio.duration > 0 && totalWords > 0) {
-              const progressRatio = audio.currentTime / audio.duration;
-              const wordIdx = Math.min(
-                totalWords - 1,
-                Math.floor(progressRatio * totalWords)
-              );
-              if (wordIdx !== this.currentTokenIndex) {
-                this.currentTokenIndex = wordIdx;
-                const currentWord = this.currentTokens[wordIdx] || '';
-                const actualWordIndex = this.wordOffset + wordIdx;
-                options.onWordBoundary?.(actualWordIndex, 0, currentWord);
+            this.playlistIndex = index;
+            const audioSrc = playlist[index];
+            const audio = new Audio(audioSrc);
+            this.audioElement = audio;
+            audio.playbackRate = this.currentRate;
+
+            const chunkStartWord = index * wordsPerChunk;
+            const chunkEndWord = Math.min(totalWords, (index + 1) * wordsPerChunk);
+            const chunkWordCount = Math.max(1, chunkEndWord - chunkStartWord);
+
+            const trackProgress = () => {
+              if (!this.isSpeakingInternal || this.isPausedInternal || !audio || audio.paused) return;
+
+              if (audio.duration && audio.duration > 0 && totalWords > 0) {
+                const chunkProgress = audio.currentTime / audio.duration;
+                const relativeWord = Math.floor(chunkProgress * chunkWordCount);
+                const wordIdx = Math.min(totalWords - 1, chunkStartWord + relativeWord);
+
+                if (wordIdx !== this.currentTokenIndex) {
+                  this.currentTokenIndex = wordIdx;
+                  const currentWord = this.currentTokens[wordIdx] || '';
+                  const actualWordIndex = this.wordOffset + wordIdx;
+                  options.onWordBoundary?.(actualWordIndex, 0, currentWord);
+                }
               }
-            }
 
-            this.animFrameId = requestAnimationFrame(trackProgress);
+              this.animFrameId = requestAnimationFrame(trackProgress);
+            };
+
+            audio.onplay = () => {
+              this.isSpeakingInternal = true;
+              this.isPausedInternal = false;
+              if (index === 0 && this.currentTokens.length > 0) {
+                options.onWordBoundary?.(this.wordOffset, 0, this.currentTokens[0]);
+              }
+              this.animFrameId = requestAnimationFrame(trackProgress);
+            };
+
+            audio.onended = () => {
+              if (this.animFrameId !== null) {
+                cancelAnimationFrame(this.animFrameId);
+                this.animFrameId = null;
+              }
+              playNextChunk(index + 1);
+            };
+
+            audio.onerror = (e) => {
+              console.warn(`Audio chunk #${index} playback error, switching to SpeechSynthesis:`, e);
+              this.cleanup();
+              this.speakWithSpeechSynthesis(speechCleanText, targetLang, options);
+            };
+
+            await audio.play();
           };
 
-          audio.onplay = () => {
-            this.isSpeakingInternal = true;
-            this.isPausedInternal = false;
-            // Emit initial word
-            if (this.currentTokens.length > 0) {
-              options.onWordBoundary?.(this.wordOffset, 0, this.currentTokens[0]);
-            }
-            this.animFrameId = requestAnimationFrame(trackProgress);
-          };
-
-          audio.onended = () => {
-            this.cleanup();
-            options.onEnd?.();
-          };
-
-          audio.onerror = (e) => {
-            console.warn('Audio playback error, switching to SpeechSynthesis:', e);
-            this.cleanup();
-            this.speakWithSpeechSynthesis(speechCleanText, targetLang, options);
-          };
-
-          await audio.play();
+          await playNextChunk(0);
           return;
         }
       }
@@ -331,6 +378,8 @@ class TTSService {
         synth.cancel();
       } catch {}
     }
+    this.audioPlaylist = [];
+    this.playlistIndex = 0;
     this.cleanup();
   }
 
@@ -348,3 +397,4 @@ class TTSService {
 }
 
 export const ttsService = new TTSService();
+
