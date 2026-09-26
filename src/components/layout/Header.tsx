@@ -18,7 +18,6 @@ import { useApp } from '../../context/AppContext';
 import { Button } from '../common/Button';
 
 export const Header: React.FC = () => {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { 
     currentRoute, 
     setCurrentRoute, 
@@ -26,12 +25,9 @@ export const Header: React.FC = () => {
     currentUser, 
     setIsUploadModalOpen,
     setIsHowItWorksOpen,
-    setIsDictationModalOpen,
     ttsState,
     startTTS,
-    stopTTS,
-    notifications,
-    removeNotification
+    stopTTS
   } = useApp();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -39,7 +35,7 @@ export const Header: React.FC = () => {
   return (
     <header 
       id="main-app-header"
-      className="fixed top-0 left-0 right-0 w-full z-50 bg-[#FEF9EB]/90 backdrop-blur-md border-b border-[#E7DFCA] px-4 lg:px-8 py-3 transition-colors"
+      className="sticky top-0 z-40 bg-[#FEF9EB]/90 backdrop-blur-md border-b border-[#E7DFCA] px-4 lg:px-8 py-3 transition-colors"
     >
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between gap-4">
@@ -298,143 +294,6 @@ export const Header: React.FC = () => {
           </nav>
         )}
       </div>
-
-      {/* Mobile Menu Drawer */}
-      {isMobileMenuOpen && (
-        <div className="md:hidden absolute top-full left-0 w-full bg-[#FEF9EB] border-b border-[#E7DFCA] shadow-lg flex flex-col p-4 gap-2 z-50">
-          <Link
-            href="/"
-            onClick={() => setIsMobileMenuOpen(false)}
-            className={`px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
-              currentRoute === 'landing' 
-                ? 'bg-[#26231E] text-[#FEF9EB]' 
-                : 'text-[#4A4338] hover:text-[#26231E] hover:bg-[#EFE8D6]'
-            }`}
-          >
-            Overview
-          </Link>
-          <Link
-            href="/library"
-            onClick={() => setIsMobileMenuOpen(false)}
-            className={`px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all ${
-              currentRoute === 'library' 
-                ? 'bg-[#26231E] text-[#FEF9EB]' 
-                : 'text-[#4A4338] hover:text-[#26231E] hover:bg-[#EFE8D6]'
-            }`}
-          >
-            <BookOpen className="w-4 h-4" />
-            Library
-          </Link>
-          {activeDocument && (
-            <Link
-              href={`/read/${activeDocument.id}`}
-              onClick={() => setIsMobileMenuOpen(false)}
-              className={`px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all ${
-                currentRoute === 'reader' 
-                  ? 'bg-[#26231E] text-[#FEF9EB]' 
-                  : 'text-[#4A4338] hover:text-[#26231E] hover:bg-[#EFE8D6]'
-              }`}
-            >
-              <FileText className="w-4 h-4" />
-              Reader
-            </Link>
-          )}
-          <Link
-            href="/calibrate"
-            onClick={() => setIsMobileMenuOpen(false)}
-            className={`px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all ${
-              currentRoute === 'calibration' 
-                ? 'bg-[#26231E] text-[#FEF9EB]' 
-                : 'text-[#4A4338] hover:text-[#26231E] hover:bg-[#EFE8D6]'
-            }`}
-          >
-            <Sparkles className="w-4 h-4 text-[#D97706]" />
-            Calibration
-          </Link>
-          <Link
-            href="/profile"
-            onClick={() => setIsMobileMenuOpen(false)}
-            className={`px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all ${
-              currentRoute === 'profile' 
-                ? 'bg-[#26231E] text-[#FEF9EB]' 
-                : 'text-[#4A4338] hover:text-[#26231E] hover:bg-[#EFE8D6]'
-            }`}
-          >
-            <Sliders className="w-4 h-4" />
-            Profile
-          </Link>
-        </div>
-      )}
-
-      {/* Floating Global Toast Notifications Stack */}
-      {notifications && notifications.length > 0 && (
-        <div 
-          aria-live="polite"
-          className="fixed top-20 right-4 sm:right-6 z-[9999] flex flex-col gap-2.5 max-w-sm w-[92vw] pointer-events-none"
-        >
-          {notifications.map((n) => {
-            const isSuccess = n.type === 'success';
-            const isError = n.type === 'error';
-            const isWarning = n.type === 'warning';
-            const isInfo = n.type === 'info' || !n.type;
-
-            return (
-              <div
-                key={n.id}
-                role="alert"
-                className="pointer-events-auto flex items-start gap-3 p-4 rounded-2xl bg-[#26231E]/95 text-[#FEF9EB] border border-white/15 backdrop-blur-xl shadow-2xl shadow-black/30 transition-all animate-in fade-in slide-in-from-top-3 duration-200 overflow-hidden relative group"
-              >
-                {/* Accent strip */}
-                <div 
-                  className={`absolute left-0 top-0 bottom-0 w-1.5 ${
-                    isSuccess ? 'bg-emerald-500' :
-                    isError ? 'bg-rose-500' :
-                    isWarning ? 'bg-amber-500' : 'bg-sky-500'
-                  }`}
-                />
-
-                {/* Icon */}
-                <div className="shrink-0 pt-0.5 pl-1">
-                  {isSuccess && <CheckCircle2 className="w-5 h-5 text-emerald-400" />}
-                  {isError && <AlertCircle className="w-5 h-5 text-rose-400" />}
-                  {isWarning && <AlertTriangle className="w-5 h-5 text-amber-400" />}
-                  {isInfo && <Info className="w-5 h-5 text-sky-400" />}
-                </div>
-
-                {/* Content */}
-                <div className="flex-1 min-w-0 pr-1">
-                  {n.title && (
-                    <p className="text-xs font-bold tracking-tight text-white mb-0.5">
-                      {n.title}
-                    </p>
-                  )}
-                  <p className="text-xs text-[#EFE8D6] leading-relaxed break-words font-medium">
-                    {n.message}
-                  </p>
-                </div>
-
-                {/* Dismiss Button */}
-                <button
-                  onClick={() => removeNotification(n.id)}
-                  className="shrink-0 text-white/50 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors"
-                  aria-label="Dismiss notification"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-
-                {/* Bottom timer progress bar */}
-                <div 
-                  className={`absolute bottom-0 left-0 right-0 h-0.5 opacity-40 ${
-                    isSuccess ? 'bg-emerald-400' :
-                    isError ? 'bg-rose-400' :
-                    isWarning ? 'bg-amber-400' : 'bg-sky-400'
-                  }`}
-                />
-              </div>
-            );
-          })}
-        </div>
-      )}
     </header>
   );
 };

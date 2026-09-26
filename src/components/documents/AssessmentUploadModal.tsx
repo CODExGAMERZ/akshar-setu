@@ -7,7 +7,7 @@ import { UploadCloud, CheckCircle2, ShieldCheck, Sparkles, Loader2, Info } from 
 import { useApp } from '../../context/AppContext';
 
 export const AssessmentUploadModal: React.FC = () => {
-  const { isAssessmentModalOpen, setIsAssessmentModalOpen, updatePreferences, saveAsGlobalPreferences, showNotification } = useApp();
+  const { isAssessmentModalOpen, setIsAssessmentModalOpen, updatePreferences, saveAsGlobalPreferences } = useApp();
   const [file, setFile] = useState<File | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isAnalyzed, setIsAnalyzed] = useState(false);
@@ -76,12 +76,10 @@ export const AssessmentUploadModal: React.FC = () => {
     ]);
     setIsAnalyzing(false);
     setIsAnalyzed(true);
-    showNotification('Assessment profile extracted and calibrated successfully!', 'success', 'IEP Evaluated');
   };
 
   const handleApplyAndSave = async () => {
     await saveAsGlobalPreferences();
-    showNotification('Personalized reading profile saved to device!', 'success', 'Profile Updated');
     handleClose();
   };
 

@@ -11,13 +11,11 @@ import {
   BookOpen, 
   Zap, 
   Sparkles, 
-  CheckCircle2,
-  Flame,
-  ArrowRight
+  CheckCircle2 
 } from 'lucide-react';
 
 export const ReadingSessionSummaryModal: React.FC = () => {
-  const { isSessionSummaryOpen, setIsSessionSummaryOpen, activeDocument, setCurrentRoute, showNotification } = useApp();
+  const { isSessionSummaryOpen, setIsSessionSummaryOpen, activeDocument, setCurrentRoute } = useApp();
 
   const session = readingService.getActiveSession();
   const hasSufficientData = !!(session && session.elapsedSeconds >= 10 && session.wordsRead >= 5);
@@ -32,25 +30,15 @@ export const ReadingSessionSummaryModal: React.FC = () => {
     <Modal
       isOpen={isSessionSummaryOpen}
       onClose={() => setIsSessionSummaryOpen(false)}
-      title="Reading Milestone & Focus Analytics"
-      subtitle="Cognitive tracking, vocabulary retention, and reading fluency metrics"
+      title="Reading Session Summary"
+      subtitle="Your engagement metrics for this reading lesson"
       maxWidth="md"
     >
-      <div className="space-y-5 text-[#26231E]">
+      <div className="space-y-6 text-[#26231E]">
         {/* Big Trophy Header */}
-        <div className="p-6 bg-gradient-to-b from-[#FAF1DA] to-[#FAF3E0] border border-[#E7DFCA] rounded-3xl text-center space-y-3 relative overflow-hidden shadow-xs">
-          <div className="w-16 h-16 rounded-3xl bg-[#FEF9EB] text-[#D97706] flex items-center justify-center mx-auto border border-[#E4D5AD] shadow-md ring-4 ring-[#D97706]/15 animate-bounce duration-1000">
-            <Trophy className="w-8 h-8" />
-          </div>
-          <div className="space-y-1">
-            <h4 className="text-lg sm:text-xl font-bold text-[#1E1B18] tracking-tight">Superb Reading Focus!</h4>
-            <p className="text-xs text-[#706655] font-medium line-clamp-1">
-              {activeDocument?.title || 'Lesson Reading Session'}
-            </p>
-          </div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#EDF5EC] text-[#1E3A2F] text-xs font-bold border border-[#CBDBCB]">
-            <Flame className="w-3.5 h-3.5 text-amber-500" />
-            <span>Daily Streak Maintained (Day 5)</span>
+        <div className="p-6 bg-[#FAF3E0] border border-[#E7DFCA] rounded-2xl text-center space-y-2">
+          <div className="w-12 h-12 rounded-2xl bg-[#FEF9EB] text-[#D97706] flex items-center justify-center mx-auto border border-[#E7DFCA] shadow-2xs">
+            <Trophy className="w-6 h-6" />
           </div>
           <h4 className="text-lg font-bold text-[#1E1B18]">
             {hasSufficientData ? 'Great Focus & Progress!' : 'Reading Session Active'}
@@ -113,18 +101,16 @@ export const ReadingSessionSummaryModal: React.FC = () => {
             variant="outline"
             onClick={() => setIsSessionSummaryOpen(false)}
           >
-            Keep Reading
+            Continue Reading
           </Button>
           <Button
-            variant="accent"
-            icon={<ArrowRight className="w-4 h-4" />}
+            variant="primary"
             onClick={() => {
               setIsSessionSummaryOpen(false);
               setCurrentRoute('library');
-              showNotification('Session saved to reading analytics profile!', 'success', 'Progress Logged');
             }}
           >
-            Library Dashboard
+            Return to Library
           </Button>
         </div>
       </div>

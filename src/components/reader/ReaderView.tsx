@@ -21,8 +21,7 @@ import {
   Minimize2, 
   PanelLeftClose, 
   PanelLeftOpen, 
-  BarChart2,
-  Mic
+  BarChart2
 } from 'lucide-react';
 
 export const ReaderView: React.FC = () => {
@@ -39,7 +38,6 @@ export const ReaderView: React.FC = () => {
     activeTranslatedText, 
     setIsSimplificationModalOpen, 
     setIsSessionSummaryOpen, 
-    setIsDictationModalOpen,
     documents, 
     selectDocument, 
     updateDocumentProgress 
@@ -47,13 +45,6 @@ export const ReaderView: React.FC = () => {
 
   const [isLeftNavOpen, setIsLeftNavOpen] = useState<boolean>(true);
   const [isRightControlsOpen, setIsRightControlsOpen] = useState<boolean>(true);
-
-  React.useEffect(() => {
-    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
-      setIsLeftNavOpen(false);
-      setIsRightControlsOpen(false);
-    }
-  }, []);
 
   const { setIsUploadModalOpen, setCurrentRoute } = useApp();
 
@@ -104,7 +95,6 @@ export const ReaderView: React.FC = () => {
   };
 
   const handleNextPage = () => {
-    if (!activeDocument) return;
     if (activePageNumber < totalPages) {
       const nextPage = activePageNumber + 1;
       setActivePageNumber(nextPage);
@@ -124,7 +114,6 @@ export const ReaderView: React.FC = () => {
         <div className="flex items-center gap-2">
           {!preferences.focusMode && (
             <button
-              type="button"
               id="reader-toggle-left-nav"
               onClick={() => setIsLeftNavOpen(!isLeftNavOpen)}
               title={isLeftNavOpen ? "Hide document navigator" : "Show document navigator"}
@@ -145,11 +134,10 @@ export const ReaderView: React.FC = () => {
         </div>
 
         {/* Center: View Mode Toggle (Original vs Reflowed) */}
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-2">
           {/* Original vs Personalized Toggle */}
           <div className="flex items-center bg-[#FEF9EB] p-1 rounded-xl border border-[#D8CEB9] shadow-2xs">
             <button
-              type="button"
               id="reader-view-original-btn"
               onClick={() => setViewMode('original')}
               className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
@@ -161,7 +149,6 @@ export const ReaderView: React.FC = () => {
               Original View
             </button>
             <button
-              type="button"
               id="reader-view-personalized-btn"
               onClick={() => setViewMode('personalized')}
               className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
@@ -178,22 +165,9 @@ export const ReaderView: React.FC = () => {
           {/* Multilingual Selector */}
           <LanguageSelector />
         </div>
-        </div>
 
-        {/* Right: Actions (Focus mode, Simplify, Dictation, Metrics, Controls Drawer) */}
-        <div className="flex flex-wrap items-center justify-end gap-2 ml-auto">
-          {/* Voice Dictation Button */}
-          <Button
-            id="reader-dictation-btn"
-            variant="outline"
-            size="sm"
-            icon={<Mic className="w-3.5 h-3.5 text-[#D97706]" />}
-            onClick={() => setIsDictationModalOpen(true)}
-            title="Speech Dictation & Voice Translation"
-          >
-            <span className="hidden md:inline">Voice Dictation</span>
-          </Button>
-
+        {/* Right: Actions (Focus mode, Simplify, Metrics, Controls Drawer) */}
+        <div className="flex items-center gap-2">
           {/* Simplify Button */}
           <Button
             id="reader-simplify-btn"
@@ -207,7 +181,6 @@ export const ReaderView: React.FC = () => {
 
           {/* Focus Mode Toggle */}
           <button
-            type="button"
             id="reader-focus-mode-btn"
             onClick={() => updatePreferences({ focusMode: !preferences.focusMode })}
             title={preferences.focusMode ? "Exit Focus Mode" : "Enter Distraction-Free Focus Mode"}
@@ -225,7 +198,6 @@ export const ReaderView: React.FC = () => {
 
           {/* Reading Session Summary */}
           <button
-            type="button"
             id="reader-session-metrics-btn"
             onClick={() => setIsSessionSummaryOpen(true)}
             title="View reading pace and session metrics"
@@ -312,8 +284,7 @@ export const ReaderView: React.FC = () => {
               <p className="font-semibold text-[#1E1B18]">Personal Sweet Spot</p>
               <p>Adjust font, line height, or warm tints anytime on the right panel.</p>
             </div>
-            </aside>
-          </>
+          </aside>
         )}
 
         {/* CENTER COLUMN: Reading Canvas Area (Dominant) */}

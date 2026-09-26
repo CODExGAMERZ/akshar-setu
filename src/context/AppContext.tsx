@@ -10,8 +10,7 @@ import {
   TTSState, 
   User, 
   ActiveViewMode, 
-  CalibrationResult,
-  AppNotification
+  CalibrationResult 
 } from '../types';
 
 import { DEFAULT_READING_PREFERENCES } from '../data/themes';
@@ -75,8 +74,6 @@ export interface AppContextType {
   setTTSSpeed: (speed: number) => void;
   setTTSVoice: (voiceName: string) => void;
   seekToWord: (wordIndex: number) => void;
-  skipSentenceForward: () => void;
-  skipSentenceBackward: () => void;
 
   // Translation State
   currentLanguage: string;
@@ -84,11 +81,6 @@ export interface AppContextType {
   changeReadingLanguage: (langCode: string) => Promise<void>;
   activeTranslatedText: string | null;
   translationNotice: string | null;
-
-  // Notifications
-  notifications: AppNotification[];
-  showNotification: (message: string, type?: 'success' | 'error' | 'info' | 'warning', title?: string, duration?: number) => void;
-  removeNotification: (id: string) => void;
 
   // Modals & Popups
   isUploadModalOpen: boolean;
@@ -101,8 +93,6 @@ export interface AppContextType {
   setIsSessionSummaryOpen: (open: boolean) => void;
   isHowItWorksOpen: boolean;
   setIsHowItWorksOpen: (open: boolean) => void;
-  isDictationModalOpen: boolean;
-  setIsDictationModalOpen: (open: boolean) => void;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -146,37 +136,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [activeTranslatedText, setActiveTranslatedText] = useState<string | null>(null);
   const [translationNotice, setTranslationNotice] = useState<string | null>(null);
 
-  // Notifications
-  const [notifications, setNotifications] = useState<AppNotification[]>([]);
-
-  const removeNotification = useCallback((id: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
-  }, []);
-
-  const showNotification = useCallback((
-    message: string, 
-    type: 'success' | 'error' | 'info' | 'warning' = 'info', 
-    title?: string, 
-    duration = 4000
-  ) => {
-    const id = `notif_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-    const newNotif: AppNotification = { id, message, type, title, duration };
-    setNotifications(prev => [...prev.slice(-4), newNotif]);
-
-    if (duration > 0) {
-      setTimeout(() => {
-        setNotifications(prev => prev.filter(n => n.id !== id));
-      }, duration);
-    }
-  }, []);
-
   // Modals
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isAssessmentModalOpen, setIsAssessmentModalOpen] = useState(false);
   const [isSimplificationModalOpen, setIsSimplificationModalOpen] = useState(false);
   const [isSessionSummaryOpen, setIsSessionSummaryOpen] = useState(false);
   const [isHowItWorksOpen, setIsHowItWorksOpen] = useState(false);
-  const [isDictationModalOpen, setIsDictationModalOpen] = useState(false);
 
   const router = useRouter();
   const pathname = usePathname();
@@ -215,6 +180,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       router.push(targetPath);
     }
   }, [pathname, router]);
+
 
   // Initial Load
   useEffect(() => {
@@ -353,6 +319,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     selectDocument(documentId);
     router.push(`/read/${documentId}`);
   }, [selectDocument, router]);
+
 
   const deleteDocument = useCallback(async (id: string) => {
     await documentService.deleteDocument(id);
@@ -527,49 +494,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [updatePreferences]);
 
   const seekToWord = useCallback((wordIndex: number) => {
-    ttsService.stop();
     const fullText = getCurrentPageText();
     const words = fullText.match(/\S+/g) || [];
     const remainingText = words.slice(wordIndex).join(' ');
     startTTS(remainingText, wordIndex);
   }, [getCurrentPageText, startTTS]);
 
-  const skipSentenceForward = useCallback(() => {
-    const fullText = getCurrentPageText();
-    const words = fullText.match(/\S+/g) || [];
-    const currentIndex = Math.max(0, ttsState.currentWordIndex);
-    // Find next sentence punctuation after current index
-    let nextIndex = Math.min(words.length - 1, currentIndex + 8);
-    for (let i = currentIndex + 1; i < words.length; i++) {
-      if (/[.!?।]$/.test(words[i])) {
-        nextIndex = Math.min(words.length - 1, i + 1);
-        break;
-      }
-    }
-    seekToWord(nextIndex);
-  }, [getCurrentPageText, ttsState.currentWordIndex, seekToWord]);
-
-  const skipSentenceBackward = useCallback(() => {
-    const fullText = getCurrentPageText();
-    const words = fullText.match(/\S+/g) || [];
-    const currentIndex = Math.max(0, ttsState.currentWordIndex);
-    // Find previous sentence start before current index
-    let prevIndex = 0;
-    for (let i = currentIndex - 2; i >= 0; i--) {
-      if (/[.!?।]$/.test(words[i])) {
-        prevIndex = i + 1;
-        break;
-      }
-    }
-    seekToWord(prevIndex);
-  }, [getCurrentPageText, ttsState.currentWordIndex, seekToWord]);
-
   // Translation
   const changeReadingLanguage = useCallback(async (targetLang: string) => {
     if (!activeDocument) return;
     setIsTranslating(true);
     setCurrentLanguage(targetLang);
-    updatePreferences({ audioLanguage: targetLang });
     try {
       const page = activeDocument.pages.find(p => p.pageNumber === activePageNumber) || activeDocument.pages[0];
       if (!page) return;
@@ -598,7 +533,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } finally {
       setIsTranslating(false);
     }
-  }, [activeDocument, activePageNumber, updatePreferences]);
+  }, [activeDocument, activePageNumber]);
 
   // Retrigger translation on page change when a non-native language is active
   useEffect(() => {
@@ -651,8 +586,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setTTSSpeed,
     setTTSVoice,
     seekToWord,
-    skipSentenceForward,
-    skipSentenceBackward,
     currentLanguage,
     isTranslating,
     changeReadingLanguage,
@@ -667,12 +600,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     isSessionSummaryOpen,
     setIsSessionSummaryOpen,
     isHowItWorksOpen,
-    setIsHowItWorksOpen,
-    isDictationModalOpen,
-    setIsDictationModalOpen,
-    notifications,
-    showNotification,
-    removeNotification
+    setIsHowItWorksOpen
   }), [
     currentRoute,
     setCurrentRoute,
@@ -709,8 +637,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setTTSSpeed,
     setTTSVoice,
     seekToWord,
-    skipSentenceForward,
-    skipSentenceBackward,
     currentLanguage,
     isTranslating,
     changeReadingLanguage,
@@ -720,11 +646,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     isAssessmentModalOpen,
     isSimplificationModalOpen,
     isSessionSummaryOpen,
-    isHowItWorksOpen,
-    isDictationModalOpen,
-    notifications,
-    showNotification,
-    removeNotification
+    isHowItWorksOpen
   ]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

@@ -43,31 +43,9 @@ Reading difficulty is neither rare nor one-size-fits-all:
 Native script rendering, contextual translations, and phonetic integrity across:
 - **Indic Languages (11)**: Hindi (हिन्दी), Marathi (मराठी), Bengali (বাংলা), Tamil (தமிழ்), Telugu (తెలుగు), Odia (ଓଡ଼ିଆ), Gujarati (ગુજરાતી), Kannada (ಕನ್ನಡ), Malayalam (മലയാളം), Punjabi (ਪੰਜਾਬੀ), English.
 - **Global Languages (2)**: Spanish (Español), French (Français).
-- **Sarvam AI Mayura Integration**: Dedicated translation pipeline powered by Sarvam AI (`mayura:v1`) with fallback AI completions and instant zero-latency pre-computed translations.
-- **Auto-Bound Accent Tracking**: Switching the document language automatically updates the speech synthesis engine to use native Indic accents.
+- **Hybrid NLP Backend**: Powered by Sarvam AI Mayura Translation with parallel MyMemory caching.
 
-### 5. 🎙️ Real-time Speech Dictation & Voice Translation
-- **Voice-to-Text Ingestion**: Speak in any language using microphone dictation with real-time streaming transcripts.
-- **Cross-Lingual Voice Translation**: One-click translation of spoken voice into any target Indic or global language.
-- **Dual Voice Playback**: Listen to both source spoken transcripts and translated speech with synchronized audio.
-- **Save as Document**: Directly export spoken notes or lectures into an accessible reading document in the user library.
-
-### 6. 🔊 Dual-Engine High-Fidelity Audio Dock & Karaoke Tracking
-- **High-Fidelity Server Audio**: Routes through `/api/tts/synthesize` (Sarvam Bulbul Indic Audio & Google TTS) for natural human-like pronunciation in all supported languages.
-- **15-Second Cutoff Prevention**: Custom sentence chunking and synthetic boundary heartbeats in Web Speech API to guarantee continuous, uninterrupted speech on all browsers.
-- **Token-Accurate Click-to-Play**: Clicking any word starts audio playback from that exact position (`wordOffset`), maintaining 100% visual highlight synchronization.
-- **Persistent Floating Audio Dock**:
-  - Play / Pause / Stop controls
-  - Sentence navigation buttons (`SkipBack` and `SkipForward`)
-  - Speech playback rate cycler (`0.75x`, `1.0x`, `1.25x`, `1.5x`, `2.0x`)
-  - Live animated equalizer soundwave and real-time word counter (`Word X of Y`).
-
-### 7. 🎯 Active Line Focus Section & Optical Reading Ruler
-- **Active Line Highlighting**: Select `highlightMode: 'line'` to spotlight the currently spoken sentence with an amber indicator badge and clear borders.
-- **Focus Mode Spotlight Mask**: Dims non-active background paragraphs during playback to reduce cognitive overload and saccadic disorientation.
-- **Optical Reading Ruler Guide**: Smoothly tracks mouse movement or synchronizes with active spoken text, with customizable ruler heights (40px–140px).
-
-### 8. 🧠 WCAG Plain Language AI Text Simplification
+### 5. 🧠 WCAG Plain Language AI Text Simplification
 - **Light Simplification**: Swaps archaic and multi-syllabic vocabulary with everyday conversational terms.
 - **Medium Simplification**: Shortens compound sentences into clear statements under 14 words each.
 - **Heavy Simplification**: Restructures dense paragraphs into clean, bulleted key takeaways (`•`).
@@ -81,7 +59,7 @@ Native script rendering, contextual translations, and phonetic integrity across:
 ### 7. 🛡️ Clinical Assessment & IEP Ingestion
 - Upload optometric contrast recommendations, school IEPs, or psychoeducational evaluation PDFs to automatically extract accommodations and pre-tune reading comfort settings via `/api/assessment/analyze`.
 
-### 10. 🎨 Ivory Clarity Design System
+### 8. 🎨 Ivory Clarity Design System
 - Built on calming, scientifically tested anti-glare palettes:
   - **Warm Cream** (`#FEF9EB` / `#26231E`) — Primary Anti-Glare
   - **Soft Mint** (`#EDF5EC` / `#1E3A2F`) — Calming Contrast
@@ -97,11 +75,9 @@ graph TD
     User(["Student / Educator / Parent"]) --> NextApp["Next.js 14 Web Application"]
     
     subgraph Client Layer
-        NextApp --> ReaderCanvas["Accessible Reading Canvas (Tokenized Reflow Engine)"]
-        NextApp --> ActiveLineFocus["Active Line & Focus Dimming Spotlight"]
+        NextApp --> ReaderCanvas["Accessible Reading Canvas (Reflow Engine)"]
         NextApp --> CalibrationEngine["8-Step Visual Calibration Diagnostic"]
-        NextApp --> AudioDock["Persistent Audio Dock (Skip, Waveform & Tracker)"]
-        NextApp --> DictationModal["Speech Dictation & Voice Translation Modal"]
+        NextApp --> AudioDock["Persistent Audio Dock & Word Tracker"]
         NextApp --> AppContext["AppContext State (localStorage Persistence)"]
     end
 
@@ -114,17 +90,17 @@ graph TD
     end
 
     subgraph AI & Service Integrations
-        UploadAPI --> GeminiVision["Gemini 2.5/1.5 Flash (Multimodal Vision OCR)"]
-        UploadAPI --> PDFParser["pdf-parse (Digital Layer Extractor)"]
+        UploadAPI --> PDFParser["pdf-parse (Layer Extractor)"]
+        UploadAPI --> GeminiVision["Gemini 3.0 Flash (Multimodal OCR)"]
         
-        SimplifyAPI --> GeminiNLP["Gemini NLP (Plain Language Simplifier)"]
+        SimplifyAPI --> GeminiNLP["Gemini 3.0 Flash (Plain Language Simplifier)"]
         SimplifyAPI --> LocalEngine["Local Algorithmic Simplifier (Offline Fallback)"]
         
         TranslateAPI --> SarvamMayura["Sarvam AI Mayura (Indic Engine)"]
         TranslateAPI --> MyMemoryCache["Parallel Translation Memory"]
         
+        TTSAPI --> GoogleTTS["High-Fidelity Server Google TTS"]
         TTSAPI --> SarvamBulbul["Sarvam Bulbul (Indic Audio)"]
-        TTSAPI --> GoogleTTS["High-Fidelity Server Audio Proxy"]
         TTSAPI --> WebSpeech["Browser Web Speech API (Client Fallback)"]
 
         AssessmentAPI --> GeminiEval["Gemini Report Accommodations Parser"]
@@ -266,18 +242,14 @@ Vercel will compile all static pages and serverless API functions automatically 
 
 ---
 
-## 👥 Team & Contributors
+## 👥 Contributors & Acknowledgements
 
-Built with ❤️ for the **Smart India Hackathon** to foster inclusive, accessible education for neurodivergent and regional language learners:
+Built with ❤️ for the **Smart India Hackathon** to foster inclusive educational technology:
 
-| # | Member | Role & Contribution | GitHub Profile |
+| # | Contributor | Role & Specialization | GitHub |
 | :-: | :--- | :--- | :--- |
 | 1 | **Chiraag Agarwal** | Team Lead • Architecture & System Design | [@chiraagagarwal](https://github.com/chiraagagarwal) |
-| 2 | **Aryan** | AI Engineering • Indic NLP & Speech Systems | [@CODExGAMERZ](https://github.com/CODExGAMERZ) |
-| 3 | **Katyayani Pandit** | UI/UX Design & Pedagogical Research | [@katyayanip1001-byte](https://github.com/katyayanip1001-byte) |
-| 4 | **Sneha Nandi** | Project Planning & Accessibility Research | [@25156124-cmd](https://github.com/25156124-cmd) |
-| 5 | **Sanjana Pathak** | Frontend Engineering & Research | [@PathakSanjana](https://github.com/PathakSanjana) |
-| 6 | **Kundan Kumar** | UI/UX Design & User Research | [@Kundan840](https://github.com/Kundan840) |
+| 2 | **CODExGAMERZ** | AI Engineering • Indic NLP & Speech Systems | [@CODExGAMERZ](https://github.com/CODExGAMERZ) |
 
 ---
 
