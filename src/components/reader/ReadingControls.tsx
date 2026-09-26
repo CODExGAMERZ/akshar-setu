@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { FontOption, HighlightMode, ConfusablePair } from '../../types';
 import { READING_THEMES } from '../../data/themes';
+import { getConfusablesForLanguage } from '../../data/confusablePairs';
 import { Slider } from '../common/Slider';
 import { ToggleSwitch } from '../common/ToggleSwitch';
 import { Button } from '../common/Button';
@@ -30,7 +31,8 @@ export const ReadingControls: React.FC<ReadingControlsProps> = ({ onClose }) => 
     saveAsGlobalPreferences,
     saveForThisDocumentOnly,
     resetToCalibratedSettings,
-    resetToDefaultSettings
+    resetToDefaultSettings,
+    currentLanguage
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<'typography' | 'colors' | 'focus' | 'confusable'>('typography');
@@ -52,7 +54,27 @@ export const ReadingControls: React.FC<ReadingControlsProps> = ({ onClose }) => 
     { id: 'none', label: 'Off' }
   ];
 
-  const confusablePairs: ConfusablePair[] = ['b/d', 'p/q', 'm/w', 'n/u', 's/z'];
+  // Dynamic confusable pairs based on active reading language
+  const languageConfusables = useMemo(() => {
+    return getConfusablesForLanguage(currentLanguage);
+  }, [currentLanguage]);
+
+  // When the language changes, reset active pairs to all pairs for the new language
+  const [prevLangKey, setPrevLangKey] = useState(currentLanguage);
+  useEffect(() => {
+    const normalizedPrev = (prevLangKey || 'en').split('-')[0].toLowerCase();
+    const normalizedCurr = (currentLanguage || 'en').split('-')[0].toLowerCase();
+    if (normalizedPrev !== normalizedCurr) {
+      setPrevLangKey(currentLanguage);
+      // Auto-select all pairs for the new language
+      updatePreferences({
+        confusableLetterSettings: {
+          ...preferences.confusableLetterSettings,
+          activePairs: languageConfusables.pairs.map(p => p.pair)
+        }
+      });
+    }
+  }, [currentLanguage, prevLangKey, languageConfusables, preferences.confusableLetterSettings, updatePreferences]);
 
   const triggerSaveToast = (msg: string) => {
     setSaveToast(msg);
@@ -122,7 +144,7 @@ export const ReadingControls: React.FC<ReadingControlsProps> = ({ onClose }) => 
           }`}
         >
           <Glasses className="w-3.5 h-3.5" />
-          <span>b/d</span>
+          <span>{languageConfusables.pairs[0]?.label.split(' / ').join('/') || 'b/d'}</span>
         </button>
 
         <button
@@ -295,10 +317,23 @@ export const ReadingControls: React.FC<ReadingControlsProps> = ({ onClose }) => 
         {/* CONFUSABLE LETTERS TAB */}
         {activeTab === 'confusable' && (
           <div className="space-y-5">
+            {/* Language indicator badge */}
+            <div className="flex items-center gap-2 p-2.5 rounded-xl bg-[#FEF9EB] border border-[#E7DFCA]">
+              <Glasses className="w-4 h-4 text-[#D97706]" />
+              <div>
+                <p className="text-xs font-bold text-[#1E1B18]">
+                  {languageConfusables.languageName} — {languageConfusables.scriptName} Script
+                </p>
+                <p className="text-[10px] text-[#706655]">
+                  Pairs update automatically when you change the reading language
+                </p>
+              </div>
+            </div>
+
             <ToggleSwitch
               label="Enable Confusable Letter Disambiguation"
               checked={preferences.confusableLetterSettings.enabled}
-              description="Visually differentiates mirror characters (e.g. b and d)"
+              description={`Visually differentiates mirror characters in ${languageConfusables.scriptName} script`}
               onChange={(checked) => updatePreferences({
                 confusableLetterSettings: {
                   ...preferences.confusableLetterSettings,
@@ -311,19 +346,19 @@ export const ReadingControls: React.FC<ReadingControlsProps> = ({ onClose }) => 
               <>
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-[#1E1B18] uppercase tracking-wider">
-                    Active Letter Pairs
+                    Active Letter Pairs ({languageConfusables.pairs.length})
                   </label>
                   <div className="grid grid-cols-2 gap-2">
-                    {confusablePairs.map(pair => {
-                      const isActive = preferences.confusableLetterSettings.activePairs.includes(pair);
+                    {languageConfusables.pairs.map(scriptPair => {
+                      const isActive = preferences.confusableLetterSettings.activePairs.includes(scriptPair.pair);
                       return (
                         <button
-                          key={pair}
+                          key={scriptPair.pair}
                           onClick={() => {
                             const current = preferences.confusableLetterSettings.activePairs;
                             const next = isActive
-                              ? current.filter(p => p !== pair)
-                              : [...current, pair];
+                              ? current.filter(p => p !== scriptPair.pair)
+                              : [...current, scriptPair.pair];
                             updatePreferences({
                               confusableLetterSettings: {
                                 ...preferences.confusableLetterSettings,
@@ -331,14 +366,17 @@ export const ReadingControls: React.FC<ReadingControlsProps> = ({ onClose }) => 
                               }
                             });
                           }}
-                          className={`p-2.5 rounded-xl border flex items-center justify-between text-xs font-bold transition-all ${
+                          className={`p-2.5 rounded-xl border text-left transition-all ${
                             isActive
                               ? 'bg-[#FEF9EB] border-[#D97706] text-[#D97706]'
                               : 'bg-[#FEF9EB]/60 border-[#E7DFCA] text-[#706655]'
                           }`}
                         >
-                          <span className="font-mono text-sm tracking-wider">{pair}</span>
-                          {isActive && <Check className="w-3.5 h-3.5" />}
+                          <div className="flex items-center justify-between">
+                            <span className="font-mono text-sm tracking-wider font-bold">{scriptPair.label}</span>
+                            {isActive && <Check className="w-3.5 h-3.5 shrink-0" />}
+                          </div>
+                          <p className="text-[10px] mt-0.5 opacity-75 line-clamp-1">{scriptPair.description}</p>
                         </button>
                       );
                     })}

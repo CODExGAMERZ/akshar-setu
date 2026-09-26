@@ -40,7 +40,8 @@ export const ReaderView: React.FC = () => {
     setIsSessionSummaryOpen, 
     documents, 
     selectDocument, 
-    updateDocumentProgress 
+    updateDocumentProgress,
+    currentLanguage
   } = useApp();
 
   const [isLeftNavOpen, setIsLeftNavOpen] = useState<boolean>(true);
@@ -309,6 +310,7 @@ export const ReaderView: React.FC = () => {
                 preferences={preferences}
                 ttsState={ttsState}
                 translatedText={activeTranslatedText}
+                currentLanguage={currentLanguage}
                 onWordClick={(wordIdx) => {
                   seekToWord(wordIdx);
                 }}

@@ -2,7 +2,7 @@ export type FontOption = 'Lexend' | 'Atkinson Hyperlegible' | 'OpenDyslexic' | '
 
 export type HighlightMode = 'none' | 'word' | 'phrase' | 'line' | 'selective';
 
-export type ConfusablePair = 'b/d' | 'p/q' | 'm/w' | 'n/u' | 's/z';
+export type ConfusablePair = string;
 
 export type SupportedLanguage = 'en' | 'hi' | 'mr' | 'ta' | 'te' | 'bn' | 'gu' | 'kn' | 'ml' | 'pa' | 'or' | 'es' | 'fr' | string;
 

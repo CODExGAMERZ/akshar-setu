@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import { DocumentPage, ReadingPreferences, ConfusablePair, TTSState } from '../../types';
 import { getFontFamilyCSS } from '../../lib/utils';
+import { getConfusablesForLanguage } from '../../data/confusablePairs';
 import { Info } from 'lucide-react';
 
 export interface ReadingContentProps {
@@ -10,6 +11,7 @@ export interface ReadingContentProps {
   preferences: ReadingPreferences;
   ttsState: TTSState;
   translatedText: string | null;
+  currentLanguage?: string;
   onWordClick?: (wordIndex: number, word: string) => void;
 }
 
@@ -18,9 +20,39 @@ export const ReadingContent: React.FC<ReadingContentProps> = ({
   preferences,
   ttsState,
   translatedText,
+  currentLanguage = 'en',
   onWordClick
 }) => {
   const [selectedTerm, setSelectedTerm] = useState<{ term: string; definition: string } | null>(null);
+
+  // Resolve confusable pairs for the active language
+  const languageConfusables = useMemo(() => {
+    return getConfusablesForLanguage(currentLanguage);
+  }, [currentLanguage]);
+
+  // Build a quick-lookup Set of all confusable characters for the active language & active pairs
+  const confusableLookup = useMemo(() => {
+    if (!preferences.confusableLetterSettings.enabled) return null;
+
+    const { activePairs } = preferences.confusableLetterSettings;
+    const lookup = new Map<string, { pairId: string; isFirst: boolean }>();
+
+    for (const scriptPair of languageConfusables.pairs) {
+      if (activePairs.includes(scriptPair.pair)) {
+        // For each active pair, register both characters (and lowercase variants for Latin)
+        const charsA = [scriptPair.charA, scriptPair.charA.toLowerCase()];
+        const charsB = [scriptPair.charB, scriptPair.charB.toLowerCase()];
+        for (const c of charsA) {
+          if (!lookup.has(c)) lookup.set(c, { pairId: scriptPair.pair, isFirst: true });
+        }
+        for (const c of charsB) {
+          if (!lookup.has(c)) lookup.set(c, { pairId: scriptPair.pair, isFirst: false });
+        }
+      }
+    }
+
+    return lookup;
+  }, [languageConfusables, preferences.confusableLetterSettings]);
 
   // Content to render (either translated or original text paragraphs)
   const rawText = translatedText || page.content;
@@ -51,32 +83,19 @@ export const ReadingContent: React.FC<ReadingContentProps> = ({
 
   // Confusable letters renderer helper
   const renderConfusableCharacters = (word: string) => {
-    if (!preferences.confusableLetterSettings.enabled) {
+    if (!preferences.confusableLetterSettings.enabled || !confusableLookup || confusableLookup.size === 0) {
       return word;
     }
 
-    const { activePairs, style } = preferences.confusableLetterSettings;
+    const { style } = preferences.confusableLetterSettings;
     const chars = Array.from(word);
 
     return chars.map((char, cIdx) => {
-      const lower = char.toLowerCase();
-      let isConfusable = false;
+      // Check both the exact char and lowercase for Latin scripts
+      const match = confusableLookup.get(char) || confusableLookup.get(char.toLowerCase());
+      if (!match) return char;
 
-      if (activePairs.includes('b/d') && (lower === 'b' || lower === 'd')) {
-        isConfusable = true;
-      } else if (activePairs.includes('p/q') && (lower === 'p' || lower === 'q')) {
-        isConfusable = true;
-      } else if (activePairs.includes('m/w') && (lower === 'm' || lower === 'w')) {
-        isConfusable = true;
-      } else if (activePairs.includes('n/u') && (lower === 'n' || lower === 'u')) {
-        isConfusable = true;
-      } else if (activePairs.includes('s/z') && (lower === 's' || lower === 'z')) {
-        isConfusable = true;
-      }
-
-      if (!isConfusable) return char;
-
-      const isFirstOfPair = lower === 'b' || lower === 'p' || lower === 'm' || lower === 'n' || lower === 's';
+      const isFirstOfPair = match.isFirst;
 
       if (style === 'weight') {
         return (
