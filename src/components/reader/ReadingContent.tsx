@@ -70,15 +70,19 @@ export const ReadingContent: React.FC<ReadingContentProps> = ({
         isConfusable = true;
       } else if (activePairs.includes('n/u') && (lower === 'n' || lower === 'u')) {
         isConfusable = true;
+      } else if (activePairs.includes('s/z') && (lower === 's' || lower === 'z')) {
+        isConfusable = true;
       }
 
       if (!isConfusable) return char;
+
+      const isFirstOfPair = lower === 'b' || lower === 'p' || lower === 'm' || lower === 'n' || lower === 's';
 
       if (style === 'weight') {
         return (
           <span 
             key={cIdx} 
-            className={`font-black ${lower === 'b' || lower === 'p' || lower === 'm' ? 'text-[#B45309]' : 'text-[#047857]'}`}
+            className={`font-black ${isFirstOfPair ? 'text-[#B45309]' : 'text-[#047857]'}`}
             title={`Confusable letter: ${char}`}
           >
             {char}
@@ -88,7 +92,7 @@ export const ReadingContent: React.FC<ReadingContentProps> = ({
         return (
           <span 
             key={cIdx} 
-            className={`px-0.5 rounded ${lower === 'b' || lower === 'p' || lower === 'm' ? 'bg-[#FED7AA]/50 text-[#9A3412]' : 'bg-[#BBF7D0]/50 text-[#166534]'}`}
+            className={`px-0.5 rounded ${isFirstOfPair ? 'bg-[#FED7AA]/50 text-[#9A3412]' : 'bg-[#BBF7D0]/50 text-[#166534]'}`}
           >
             {char}
           </span>
@@ -154,39 +158,54 @@ export const ReadingContent: React.FC<ReadingContentProps> = ({
           maxWidth: `${preferences.textWidth}ch`
         }}
       >
-        {tokenizedParagraphs.map(({ pIdx, elements }) => (
-          <p
-            key={pIdx}
-            className="transition-all rounded-lg p-1.5 -m-1.5"
-            style={{
-              marginBottom: `${preferences.paragraphSpacing}rem`
-            }}
-          >
-            {elements.map((elem, eIdx) => {
-              if (elem.isSpace) {
-                return <span key={eIdx}>{elem.text}</span>;
-              }
+        {tokenizedParagraphs.map(({ pIdx, elements }) => {
+          const paragraphWordIndices = elements
+            .filter(e => !e.isSpace && e.wordIndex !== undefined)
+            .map(e => e.wordIndex as number);
+          const isParagraphContainingActiveWord = ttsState.isPlaying && 
+            preferences.highlightMode === 'line' && 
+            paragraphWordIndices.includes(ttsState.currentWordIndex);
 
-              const wordIdx = elem.wordIndex ?? -1;
-              const isCurrentSpokenWord = ttsState.isPlaying && ttsState.currentWordIndex === wordIdx;
-              const isCurrentSpokenPhrase = ttsState.isPlaying && 
-                preferences.highlightMode === 'phrase' && 
-                wordIdx >= ttsState.currentWordIndex - 2 && 
-                wordIdx <= ttsState.currentWordIndex + 2;
+          return (
+            <p
+              key={pIdx}
+              className={`transition-all rounded-xl p-2 -m-2 ${
+                isParagraphContainingActiveWord ? 'ring-2 ring-[#D97706]/40 shadow-xs' : ''
+              }`}
+              style={{
+                marginBottom: `${preferences.paragraphSpacing}rem`,
+                backgroundColor: isParagraphContainingActiveWord 
+                  ? `${preferences.highlightColor}33`
+                  : undefined
+              }}
+            >
+              {elements.map((elem, eIdx) => {
+                if (elem.isSpace) {
+                  return <span key={eIdx}>{elem.text}</span>;
+                }
 
-              let highlightClass = '';
-              if (isCurrentSpokenWord && preferences.highlightMode === 'word') {
-                highlightClass = 'rounded-md shadow-xs px-1 -mx-0.5 font-bold transition-all scale-105 inline-block';
-              } else if (isCurrentSpokenPhrase) {
-                highlightClass = 'rounded-xs px-0.5 bg-[#FDE047]/60';
-              }
+                const wordIdx = elem.wordIndex ?? -1;
+                const isCurrentSpokenWord = ttsState.isPlaying && ttsState.currentWordIndex === wordIdx;
+                const isCurrentSpokenPhrase = ttsState.isPlaying && 
+                  preferences.highlightMode === 'phrase' && 
+                  wordIdx >= ttsState.currentWordIndex - 2 && 
+                  wordIdx <= ttsState.currentWordIndex + 2;
 
-              return (
-                <span
-                  key={eIdx}
-                  id={`word-span-${wordIdx}`}
-                  onClick={() => onWordClick && onWordClick(wordIdx, elem.text)}
-                  className={`cursor-pointer transition-colors duration-100 ${highlightClass}`}
+                let highlightClass = '';
+                if (isCurrentSpokenWord && preferences.highlightMode === 'word') {
+                  highlightClass = 'rounded-md shadow-xs px-1 -mx-0.5 font-bold transition-all scale-105 inline-block';
+                } else if (isCurrentSpokenPhrase) {
+                  highlightClass = 'rounded-xs px-0.5 bg-[#FDE047]/60';
+                } else if (isCurrentSpokenWord && preferences.highlightMode === 'line') {
+                  highlightClass = 'font-bold underline decoration-[#D97706] decoration-2';
+                }
+
+                return (
+                  <span
+                    key={eIdx}
+                    id={`word-span-${wordIdx}`}
+                    onClick={() => onWordClick && onWordClick(wordIdx, elem.text)}
+                    className={`cursor-pointer transition-colors duration-100 ${highlightClass}`}
                   style={{
                     backgroundColor: isCurrentSpokenWord && preferences.highlightMode === 'word' 
                       ? preferences.highlightColor 
@@ -202,7 +221,8 @@ export const ReadingContent: React.FC<ReadingContentProps> = ({
               );
             })}
           </p>
-        ))}
+        );
+      })}
 
         {/* Key Educational Terms Glossary in Reader */}
         {page.keyTerms && page.keyTerms.length > 0 && !translatedText && (

@@ -18,6 +18,7 @@ export const SimplificationModal: React.FC = () => {
 
   const [simplifiedData, setSimplifiedData] = useState<SimplifiedResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [level, setLevel] = useState<'light' | 'medium' | 'heavy'>('medium');
 
   const currentPage = activeDocument?.pages.find(p => p.pageNumber === activePageNumber) || activeDocument?.pages[0];
 
@@ -26,7 +27,7 @@ export const SimplificationModal: React.FC = () => {
       if (isSimplificationModalOpen && currentPage) {
         setIsLoading(true);
         try {
-          const res = await simplificationService.simplify(currentPage.content);
+          const res = await simplificationService.simplify(currentPage.content, level);
           setSimplifiedData(res);
         } catch (e) {
           console.warn('Failed to simplify text:', e);
@@ -36,7 +37,7 @@ export const SimplificationModal: React.FC = () => {
       }
     }
     loadSimplified();
-  }, [isSimplificationModalOpen, currentPage]);
+  }, [isSimplificationModalOpen, currentPage, level]);
 
   const handleReadAloudSimplified = () => {
     if (simplifiedData) {
@@ -54,6 +55,26 @@ export const SimplificationModal: React.FC = () => {
       maxWidth="2xl"
     >
       <div className="space-y-6 text-[#26231E]">
+        {/* Level Selector Segmented Control (Fix 9) */}
+        <div className="flex items-center justify-between p-1.5 bg-[#FAF3E0] border border-[#E7DFCA] rounded-xl text-xs">
+          <span className="font-bold text-[#706655] px-3">Simplification Level:</span>
+          <div className="flex items-center gap-1">
+            {(['light', 'medium', 'heavy'] as const).map(lvl => (
+              <button
+                key={lvl}
+                onClick={() => setLevel(lvl)}
+                className={`px-3 py-1.5 rounded-lg font-bold capitalize transition-all ${
+                  level === lvl
+                    ? 'bg-[#26231E] text-[#FEF9EB] shadow-xs'
+                    : 'text-[#524B40] hover:bg-[#EFE8D6]'
+                }`}
+              >
+                {lvl}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {isLoading && (
           <div className="py-12 space-y-4 text-center">
             <div className="w-12 h-12 rounded-2xl bg-[#FAF1DA] text-[#D97706] flex items-center justify-center mx-auto border border-[#E4D5AD]">

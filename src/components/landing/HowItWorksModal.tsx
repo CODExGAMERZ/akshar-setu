@@ -20,7 +20,7 @@ export const HowItWorksModal: React.FC = () => {
     {
       icon: <Sparkles className="w-5 h-5 text-[#D97706]" />,
       title: "1. Visual Calibration (5 Minutes)",
-      desc: "Take a 5-step interactive comparison test. Discover your personal sweet spot across research-backed fonts (Lexend, Atkinson Hyperlegible, OpenDyslexic), line spacing, and soothing pastel tints."
+      desc: "Take an 8-step interactive comparison test. Discover your personal sweet spot across research-backed fonts (Lexend, Atkinson Hyperlegible, OpenDyslexic), line spacing, confusable anchors, and soothing pastel tints."
     },
     {
       icon: <BookOpen className="w-5 h-5 text-[#2563EB]" />,

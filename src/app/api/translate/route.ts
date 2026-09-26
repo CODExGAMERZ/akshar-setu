@@ -193,8 +193,9 @@ ${text.slice(0, 8000)}`;
 
     return NextResponse.json({
       translatedText: text,
-      status: 'fallback',
-    });
+      status: 'untranslated',
+      error: 'All translation providers failed'
+    }, { status: 206 });
   } catch (err: any) {
     console.error('Translation route error:', err);
     return NextResponse.json({ error: err.message || 'Translation failed' }, { status: 500 });

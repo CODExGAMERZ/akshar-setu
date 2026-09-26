@@ -1,9 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Document } from '../../types';
 import { Button } from '../common/Button';
-import { BookOpen, Clock, FileText, Trash2, ArrowRight } from 'lucide-react';
+import { BookOpen, Clock, FileText, Trash2, ArrowRight, Tag, ChevronDown } from 'lucide-react';
+import { useApp } from '../../context/AppContext';
 
 export interface DocumentCardProps {
   document: Document;
@@ -16,6 +17,9 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
   onOpen,
   onDelete
 }) => {
+  const { updateDocumentCategory } = useApp();
+  const [isChangingCategory, setIsChangingCategory] = useState(false);
+
   const categoryColors: Record<string, string> = {
     Science: 'bg-[#EDF5EC] text-[#047857] border-[#CBDBCB]',
     History: 'bg-[#FAF1DA] text-[#B45309] border-[#E4D5AD]',
@@ -26,6 +30,13 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
 
   const badgeClass = categoryColors[document.category] || categoryColors.General;
 
+  const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    e.stopPropagation();
+    const newCategory = e.target.value;
+    updateDocumentCategory(document.id, newCategory);
+    setIsChangingCategory(false);
+  };
+
   return (
     <div 
       className="bg-[#FEF9EB] border border-[#E7DFCA] hover:border-[#D97706]/60 rounded-2xl p-5 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between group space-y-4"
@@ -33,9 +44,22 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
       <div className="space-y-3">
         {/* Top meta */}
         <div className="flex items-center justify-between gap-2">
-          <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md border ${badgeClass}`}>
-            {document.category}
-          </span>
+          <div className="relative inline-flex items-center">
+            <select
+              value={document.category}
+              onChange={handleCategoryChange}
+              onClick={(e) => e.stopPropagation()}
+              className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md border appearance-none pr-5 cursor-pointer bg-transparent focus:outline-none focus:ring-1 focus:ring-[#D97706] ${badgeClass}`}
+              title="Change document category"
+            >
+              <option value="Science">Science</option>
+              <option value="History">History</option>
+              <option value="English">English</option>
+              <option value="Mathematics">Mathematics</option>
+              <option value="General">General</option>
+            </select>
+            <ChevronDown className="w-2.5 h-2.5 absolute right-1.5 pointer-events-none opacity-60" />
+          </div>
           <div className="flex items-center gap-1 text-[11px] text-[#706655]">
             <Clock className="w-3 h-3" />
             <span>{document.estimatedReadTimeMinutes} min read</span>
@@ -77,9 +101,7 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                if (confirm(`Delete "${document.title}" from your library?`)) {
-                  onDelete();
-                }
+                onDelete();
               }}
               title="Delete document"
               className="p-1.5 rounded-lg text-[#706655] hover:text-[#DC2626] hover:bg-[#FAF3E0] transition-colors"

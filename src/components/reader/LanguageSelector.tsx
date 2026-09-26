@@ -6,10 +6,10 @@ import { SUPPORTED_LANGUAGES } from '../../data/themes';
 import { Languages, Loader2 } from 'lucide-react';
 
 export const LanguageSelector: React.FC = () => {
-  const { currentLanguage, changeReadingLanguage, isTranslating } = useApp();
+  const { currentLanguage, changeReadingLanguage, isTranslating, translationNotice } = useApp();
 
   return (
-    <div className="relative inline-flex items-center">
+    <div className="relative inline-flex items-center gap-2">
       <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[#FEF9EB] border border-[#D8CEB9] text-xs font-semibold text-[#26231E]">
         {isTranslating ? (
           <Loader2 className="w-3.5 h-3.5 text-[#D97706] animate-spin" />
@@ -30,6 +30,15 @@ export const LanguageSelector: React.FC = () => {
           ))}
         </select>
       </div>
+
+      {translationNotice && (
+        <span 
+          className="text-[10px] font-semibold text-[#B45309] bg-[#FEF3C7] border border-[#FDE68A] px-2 py-0.5 rounded-lg hidden sm:inline-block animate-in fade-in"
+          title={translationNotice}
+        >
+          Original Text
+        </span>
+      )}
     </div>
   );
 };

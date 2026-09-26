@@ -16,8 +16,17 @@ export const DocumentUploaderModal: React.FC = () => {
 
   const handleFileChange = async (file: File) => {
     setSelectedFile(file);
-    setUploadStep('uploading');
     setErrorMessage(null);
+
+    // Client pre-flight: reject files > 25 MB
+    const MAX_SIZE_MB = 25;
+    if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+      setUploadStep('error');
+      setErrorMessage(`File is too large (${(file.size / (1024 * 1024)).toFixed(1)} MB). Maximum allowed size is ${MAX_SIZE_MB} MB.`);
+      return;
+    }
+
+    setUploadStep('uploading');
 
     try {
       // Simulate realistic multi-stage mock OCR processing

@@ -117,7 +117,7 @@ export interface CalibrationRound {
   id: number;
   title: string;
   subtitle: string;
-  roundType: 'typography' | 'spacing' | 'theme' | 'highlighting' | 'comparison';
+  roundType: 'typography' | 'spacing' | 'theme' | 'highlighting' | 'confusable' | 'audio' | 'density' | 'comparison';
   sampleText: string;
   options: CalibrationOption[];
 }
@@ -138,6 +138,7 @@ export interface TTSState {
   playbackRate: number;
   voiceName: string;
   isSupported: boolean;
+  activeEngine?: 'neural' | 'device' | 'none';
 }
 
 export interface ReadingSession {

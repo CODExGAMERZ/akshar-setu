@@ -68,9 +68,64 @@ export const CalibrationCard: React.FC<CalibrationCardProps> = ({
           textAlign: merged.alignment
         }}
       >
-        <p className="line-clamp-3">
-          {sampleText}
-        </p>
+        <div 
+          className="line-clamp-3"
+          style={{
+            maxWidth: merged.textWidth ? `${merged.textWidth}ch` : undefined
+          }}
+        >
+          {(() => {
+            if (!merged.confusableLetterSettings?.enabled) {
+              return sampleText;
+            }
+            const { activePairs, style } = merged.confusableLetterSettings;
+            return sampleText.split(/(\s+)/).map((chunk, idx) => {
+              if (/^\s+$/.test(chunk)) return chunk;
+              return (
+                <span key={idx}>
+                  {Array.from(chunk).map((char, cIdx) => {
+                    const lower = char.toLowerCase();
+                    let isConfusable = false;
+                    if (activePairs.includes('b/d') && (lower === 'b' || lower === 'd')) isConfusable = true;
+                    else if (activePairs.includes('p/q') && (lower === 'p' || lower === 'q')) isConfusable = true;
+                    else if (activePairs.includes('m/w') && (lower === 'm' || lower === 'w')) isConfusable = true;
+                    else if (activePairs.includes('n/u') && (lower === 'n' || lower === 'u')) isConfusable = true;
+                    else if (activePairs.includes('s/z') && (lower === 's' || lower === 'z')) isConfusable = true;
+
+                    if (!isConfusable) return char;
+                    const isFirstOfPair = lower === 'b' || lower === 'p' || lower === 'm' || lower === 'n' || lower === 's';
+
+                    if (style === 'weight') {
+                      return (
+                        <span key={cIdx} className={`font-black ${isFirstOfPair ? 'text-[#B45309]' : 'text-[#047857]'}`}>
+                          {char}
+                        </span>
+                      );
+                    } else if (style === 'subtle-color') {
+                      return (
+                        <span key={cIdx} className={`px-0.5 rounded ${isFirstOfPair ? 'bg-[#FED7AA]/60 text-[#9A3412]' : 'bg-[#BBF7D0]/60 text-[#166534]'}`}>
+                          {char}
+                        </span>
+                      );
+                    } else if (style === 'underline') {
+                      return (
+                        <span key={cIdx} className="underline decoration-2 decoration-[#D97706] font-bold">
+                          {char}
+                        </span>
+                      );
+                    } else {
+                      return (
+                        <span key={cIdx} className="border-b border-dotted border-[#D97706] font-semibold">
+                          {char}
+                        </span>
+                      );
+                    }
+                  })}
+                </span>
+              );
+            });
+          })()}
+        </div>
       </div>
 
       {/* Select button state */}

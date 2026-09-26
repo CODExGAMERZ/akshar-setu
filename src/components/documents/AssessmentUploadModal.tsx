@@ -11,17 +11,47 @@ export const AssessmentUploadModal: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isAnalyzed, setIsAnalyzed] = useState(false);
+  const [extractedSummary, setExtractedSummary] = useState<string[]>([]);
+  const [extractedPreferences, setExtractedPreferences] = useState<any>(null);
 
   const handleFileChange = async (selected: File) => {
     setFile(selected);
     setIsAnalyzing(true);
 
-    // Simulate clinical / educator report analysis
-    await new Promise(r => setTimeout(r, 1200));
+    try {
+      const formData = new FormData();
+      formData.append('file', selected);
 
-    // Recommend tuned profile: Lexend, Warm cream, spacious tracking, confusable letters
-    updatePreferences({
-      font: 'Lexend',
+      const savedKey = typeof window !== 'undefined' ? localStorage.getItem('aksharsetu_user_gemini_key') || '' : '';
+      const savedProvider = typeof window !== 'undefined' ? localStorage.getItem('aksharsetu_ai_provider') || 'server-default' : 'server-default';
+
+      const res = await fetch('/api/assessment/analyze', {
+        method: 'POST',
+        headers: {
+          'x-user-api-key': savedKey,
+          'x-ai-provider': savedProvider,
+        },
+        body: formData,
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.preferences) {
+          setExtractedPreferences(data.preferences);
+          updatePreferences(data.preferences);
+          setExtractedSummary(data.summary || []);
+          setIsAnalyzing(false);
+          setIsAnalyzed(true);
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn('API assessment analysis error, using fallback accommodations:', err);
+    }
+
+    // Fallback if network or endpoint fails
+    const fallbackPrefs = {
+      font: 'Lexend' as const,
       fontSize: 20,
       lineSpacing: 1.9,
       letterSpacing: 0.05,
@@ -32,12 +62,18 @@ export const AssessmentUploadModal: React.FC = () => {
       highlightColor: '#FDE047',
       confusableLetterSettings: {
         enabled: true,
-        activePairs: ['b/d', 'p/q', 'm/w'],
-        style: 'weight'
+        activePairs: ['b/d', 'p/q', 'm/w'] as any,
+        style: 'weight' as const
       },
       bionicReading: true
-    });
-
+    };
+    updatePreferences(fallbackPrefs);
+    setExtractedSummary([
+      'Selected font Lexend (20px) to reduce visual crowding',
+      'Set line spacing to 1.9x for relaxed saccadic eye tracking',
+      'Applied Warm Cream (#FEF9EB) anti-glare contrast filter',
+      'Enabled active b/d and p/q mirror letter disambiguation'
+    ]);
     setIsAnalyzing(false);
     setIsAnalyzed(true);
   };
@@ -51,6 +87,8 @@ export const AssessmentUploadModal: React.FC = () => {
     setFile(null);
     setIsAnalyzing(false);
     setIsAnalyzed(false);
+    setExtractedSummary([]);
+    setExtractedPreferences(null);
     setIsAssessmentModalOpen(false);
   };
 
@@ -99,8 +137,23 @@ export const AssessmentUploadModal: React.FC = () => {
             <div className="text-center pt-2">
               <button
                 onClick={() => {
-                  const blob = new Blob(["Sample IEP Assessment Report"], { type: "text/plain" });
-                  const sample = new File([blob], "Student_IEP_Reading_Evaluation.pdf", { type: "application/pdf" });
+                  const sampleText = `PSYCHOEDUCATIONAL & SPECIAL EDUCATION ACCOMMODATIONS EVALUATION
+STUDENT ID: AK-9204 | EVALUATION DATE: 2026-03-15
+DIAGNOSIS & OBSERVATIONS:
+Student presents with developmental phonological dyslexia and mild scotopic sensitivity.
+Key observations during timed reading assessment:
+1. Significant visual crowding noted when reading standard condensed serif or sans-serif fonts.
+2. Frequent letter reversals and mirror disorientation, especially between 'b' and 'd', 'p' and 'q', and 'm' and 'w'.
+3. Ocular saccadic tracking loss after 8-10 minutes under stark white paper contrast; complains of glare and jitter.
+4. Eye tracking frequently skips over single lines without reading ruler guide.
+
+RECOMMENDED CLASSROOM ACCOMMODATIONS:
+- Typography: High-legibility sans-serif with expanded apertures and wider character tracking (e.g. Lexend or OpenDyslexic), 20pt.
+- Spacing: 1.9x to 2.0x line height with generous paragraph separation.
+- Surface: Warm cream / pastel anti-glare reading filter overlay (eliminate pure white stark contrast).
+- Highlighting / Tools: Mechanical reading ruler or line tracking guide; color-differentiated cues for confusable mirror consonants.`;
+                  const blob = new Blob([sampleText], { type: "text/plain" });
+                  const sample = new File([blob], "Student_IEP_Reading_Evaluation.txt", { type: "text/plain" });
                   handleFileChange(sample);
                 }}
                 className="text-xs text-[#D97706] hover:underline font-semibold"
@@ -143,13 +196,23 @@ export const AssessmentUploadModal: React.FC = () => {
                 <Sparkles className="w-4 h-4 text-[#D97706]" />
                 Extracted Custom Adaptations:
               </h5>
-              <ul className="space-y-1.5 text-[#524B40] list-disc list-inside">
-                <li>Primary Font: <strong>Lexend (20px, expanded letter tracking)</strong></li>
-                <li>Line Height: <strong>1.9x (Spacious saccadic breathing room)</strong></li>
-                <li>Surface Contrast: <strong>Warm Cream #FEF9EB (Anti-glare palette)</strong></li>
-                <li>Confusable Markers: <strong>Active b/d and p/q disambiguation enabled</strong></li>
-                <li>Bionic Fixation: <strong>Initial letter fixations enabled</strong></li>
-              </ul>
+              {extractedSummary.length > 0 ? (
+                <ul className="space-y-1.5 text-[#524B40] list-disc list-inside">
+                  {extractedSummary.map((item, idx) => (
+                    <li key={idx} className="leading-relaxed">
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <ul className="space-y-1.5 text-[#524B40] list-disc list-inside">
+                  <li>Primary Font: <strong>Lexend (20px, expanded letter tracking)</strong></li>
+                  <li>Line Height: <strong>1.9x (Spacious saccadic breathing room)</strong></li>
+                  <li>Surface Contrast: <strong>Warm Cream #FEF9EB (Anti-glare palette)</strong></li>
+                  <li>Confusable Markers: <strong>Active b/d and p/q disambiguation enabled</strong></li>
+                  <li>Bionic Fixation: <strong>Initial letter fixations enabled</strong></li>
+                </ul>
+              )}
             </div>
 
             <div className="flex justify-end gap-3 pt-2">

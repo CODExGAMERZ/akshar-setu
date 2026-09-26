@@ -6,6 +6,7 @@ export interface TTSOptions {
   lang?: string;
   provider?: string;
   apiKey?: string;
+  onEngineDetermined?: (engine: 'neural' | 'device') => void;
   onWordBoundary?: (wordIndex: number, charIndex: number, word: string) => void;
   onSentenceBoundary?: (sentenceIndex: number) => void;
   onEnd?: () => void;
@@ -30,6 +31,11 @@ class TTSService {
   constructor() {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       this.synth = window.speechSynthesis;
+      if (typeof this.synth.onvoiceschanged !== 'undefined') {
+        this.synth.onvoiceschanged = () => {
+          this.synth?.getVoices();
+        };
+      }
     }
   }
 
@@ -48,6 +54,30 @@ class TTSService {
     const synth = this.getSynth();
     if (!synth) return [];
     return synth.getVoices();
+  }
+
+  public async getVoicesAsync(): Promise<SpeechSynthesisVoice[]> {
+    const synth = this.getSynth();
+    if (!synth) return [];
+    const directVoices = synth.getVoices();
+    if (directVoices && directVoices.length > 0) return directVoices;
+
+    return new Promise((resolve) => {
+      let resolved = false;
+      const handler = () => {
+        if (!resolved) {
+          resolved = true;
+          resolve(synth.getVoices());
+        }
+      };
+      synth.onvoiceschanged = handler;
+      setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          resolve(synth.getVoices());
+        }
+      }, 500);
+    });
   }
 
   public setRate(rate: number) {
@@ -159,6 +189,7 @@ class TTSService {
             audio.onplay = () => {
               this.isSpeakingInternal = true;
               this.isPausedInternal = false;
+              options.onEngineDetermined?.('neural');
               if (index === 0 && this.currentTokens.length > 0) {
                 options.onWordBoundary?.(0, 0, this.currentTokens[0]);
               }
@@ -194,7 +225,7 @@ class TTSService {
     this.speakWithSpeechSynthesis(speechCleanText, targetLang, options);
   }
 
-  private speakWithSpeechSynthesis(
+  private async speakWithSpeechSynthesis(
     speechCleanText: string,
     targetLang: string,
     options: TTSOptions
@@ -208,6 +239,7 @@ class TTSService {
     }
 
     this.activeMode = 'synth';
+    options.onEngineDetermined?.('device');
     try {
       synth.cancel();
       if (synth.paused) synth.resume();
@@ -221,7 +253,10 @@ class TTSService {
     utterance.pitch = options.pitch || 1.0;
     utterance.lang = targetLang;
 
-    const voices = this.getVoices();
+    let voices = this.getVoices();
+    if (voices.length === 0) {
+      voices = await this.getVoicesAsync();
+    }
     if (options.voiceName) {
       const explicit = voices.find(v => v.name === options.voiceName);
       if (explicit) utterance.voice = explicit;
@@ -277,14 +312,14 @@ class TTSService {
   }
 
   private startFallbackTimer(
-    msPerWord: number, 
+    baseMsPerWord: number, 
     onWordBoundary?: (index: number, charIndex: number, word: string) => void,
     hasRealBoundary?: () => boolean
   ) {
     this.clearFallbackTimer();
     if (typeof window === 'undefined') return;
 
-    this.fallbackTimer = window.setInterval(() => {
+    const scheduleNextWord = () => {
       if (hasRealBoundary && hasRealBoundary()) {
         this.clearFallbackTimer();
         return;
@@ -296,15 +331,24 @@ class TTSService {
         const word = this.currentTokens[this.currentTokenIndex] || '';
         onWordBoundary?.(this.currentTokenIndex, 0, word);
         this.currentTokenIndex++;
+
+        // Weighted interval based on word length for natural cadence
+        const wordWeight = 0.5 + Math.min(word.length, 12) * 0.12;
+        const nextDelay = Math.max(80, Math.round(baseMsPerWord * wordWeight));
+        this.fallbackTimer = window.setTimeout(scheduleNextWord, nextDelay);
       } else {
         this.clearFallbackTimer();
       }
-    }, msPerWord);
+    };
+
+    const firstWord = this.currentTokens[this.currentTokenIndex] || '';
+    const initialDelay = Math.max(80, Math.round(baseMsPerWord * (0.5 + Math.min(firstWord.length, 12) * 0.12)));
+    this.fallbackTimer = window.setTimeout(scheduleNextWord, initialDelay);
   }
 
   private clearFallbackTimer() {
     if (this.fallbackTimer !== null && typeof window !== 'undefined') {
-      window.clearInterval(this.fallbackTimer);
+      window.clearTimeout(this.fallbackTimer);
       this.fallbackTimer = null;
     }
   }
