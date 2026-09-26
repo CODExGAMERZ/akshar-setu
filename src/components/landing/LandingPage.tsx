@@ -70,7 +70,7 @@ export const LandingPage: React.FC = () => {
               icon={<Sparkles className="w-5 h-5" />}
               onClick={() => setCurrentRoute('calibration')}
             >
-              Calibrate Reading (5 Steps)
+              Calibrate Reading (8 Steps)
             </Button>
 
             <Button
@@ -176,7 +176,7 @@ export const LandingPage: React.FC = () => {
               </div>
               <h3 className="font-bold text-base text-[#1E1B18]">Personalized Reading & Calibration</h3>
               <p className="text-xs text-[#524B40] leading-relaxed">
-                Take a 5-step calibration test to discover your optimal font family, letter spacing, line height, and color tint.
+                Take an 8-step calibration test to discover your optimal font family, letter spacing, line height, color tint, and confusable anchors.
               </p>
             </div>
 

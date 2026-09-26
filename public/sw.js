@@ -1,25 +1,29 @@
-const CACHE_NAME = 'aksharsetu-pwa-v1';
+const CACHE_NAME = 'aksharsetu-pwa-v2';
 const PRECACHE_ASSETS = [
   '/',
   '/manifest.webmanifest',
   '/icons/icon.svg',
   '/icons/icon-192x192.svg',
   '/icons/icon-512x512.svg',
-  '/read',
   '/calibrate',
-  '/settings',
-  '/history',
-  '/upload',
-  '/language',
+  '/library',
+  '/login',
+  '/profile',
+  '/read',
+  '/reader'
 ];
 
 // Install Event
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(PRECACHE_ASSETS).catch((err) => {
-        console.warn('Pre-caching assets notification:', err);
-      });
+    caches.open(CACHE_NAME).then(async (cache) => {
+      await Promise.allSettled(
+        PRECACHE_ASSETS.map((url) =>
+          cache.add(url).catch((err) => {
+            console.warn(`Failed to precache ${url}:`, err);
+          })
+        )
+      );
     })
   );
   self.skipWaiting();

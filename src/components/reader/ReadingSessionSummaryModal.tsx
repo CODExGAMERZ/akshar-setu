@@ -20,9 +20,13 @@ export const ReadingSessionSummaryModal: React.FC = () => {
   const { isSessionSummaryOpen, setIsSessionSummaryOpen, activeDocument, setCurrentRoute, showNotification } = useApp();
 
   const session = readingService.getActiveSession();
-  const elapsedMinutes = session ? Math.max(1, Math.round(session.elapsedSeconds / 60)) : 4;
-  const wordsRead = session ? Math.max(120, session.wordsRead) : 280;
-  const wpm = session && session.wpm > 0 ? session.wpm : Math.round(wordsRead / elapsedMinutes);
+  const hasSufficientData = !!(session && session.elapsedSeconds >= 10 && session.wordsRead >= 5);
+  const elapsedSeconds = session?.elapsedSeconds || 0;
+  const elapsedMinutes = Math.max(1, Math.round(elapsedSeconds / 60));
+  const wordsRead = session?.wordsRead || 0;
+  const wpm = session && session.wpm > 0 
+    ? session.wpm 
+    : (elapsedSeconds > 5 ? Math.round((wordsRead / elapsedSeconds) * 60) : 0);
 
   return (
     <Modal
@@ -48,43 +52,60 @@ export const ReadingSessionSummaryModal: React.FC = () => {
             <Flame className="w-3.5 h-3.5 text-amber-500" />
             <span>Daily Streak Maintained (Day 5)</span>
           </div>
+          <h4 className="text-lg font-bold text-[#1E1B18]">
+            {hasSufficientData ? 'Great Focus & Progress!' : 'Reading Session Active'}
+          </h4>
+          <p className="text-xs text-[#706655] line-clamp-1">
+            {activeDocument?.title || 'Lesson Reading Session'}
+          </p>
         </div>
 
-        {/* Metrics Grid */}
-        <div className="grid grid-cols-3 gap-3">
-          <div className="p-4 bg-[#FEF9EB] border border-[#E7DFCA] rounded-2xl text-center space-y-1 shadow-2xs hover:border-[#D97706] transition-colors">
-            <div className="flex items-center justify-center gap-1 text-xs text-[#706655] font-semibold">
-              <Clock className="w-3.5 h-3.5 text-[#D97706]" />
-              <span>Time</span>
-            </div>
-            <p className="text-xl font-extrabold text-[#1E1B18]">{elapsedMinutes}m</p>
-            <p className="text-[10px] text-[#706655]">Total Session</p>
-          </div>
+        {hasSufficientData ? (
+          <>
+            {/* Metrics Grid */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="p-4 bg-[#FEF9EB] border border-[#E7DFCA] rounded-2xl text-center space-y-1">
+                <div className="flex items-center justify-center gap-1 text-xs text-[#706655]">
+                  <Clock className="w-3.5 h-3.5 text-[#D97706]" />
+                  <span>Time</span>
+                </div>
+                <p className="text-lg font-bold text-[#1E1B18]">{elapsedMinutes}m</p>
+              </div>
 
-          <div className="p-4 bg-[#FEF9EB] border border-[#E7DFCA] rounded-2xl text-center space-y-1 shadow-2xs hover:border-[#D97706] transition-colors">
-            <div className="flex items-center justify-center gap-1 text-xs text-[#706655] font-semibold">
-              <BookOpen className="w-3.5 h-3.5 text-blue-600" />
-              <span>Words</span>
-            </div>
-            <p className="text-xl font-extrabold text-[#1E1B18]">{wordsRead}</p>
-            <p className="text-[10px] text-[#706655]">Tokens Read</p>
-          </div>
+              <div className="p-4 bg-[#FEF9EB] border border-[#E7DFCA] rounded-2xl text-center space-y-1">
+                <div className="flex items-center justify-center gap-1 text-xs text-[#706655]">
+                  <BookOpen className="w-3.5 h-3.5 text-[#2563EB]" />
+                  <span>Words</span>
+                </div>
+                <p className="text-lg font-bold text-[#1E1B18]">{wordsRead}</p>
+              </div>
 
-          <div className="p-4 bg-[#FEF9EB] border border-[#E7DFCA] rounded-2xl text-center space-y-1 shadow-2xs hover:border-[#D97706] transition-colors">
-            <div className="flex items-center justify-center gap-1 text-xs text-[#706655] font-semibold">
-              <Zap className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Speed</span>
+              <div className="p-4 bg-[#FEF9EB] border border-[#E7DFCA] rounded-2xl text-center space-y-1">
+                <div className="flex items-center justify-center gap-1 text-xs text-[#706655]">
+                  <Zap className="w-3.5 h-3.5 text-[#047857]" />
+                  <span>Speed</span>
+                </div>
+                <p className="text-lg font-bold text-[#1E1B18]">{wpm} <span className="text-[10px] font-normal">WPM</span></p>
+              </div>
             </div>
-            <p className="text-xl font-extrabold text-[#1E1B18]">{wpm}</p>
-            <p className="text-[10px] text-[#706655]">Words / Min</p>
-          </div>
-        </div>
 
-        {/* Feedback pill */}
-        <div className="p-3.5 bg-[#EDF5EC] border border-[#CBDBCB] rounded-2xl flex items-start gap-2.5 text-xs text-[#1E3A2F] leading-relaxed">
-          <CheckCircle2 className="w-4 h-4 text-[#047857] shrink-0 mt-0.5" />
-          <span><strong>Cognitive Smoothness</strong>: Consistent fixation anchors detected with low regression rates. Your personalized visual spacing is working effectively!</span>
-        </div>
+            {/* Feedback pill */}
+            <div className="p-3.5 bg-[#EDF5EC] border border-[#CBDBCB] rounded-xl flex items-center gap-2.5 text-xs text-[#047857]">
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+              <span>Consistent tracking detected with minimal visual regressive eye fixations.</span>
+            </div>
+          </>
+        ) : (
+          <div className="p-5 bg-[#FEF9EB] border border-[#E7DFCA] rounded-2xl text-center space-y-2">
+            <Sparkles className="w-5 h-5 text-[#D97706] mx-auto" />
+            <p className="text-xs font-semibold text-[#1E1B18]">
+              Session just started — not enough reading data yet!
+            </p>
+            <p className="text-[11px] text-[#706655]">
+              Read through the passage or start the Read-Aloud speech synthesizer to track your reading speed and word counts.
+            </p>
+          </div>
+        )}
 
         {/* Action Buttons */}
         <div className="flex justify-end gap-3 pt-2">

@@ -114,22 +114,21 @@ export const ReaderView: React.FC = () => {
   };
 
   return (
-    <div className="relative flex-1 h-[calc(100dvh-65px)] bg-[#FEF9EB] text-[#26231E] flex flex-col overflow-hidden">
+    <div className="relative h-[calc(100dvh-65px)] bg-[#FEF9EB] text-[#26231E] flex flex-col overflow-hidden">
       {/* Visual reading ruler / mask overlay if active */}
       <FocusModeOverlay />
 
       {/* Top Reader Utility Bar */}
-      <div className="bg-[#FAF3E0] border-b border-[#E7DFCA] px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 z-30 transition-colors">
-        <div className="flex items-center flex-wrap gap-4">
-          {/* Left: Left nav toggle & document title */}
-          <div className="flex items-center gap-2">
-            {!preferences.focusMode && (
+      <div className="bg-[#FAF3E0] border-b border-[#E7DFCA] px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 shrink-0 z-20 transition-colors">
+        {/* Left: Left nav toggle & document title */}
+        <div className="flex items-center gap-2">
+          {!preferences.focusMode && (
             <button
               type="button"
               id="reader-toggle-left-nav"
               onClick={() => setIsLeftNavOpen(!isLeftNavOpen)}
               title={isLeftNavOpen ? "Hide document navigator" : "Show document navigator"}
-              className="p-1.5 rounded-lg text-[#706655] hover:text-[#1E1B18] hover:bg-[#EFE8D6] transition-colors"
+              className="p-1.5 rounded-lg text-[#706655] hover:text-[#1E1B18] hover:bg-[#EFE8D6] transition-colors flex items-center"
             >
               {isLeftNavOpen ? <PanelLeftClose className="w-4 h-4" /> : <PanelLeftOpen className="w-4 h-4" />}
             </button>
@@ -251,16 +250,10 @@ export const ReaderView: React.FC = () => {
       </div>
 
       {/* Main 3-Column Body */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex min-h-0 overflow-hidden">
         {/* LEFT COLUMN: Document Navigator (Collapsible) */}
         {!preferences.focusMode && isLeftNavOpen && (
-          <>
-            {/* Mobile Backdrop */}
-            <div 
-              className="lg:hidden fixed inset-0 bg-[#1E1B18]/20 backdrop-blur-sm z-40" 
-              onClick={() => setIsLeftNavOpen(false)} 
-            />
-            <aside className="fixed lg:static top-[65px] lg:top-0 left-0 bottom-0 z-50 w-72 lg:w-64 bg-[#FAF3E0] border-r border-[#E7DFCA] p-4 flex flex-col justify-between shrink-0 overflow-y-auto shadow-2xl lg:shadow-none animate-in slide-in-from-left-8 lg:animate-none">
+          <aside className="w-64 bg-[#FAF3E0] border-r border-[#E7DFCA] p-4 hidden lg:flex flex-col justify-between shrink-0 overflow-y-auto min-h-0">
             <div className="space-y-4">
               <div className="space-y-1">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-[#706655]">
@@ -325,7 +318,7 @@ export const ReaderView: React.FC = () => {
 
         {/* CENTER COLUMN: Reading Canvas Area (Dominant) */}
         <main 
-          className="flex-1 overflow-y-auto px-4 sm:px-8 lg:px-12 py-8 flex flex-col items-center justify-start transition-colors"
+          className="flex-1 overflow-y-auto min-h-0 px-4 sm:px-8 lg:px-12 py-8 flex flex-col items-center justify-start transition-colors"
           style={{
             backgroundColor: viewMode === 'personalized' ? preferences.backgroundColor : '#F1F5F9'
           }}
@@ -382,20 +375,68 @@ export const ReaderView: React.FC = () => {
           </div>
         </main>
 
-        {/* RIGHT COLUMN: Personalization Controls Panel (Collapsible) */}
+        {/* RIGHT COLUMN: Personalization Controls Panel (Desktop) */}
         {!preferences.focusMode && isRightControlsOpen && (
-          <>
-            {/* Mobile Backdrop */}
-            <div 
-              className="lg:hidden fixed inset-0 bg-[#1E1B18]/20 backdrop-blur-sm z-40" 
-              onClick={() => setIsRightControlsOpen(false)} 
-            />
-            <aside className="fixed lg:static top-[65px] lg:top-0 right-0 bottom-0 z-50 w-80 bg-[#FAF3E0] border-l border-[#E7DFCA] shrink-0 overflow-y-auto shadow-2xl lg:shadow-none animate-in slide-in-from-right-8 lg:animate-none">
-              <ReadingControls onClose={() => setIsRightControlsOpen(false)} />
-            </aside>
-          </>
+          <aside className="w-80 bg-[#FAF3E0] border-l border-[#E7DFCA] hidden lg:block shrink-0 h-full overflow-hidden min-h-0 z-10">
+            <ReadingControls onClose={() => setIsRightControlsOpen(false)} />
+          </aside>
         )}
       </div>
+
+      {/* Mobile Settings Drawer (< lg) (Fix 11) */}
+      {!preferences.focusMode && isRightControlsOpen && (
+        <div className="lg:hidden fixed inset-0 z-50 flex justify-end animate-in fade-in duration-200">
+          <div 
+            className="fixed inset-0 bg-black/40 backdrop-blur-xs transition-opacity"
+            onClick={() => setIsRightControlsOpen(false)}
+          />
+          <div className="relative w-full max-w-sm h-full bg-[#FAF3E0] shadow-2xl z-10 flex flex-col animate-in slide-in-from-right duration-200">
+            <ReadingControls onClose={() => setIsRightControlsOpen(false)} />
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Navigator Drawer (< lg) */}
+      {!preferences.focusMode && isLeftNavOpen && (
+        <div className="lg:hidden fixed inset-0 z-50 flex justify-start animate-in fade-in duration-200">
+          <div 
+            className="fixed inset-0 bg-black/40 backdrop-blur-xs transition-opacity"
+            onClick={() => setIsLeftNavOpen(false)}
+          />
+          <div className="relative w-72 h-full bg-[#FAF3E0] shadow-2xl z-10 flex flex-col p-4 overflow-y-auto animate-in slide-in-from-left duration-200">
+            <div className="flex items-center justify-between pb-3 border-b border-[#E7DFCA]">
+              <span className="text-xs font-bold text-[#1E1B18]">Lesson Navigator</span>
+              <button 
+                onClick={() => setIsLeftNavOpen(false)}
+                className="p-1 rounded-lg hover:bg-[#EFE8D6] text-xs font-bold"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="space-y-1 pt-3">
+              {activeDocument.pages.map((p) => (
+                <button
+                  key={p.pageNumber}
+                  onClick={() => {
+                    setActivePageNumber(p.pageNumber);
+                    setIsLeftNavOpen(false);
+                  }}
+                  className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between transition-all ${
+                    activePageNumber === p.pageNumber
+                      ? 'bg-[#26231E] text-[#FEF9EB] shadow-2xs'
+                      : 'text-[#524B40] hover:bg-[#EFE8D6]'
+                  }`}
+                >
+                  <span>Page {p.pageNumber}</span>
+                  <span className="text-[10px] opacity-70">
+                    {p.paragraphs.length} paragraphs
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Floating Audio Dock */}
       <AudioDock />

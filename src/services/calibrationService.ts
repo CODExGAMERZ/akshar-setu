@@ -92,6 +92,57 @@ class CalibrationService {
       preferences.readingRuler = false;
     }
 
+    // Round 5: Confusable Letter Distinctions
+    const round5Choice = answers[5];
+    if (round5Choice === 'confusable_weight') {
+      preferences.confusableLetterSettings = {
+        enabled: true,
+        activePairs: ['b/d', 'p/q', 'm/w', 'n/u', 's/z'],
+        style: 'weight'
+      };
+    } else if (round5Choice === 'confusable_subtle') {
+      preferences.confusableLetterSettings = {
+        enabled: true,
+        activePairs: ['b/d', 'p/q', 'm/w', 'n/u', 's/z'],
+        style: 'subtle-color'
+      };
+    } else if (round5Choice === 'confusable_underline') {
+      preferences.confusableLetterSettings = {
+        enabled: true,
+        activePairs: ['b/d', 'p/q', 'm/w', 'n/u', 's/z'],
+        style: 'underline'
+      };
+    } else if (round5Choice === 'confusable_none') {
+      preferences.confusableLetterSettings = {
+        enabled: false,
+        activePairs: [],
+        style: 'weight'
+      };
+    }
+
+    // Round 6: Audio Narration & Speech Cadence
+    const round6Choice = answers[6];
+    if (round6Choice === 'audio_relaxed') {
+      preferences.ttsSpeed = 0.85;
+    } else if (round6Choice === 'audio_balanced') {
+      preferences.ttsSpeed = 1.0;
+    } else if (round6Choice === 'audio_brisk') {
+      preferences.ttsSpeed = 1.15;
+    }
+
+    // Round 7: Column Width & Reading Density
+    const round7Choice = answers[7];
+    if (round7Choice === 'density_narrow') {
+      preferences.textWidth = 58;
+      preferences.paragraphSpacing = 1.75;
+    } else if (round7Choice === 'density_balanced') {
+      preferences.textWidth = 68;
+      preferences.paragraphSpacing = 1.5;
+    } else if (round7Choice === 'density_wide') {
+      preferences.textWidth = 78;
+      preferences.paragraphSpacing = 1.3;
+    }
+
     return preferences;
   }
 

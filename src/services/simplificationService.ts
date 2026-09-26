@@ -190,13 +190,20 @@ class SimplificationService {
       if (res.ok) {
         const data = await res.json();
         if (data.simplifiedText && data.status === 'success' && data.simplifiedText.trim() !== text.trim()) {
-          const bullets = extractBulletSummary(data.simplifiedText);
+          const bullets = Array.isArray(data.bulletSummary) && data.bulletSummary.length > 0 
+            ? data.bulletSummary 
+            : extractBulletSummary(data.simplifiedText);
+          const levelLabels = {
+            light: 'Refined Vocabulary (AI)',
+            medium: 'Standard → Plain Language (AI)',
+            heavy: 'High Accessibility Shortened (AI)'
+          };
           const result: SimplifiedResult = {
             originalText: text,
             simplifiedText: data.simplifiedText,
-            readingGradeReduction: `${level.toUpperCase()} Plain Language (AI)`,
+            readingGradeReduction: levelLabels[level] || 'Plain Language (AI)',
             keyVocabulary: extractKeyTerms(text),
-            bulletSummary: bullets.length > 0 ? bullets : ['Key ideas restructured for accessible reading.']
+            bulletSummary: bullets.length > 0 ? bullets : ['Core ideas restructured for accessible reading.']
           };
           this.cache.set(cacheKey, result);
           return result;
@@ -214,7 +221,7 @@ class SimplificationService {
     const result: SimplifiedResult = {
       originalText: text,
       simplifiedText: simplified,
-      readingGradeReduction: 'Intermediate → Plain Language',
+      readingGradeReduction: level === 'heavy' ? 'Core Highlights (Offline)' : 'Intermediate → Plain Language',
       keyVocabulary: keyTerms,
       bulletSummary: bullets.length > 0 ? bullets : ['Main points restructured into shorter sentences.']
     };

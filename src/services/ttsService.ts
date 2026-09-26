@@ -7,6 +7,7 @@ export interface TTSOptions {
   wordOffset?: number;
   provider?: string;
   apiKey?: string;
+  onEngineDetermined?: (engine: 'neural' | 'device') => void;
   onWordBoundary?: (wordIndex: number, charIndex: number, word: string) => void;
   onSentenceBoundary?: (sentenceIndex: number) => void;
   onEnd?: () => void;
@@ -37,16 +38,11 @@ class TTSService {
   constructor() {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       this.synth = window.speechSynthesis;
-      this.loadVoices();
-      if (this.synth.onvoiceschanged !== undefined) {
-        this.synth.onvoiceschanged = () => this.loadVoices();
+      if (typeof this.synth.onvoiceschanged !== 'undefined') {
+        this.synth.onvoiceschanged = () => {
+          this.synth?.getVoices();
+        };
       }
-    }
-  }
-
-  private loadVoices() {
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      this.cachedVoices = window.speechSynthesis.getVoices();
     }
   }
 
@@ -66,6 +62,30 @@ class TTSService {
       this.loadVoices();
     }
     return this.cachedVoices;
+  }
+
+  public async getVoicesAsync(): Promise<SpeechSynthesisVoice[]> {
+    const synth = this.getSynth();
+    if (!synth) return [];
+    const directVoices = synth.getVoices();
+    if (directVoices && directVoices.length > 0) return directVoices;
+
+    return new Promise((resolve) => {
+      let resolved = false;
+      const handler = () => {
+        if (!resolved) {
+          resolved = true;
+          resolve(synth.getVoices());
+        }
+      };
+      synth.onvoiceschanged = handler;
+      setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          resolve(synth.getVoices());
+        }
+      }, 500);
+    });
   }
 
   public setRate(rate: number) {
@@ -205,6 +225,7 @@ class TTSService {
               }
               this.isSpeakingInternal = true;
               this.isPausedInternal = false;
+              options.onEngineDetermined?.('neural');
               if (index === 0 && this.currentTokens.length > 0) {
                 options.onWordBoundary?.(this.wordOffset, 0, this.currentTokens[0]);
               }
@@ -255,11 +276,7 @@ class TTSService {
     this.speakWithWebSpeechQueue(speechCleanText, targetLang, options, playId);
   }
 
-  /**
-   * Sentence-by-Sentence Web Speech Queue:
-   * Bypasses Chrome 15s timeout and avoids GC cancellation by chunking into sentences
-   */
-  private speakWithWebSpeechQueue(
+  private async speakWithSpeechSynthesis(
     speechCleanText: string,
     targetLang: string,
     options: TTSOptions,
@@ -276,6 +293,7 @@ class TTSService {
     }
 
     this.activeMode = 'synth';
+    options.onEngineDetermined?.('device');
     try {
       if (synth.paused) synth.resume();
       synth.cancel();
@@ -294,16 +312,10 @@ class TTSService {
     const sentences = speechCleanText.match(/[^.!?।\n]+[.!?।\n]+|[^.!?।\n]+$/g) || [speechCleanText];
     const sentenceList = sentences.map(s => s.trim()).filter(s => s.length > 0);
 
-    if (sentenceList.length === 0) {
-      options.onEnd?.();
-      return;
+    let voices = this.getVoices();
+    if (voices.length === 0) {
+      voices = await this.getVoicesAsync();
     }
-
-    // Best matching voice resolution
-    const voices = this.getVoices();
-    const primaryLang = targetLang.split('-')[0].toLowerCase();
-    let selectedVoice: SpeechSynthesisVoice | undefined;
-
     if (options.voiceName) {
       selectedVoice = voices.find(v => v.name.toLowerCase().includes(options.voiceName!.toLowerCase()));
     }
@@ -446,7 +458,7 @@ class TTSService {
   }
 
   private startFallbackTimer(
-    msPerWord: number, 
+    baseMsPerWord: number, 
     onWordBoundary?: (index: number, charIndex: number, word: string) => void,
     hasRealBoundary?: () => boolean,
     playId?: number,
@@ -456,12 +468,7 @@ class TTSService {
     this.clearFallbackTimer();
     if (typeof window === 'undefined') return;
 
-    let localIdx = 0;
-    this.fallbackTimer = window.setInterval(() => {
-      if (playId !== undefined && this.currentPlayId !== playId) {
-        this.clearFallbackTimer();
-        return;
-      }
+    const scheduleNextWord = () => {
       if (hasRealBoundary && hasRealBoundary()) {
         this.clearFallbackTimer();
         return;
@@ -469,20 +476,28 @@ class TTSService {
 
       if (!this.isSpeakingInternal || this.isPausedInternal) return;
 
-      if (localIdx < sentenceWordCount) {
-        const globalIdx = this.wordOffset + sentenceWordOffset + localIdx;
-        const word = this.currentTokens[sentenceWordOffset + localIdx] || '';
-        onWordBoundary?.(globalIdx, 0, word);
-        localIdx++;
+      if (this.currentTokenIndex < this.currentTokens.length) {
+        const word = this.currentTokens[this.currentTokenIndex] || '';
+        onWordBoundary?.(this.currentTokenIndex, 0, word);
+        this.currentTokenIndex++;
+
+        // Weighted interval based on word length for natural cadence
+        const wordWeight = 0.5 + Math.min(word.length, 12) * 0.12;
+        const nextDelay = Math.max(80, Math.round(baseMsPerWord * wordWeight));
+        this.fallbackTimer = window.setTimeout(scheduleNextWord, nextDelay);
       } else {
         this.clearFallbackTimer();
       }
-    }, msPerWord);
+    };
+
+    const firstWord = this.currentTokens[this.currentTokenIndex] || '';
+    const initialDelay = Math.max(80, Math.round(baseMsPerWord * (0.5 + Math.min(firstWord.length, 12) * 0.12)));
+    this.fallbackTimer = window.setTimeout(scheduleNextWord, initialDelay);
   }
 
   private clearFallbackTimer() {
     if (this.fallbackTimer !== null && typeof window !== 'undefined') {
-      window.clearInterval(this.fallbackTimer);
+      window.clearTimeout(this.fallbackTimer);
       this.fallbackTimer = null;
     }
   }

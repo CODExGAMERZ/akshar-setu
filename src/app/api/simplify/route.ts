@@ -42,6 +42,7 @@ Rules:
 1. Maintain the EXACT SAME LANGUAGE as the source text (if text is Hindi, output simplified Hindi; if English, output simplified English; if Bengali/Tamil/Telugu/Odia/Marathi, simplify in that same language).
 2. Do NOT add any preamble (like "Here is the simplified text:").
 3. Do NOT wrap in markdown code blocks. Output the clean text directly.
+4. At the very end of your response, on a new line write "---CORE_IDEAS---" followed by 3 concise takeaway bullet points (each starting with "• ").
 
 Original Passage:
 ${text}`;
@@ -57,8 +58,21 @@ ${text}`;
     });
 
     if (aiResult && aiResult.trim().length > 0) {
+      let mainText = aiResult.trim();
+      let bulletSummary: string[] = [];
+
+      if (mainText.includes('---CORE_IDEAS---')) {
+        const parts = mainText.split('---CORE_IDEAS---');
+        mainText = parts[0].trim();
+        const rawBullets = parts[1].trim().split('\n');
+        bulletSummary = rawBullets
+          .map(b => b.replace(/^[•\-\*]\s*/, '').trim())
+          .filter(b => b.length > 0);
+      }
+
       return NextResponse.json({
-        simplifiedText: aiResult.trim(),
+        simplifiedText: mainText,
+        bulletSummary: bulletSummary.length > 0 ? bulletSummary : undefined,
         status: 'success',
         provider: 'ai',
       });

@@ -52,7 +52,7 @@ export const ReadingControls: React.FC<ReadingControlsProps> = ({ onClose }) => 
     { id: 'none', label: 'Off' }
   ];
 
-  const confusablePairs: ConfusablePair[] = ['b/d', 'p/q', 'm/w', 'n/u'];
+  const confusablePairs: ConfusablePair[] = ['b/d', 'p/q', 'm/w', 'n/u', 's/z'];
 
   const triggerSaveToast = (msg: string) => {
     setSaveToast(msg);

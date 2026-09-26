@@ -27,17 +27,16 @@ Reading difficulty is neither rare nor one-size-fits-all:
 ## 🚀 Core Features & Capabilities
 
 ### 1. 🎯 Interactive 8-Step Visual Calibration Engine
-- Gamified visual A/B diagnostic testing font apertures, line heights (1.4x–2.8x), letter spacing, word tracking, anti-glare color palettes, and reading ruler heights.
-- Generates an individualized **Reading Profile** saved locally and exportable as JSON.
+- Gamified visual A/B diagnostic testing font apertures, line heights (1.4x–2.8x), letter spacing, word tracking, anti-glare color palettes, confusable anchors, audio speeds, and column density.
+- Generates an individualized **Reading Profile** saved locally with full bidirectional JSON **Export and Import** support.
 
 ### 2. 🔤 Confusable Letter Disambiguation & Bionic Fixations
-- **Confusable Letter Markers**: Differentiates mirror pairs like `b/d`, `p/q`, `m/w`, and `n/u` with custom typographic weights, distinct amber/green cues, underlines, or under-dots.
+- **Confusable Letter Markers**: Differentiates mirror pairs like `b/d`, `p/q`, `m/w`, `n/u`, and `s/z` with custom typographic weights, distinct amber/green cues, underlines, or under-dots.
 - **Bionic Reading Fixations**: Automatically bolds initial word phonemes to guide eye saccades smoothly across sentences.
 
-### 3. 📄 Universal Document & Multimodal Vision OCR Engine
-- **Full Ingestion Support**: Upload any digital textbook PDF, scanned worksheet, image (`.png`, `.jpg`, `.jpeg`, `.webp`), or plain text file.
-- **Multimodal Vision OCR**: Integrated with Google Gemini (2.5/1.5 Flash) and OpenAI Vision to transcribe physical textbook photos and low-contrast scanned worksheets.
-- **Visual Extraction Pipeline**: Multi-stage animated pipeline (`Upload` ➔ `OCR` ➔ `Extract` ➔ `Reflow`) with real-time extracted preview snippet and direct 1-click reader opening.
+### 3. 📄 Universal Document & PDF Digitization Engine
+- **Textbook & Lesson Ingestion**: Upload any textbook PDF, worksheet, image, or text file (up to 25 MB with chunked reflow protection).
+- **Multimodal AI OCR**: Integrated with Google Gemini 3.0/Flash for scanned image PDFs and `pdf-parse` for digital documents.
 - **Automatic Classification**: Intelligently categorizes uploaded material into `Science`, `History`, `English`, `Mathematics`, or `General`.
 
 ### 4. 🌐 Multilingual Indian & Global Language Support (13 Languages)
@@ -74,8 +73,13 @@ Native script rendering, contextual translations, and phonetic integrity across:
 - **Heavy Simplification**: Restructures dense paragraphs into clean, bulleted key takeaways (`•`).
 - **Zero-Key Local Algorithmic Engine**: Includes a 60+ vocabulary simplifier and sentence breaker that operates fully offline even without external API keys.
 
-### 9. 🛡️ Clinical Assessment & IEP Ingestion
-- Upload optometric contrast recommendations, school IEPs, or psychoeducational evaluation PDFs to automatically pre-tune reading comfort settings.
+### 6. 🔊 Dual-Engine High-Fidelity Audio Dock & Karaoke Tracking
+- **High-Fidelity Server Audio**: Routes through `/api/tts/synthesize` (Google TTS, Sarvam Bulbul, OpenAI) for natural human pronunciation in all 13 languages.
+- **Synchronized Word Boundary Tracker**: Highlights active words on the canvas in real time with progressive audio dock scrubber.
+- **Fail-Safe Web Speech API**: Client-side browser synthesis fallback with automated device voice loading and cadence timing.
+
+### 7. 🛡️ Clinical Assessment & IEP Ingestion
+- Upload optometric contrast recommendations, school IEPs, or psychoeducational evaluation PDFs to automatically extract accommodations and pre-tune reading comfort settings via `/api/assessment/analyze`.
 
 ### 10. 🎨 Ivory Clarity Design System
 - Built on calming, scientifically tested anti-glare palettes:
@@ -102,10 +106,11 @@ graph TD
     end
 
     subgraph API Route Layer
-        AppContext --> UploadAPI["/api/documents/upload (Vision OCR & PDF)"]
-        AppContext --> SimplifyAPI["/api/simplify (Plain Language AI)"]
-        AppContext --> TranslateAPI["/api/translate (Sarvam Mayura & AI)"]
-        AppContext --> TTSAPI["/api/tts/synthesize (Sarvam Bulbul & Google)"]
+        AppContext --> UploadAPI["/api/documents/upload"]
+        AppContext --> SimplifyAPI["/api/simplify"]
+        AppContext --> TranslateAPI["/api/translate"]
+        AppContext --> TTSAPI["/api/tts/synthesize"]
+        AppContext --> AssessmentAPI["/api/assessment/analyze"]
     end
 
     subgraph AI & Service Integrations
@@ -121,6 +126,8 @@ graph TD
         TTSAPI --> SarvamBulbul["Sarvam Bulbul (Indic Audio)"]
         TTSAPI --> GoogleTTS["High-Fidelity Server Audio Proxy"]
         TTSAPI --> WebSpeech["Browser Web Speech API (Client Fallback)"]
+
+        AssessmentAPI --> GeminiEval["Gemini Report Accommodations Parser"]
     end
 ```
 
@@ -134,8 +141,9 @@ graph TD
 | **Language** | [TypeScript 5.5](https://www.typescriptlang.org/) (Strict Mode) |
 | **Styling** | [Tailwind CSS 3.4](https://tailwindcss.com/) with Ivory Clarity accessible color system |
 | **Icons & Assets** | [Lucide React](https://lucide.dev/) |
-| **Document Processing** | `pdf-parse` + Gemini Multimodal Vision API |
-| **AI Providers** | Google Gemini 3.0 Flash, Sarvam AI (Mayura & Bulbul), OpenAI GPT-4o-mini |
+| **Document Processing** | `pdf-parse` + Gemini Multimodal Vision OCR |
+| **PWA & Offline** | Service Worker (`public/sw.js`) + Web App Manifest (`manifest.webmanifest`) |
+| **AI Providers** | Google Gemini (Flash / Pro), Sarvam AI (Mayura & Bulbul), OpenAI GPT-4o-mini |
 | **Audio Processing** | HTML5 Web Audio Stream + Web Speech Synthesis API |
 | **Deployment** | [Vercel](https://vercel.com/) (Edge / Serverless Functions) |
 
@@ -145,45 +153,50 @@ graph TD
 
 ```
 akshar-setu/
+├── public/
+│   ├── icons/                       # PWA application icons (SVG, 192x192, 512x512)
+│   ├── manifest.webmanifest         # PWA progressive web app manifest
+│   └── sw.js                        # Offline precaching service worker
 ├── src/
 │   ├── app/
 │   │   ├── api/
+│   │   │   ├── assessment/analyze/  # Clinical IEP & optometry accommodations parser
 │   │   │   ├── documents/upload/    # PDF / TXT ingestion & OCR route
-│   │   │   ├── simplify/            # Plain Language AI text simplifier
+│   │   │   ├── simplify/            # Plain Language AI text simplifier (3 levels)
 │   │   │   ├── translate/           # 13-language translation endpoint
 │   │   │   └── tts/synthesize/      # Server-side audio synthesis endpoint
 │   │   ├── calibrate/               # 8-step visual diagnostic page
-│   │   ├── library/                 # Document library & category filters
-│   │   ├── login/                   # User profile & role sign-in
-│   │   ├── profile/                 # Reading profile & BYOK settings
+│   │   ├── library/                 # Document library, sort & category filters
+│   │   ├── login/                   # User profile & role sign-in with persistence
+│   │   ├── profile/                 # Reading profile, JSON export/import & BYOK settings
 │   │   ├── read/                    # Dynamic reader route ([id])
-│   │   ├── layout.tsx               # Root layout with AppProvider
+│   │   ├── layout.tsx               # Root layout with AppProvider & PWARegistrar
 │   │   └── page.tsx                 # Interactive landing & quick start
 │   ├── components/
-│   │   ├── calibration/             # Calibration round cards & A/B testers
-│   │   ├── common/                  # Buttons, Modals, Sliders, ToggleSwitches
-│   │   ├── documents/               # DocumentCards, UploaderModal, IEPModal
+│   │   ├── calibration/             # 8-step calibration cards, previewers & summary
+│   │   ├── common/                  # Buttons, Modals, Sliders, ToggleSwitches, PWARegistrar
+│   │   ├── documents/               # DocumentCards, UploaderModal, AssessmentUploadModal
 │   │   ├── landing/                 # Landing hero, feature highlights & showcase
-│   │   ├── navigation/              # Accessible top navbar & mobile drawer
-│   │   ├── profile/                 # Profile editor & JSON exporter
-│   │   └── reader/                  # ReadingContent, AudioDock, FocusOverlay, Rulers
+│   │   ├── layout/                  # Responsive top navbar with mobile drawer
+│   │   ├── profile/                 # Profile editor, JSON import/export & analytics
+│   │   └── reader/                  # ReadingContent, AudioDock, FocusOverlay, RulerToast
 │   ├── context/
-│   │   └── AppContext.tsx           # Global state (documents, audio, preferences)
+│   │   └── AppContext.tsx           # Global state (auth, documents, audio, preferences)
 │   ├── data/
-│   │   ├── calibrationRounds.ts     # Visual diagnostic round definitions
+│   │   ├── calibrationData.ts       # 8-step visual diagnostic round definitions
 │   │   ├── mockDocuments.ts         # Pre-loaded educational curriculum lessons
 │   │   └── themes.ts                # Anti-glare color palettes & font configurations
 │   ├── lib/
 │   │   ├── ai-provider.ts           # Unified multi-provider LLM executor
 │   │   └── utils.ts                 # Font families & CSS styling utilities
 │   ├── services/
-│   │   ├── calibrationService.ts    # Preference compilation algorithm
+│   │   ├── calibrationService.ts    # 8-step preference synthesis algorithm
 │   │   ├── documentService.ts       # Document persistence & category detector
 │   │   ├── pdf.service.ts           # Structural PDF cleaner & language detector
-│   │   ├── profileService.ts        # Reading profile JSON manager
-│   │   ├── readingService.ts        # Session analytics (WPM, words read)
-│   │   ├── simplificationService.ts # Local + AI text simplification service
-│   │   ├── translationService.ts    # Multilingual translation service
+│   │   ├── profileService.ts        # Reading profile JSON export & import manager
+│   │   ├── readingService.ts        # Honest session analytics (WPM, words read)
+│   │   ├── simplificationService.ts # 3-level local + AI text simplification service
+│   │   ├── translationService.ts    # Multilingual translation service with cache
 │   │   └── ttsService.ts            # Dual-engine server audio + Web Speech TTS
 │   └── types/
 │       └── index.ts                 # TypeScript data contracts & models

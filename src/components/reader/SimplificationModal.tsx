@@ -19,8 +19,7 @@ export const SimplificationModal: React.FC = () => {
 
   const [simplifiedData, setSimplifiedData] = useState<SimplifiedResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedLevel, setSelectedLevel] = useState<'light' | 'medium' | 'heavy'>('medium');
-  const [copied, setCopied] = useState(false);
+  const [level, setLevel] = useState<'light' | 'medium' | 'heavy'>('medium');
 
   const currentPage = activeDocument?.pages.find(p => p.pageNumber === activePageNumber) || activeDocument?.pages[0];
 
@@ -29,7 +28,7 @@ export const SimplificationModal: React.FC = () => {
       if (isSimplificationModalOpen && currentPage) {
         setIsLoading(true);
         try {
-          const res = await simplificationService.simplify(currentPage.content, selectedLevel);
+          const res = await simplificationService.simplify(currentPage.content, level);
           setSimplifiedData(res);
           showNotification('Text simplified with WCAG Plain Language guidelines!', 'success', 'Simplification Complete');
         } catch (e) {
@@ -41,7 +40,7 @@ export const SimplificationModal: React.FC = () => {
       }
     }
     loadSimplified();
-  }, [isSimplificationModalOpen, currentPage, selectedLevel]);
+  }, [isSimplificationModalOpen, currentPage, level]);
 
   const handleReadAloudSimplified = () => {
     if (simplifiedData) {
@@ -68,22 +67,19 @@ export const SimplificationModal: React.FC = () => {
       subtitle="Reflows complex paragraphs into bite-sized, accessible sentences"
       maxWidth="2xl"
     >
-      <div className="space-y-5 text-[#26231E]">
-        {/* Simplification Intensity Level Selector */}
-        <div className="p-3.5 bg-[#FAF3E0] border border-[#E7DFCA] rounded-2xl flex flex-wrap items-center justify-between gap-3 shadow-xs">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-[#D97706]" />
-            <span className="text-xs font-bold text-[#1E1B18]">Simplification Level:</span>
-          </div>
-          <div className="flex items-center gap-1.5 bg-[#FEF9EB] p-1 rounded-xl border border-[#D8CEB9]">
-            {(['light', 'medium', 'heavy'] as const).map((lvl) => (
+      <div className="space-y-6 text-[#26231E]">
+        {/* Level Selector Segmented Control (Fix 9) */}
+        <div className="flex items-center justify-between p-1.5 bg-[#FAF3E0] border border-[#E7DFCA] rounded-xl text-xs">
+          <span className="font-bold text-[#706655] px-3">Simplification Level:</span>
+          <div className="flex items-center gap-1">
+            {(['light', 'medium', 'heavy'] as const).map(lvl => (
               <button
                 key={lvl}
-                onClick={() => setSelectedLevel(lvl)}
-                className={`px-3 py-1 text-xs font-bold rounded-lg capitalize transition-all ${
-                  selectedLevel === lvl
+                onClick={() => setLevel(lvl)}
+                className={`px-3 py-1.5 rounded-lg font-bold capitalize transition-all ${
+                  level === lvl
                     ? 'bg-[#26231E] text-[#FEF9EB] shadow-xs'
-                    : 'text-[#706655] hover:text-[#1E1B18] hover:bg-[#EFE8D6]'
+                    : 'text-[#524B40] hover:bg-[#EFE8D6]'
                 }`}
               >
                 {lvl}

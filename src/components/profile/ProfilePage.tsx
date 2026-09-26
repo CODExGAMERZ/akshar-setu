@@ -15,7 +15,9 @@ import {
   RotateCcw, 
   Save, 
   Download, 
+  Upload,
   CheckCircle2, 
+  AlertCircle,
   Glasses,
   LogOut
 } from 'lucide-react';
@@ -31,11 +33,14 @@ export const ProfilePage: React.FC = () => {
     resetToCalibratedSettings, 
     resetToDefaultSettings, 
     profile, 
+    saveProfileChanges,
     setCurrentRoute 
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<'typography' | 'colors' | 'confusable' | 'audio' | 'calibration'>('typography');
   const [saveToast, setSaveToast] = useState<string | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const fonts: Array<{ name: FontOption; label: string }> = [
     { name: 'Lexend', label: 'Lexend' },
@@ -60,6 +65,26 @@ export const ProfilePage: React.FC = () => {
     a.href = url;
     a.download = `AksharSetu_Profile_${currentUser?.name || 'User'}.json`;
     a.click();
+  };
+
+  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const imported = await profileService.importProfileJSON(text);
+      await saveProfileChanges(imported);
+      setSaveToast('Reading Profile imported successfully!');
+      setImportError(null);
+      setTimeout(() => setSaveToast(null), 2500);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Invalid JSON file';
+      setImportError(`Import failed: ${msg}`);
+      setTimeout(() => setImportError(null), 4000);
+    } finally {
+      if (e.target) e.target.value = '';
+    }
   };
 
 
@@ -94,6 +119,24 @@ export const ProfilePage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2.5">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json,application/json"
+            className="hidden"
+            id="profile-import-input"
+            onChange={handleImportFile}
+          />
+
+          <Button
+            variant="outline"
+            size="sm"
+            icon={<Upload className="w-4 h-4" />}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            Import JSON
+          </Button>
+
           <Button
             variant="outline"
             size="sm"
@@ -184,6 +227,13 @@ export const ProfilePage: React.FC = () => {
           {saveToast && (
             <div className="p-3 rounded-xl bg-[#EDF5EC] border border-[#CBDBCB] text-xs text-[#047857] text-center font-bold animate-in fade-in">
               {saveToast}
+            </div>
+          )}
+
+          {importError && (
+            <div className="p-3 rounded-xl bg-[#FEF2F2] border border-[#FECACA] text-xs text-[#DC2626] text-center font-bold flex items-center justify-center gap-1.5 animate-in fade-in">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              {importError}
             </div>
           )}
 
@@ -419,7 +469,7 @@ export const ProfilePage: React.FC = () => {
               <div>
                 <h3 className="text-lg font-bold text-[#1E1B18]">Calibration History & Management</h3>
                 <p className="text-xs text-[#706655]">
-                  Review your calibrated reading profile or run the 5-step test again.
+                  Review your calibrated reading profile or run the 8-step test again.
                 </p>
               </div>
 
@@ -440,7 +490,7 @@ export const ProfilePage: React.FC = () => {
                     icon={<Sparkles className="w-3.5 h-3.5" />}
                     onClick={() => setCurrentRoute('calibration')}
                   >
-                    Redo 5-Step Reading Calibration
+                    Redo 8-Step Reading Calibration
                   </Button>
                 </div>
               </div>

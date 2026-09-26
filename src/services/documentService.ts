@@ -14,7 +14,7 @@ const CATEGORY_KEYWORDS: Record<DocCategory, string[]> = {
 };
 
 function detectCategory(title: string, content: string): DocCategory {
-  const combined = `${title} ${content.slice(0, 2000)}`.toLowerCase();
+  const combined = `${title} ${content}`.toLowerCase();
 
   let bestCategory: DocCategory = 'General';
   let bestScore = 0;

@@ -20,8 +20,8 @@ export const AudioDock: React.FC = () => {
     resumeTTS, 
     stopTTS, 
     setTTSSpeed, 
-    skipSentenceForward, 
-    skipSentenceBackward 
+    seekToWord,
+    preferences 
   } = useApp();
 
   const speeds = [0.75, 1.0, 1.25, 1.5, 2.0];
@@ -40,6 +40,14 @@ export const AudioDock: React.FC = () => {
     const current = ttsState.playbackRate;
     const nextIdx = (speeds.indexOf(current) + 1) % speeds.length;
     setTTSSpeed(speeds[nextIdx] || 1.0);
+  };
+
+  const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (ttsState.totalWords <= 0) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickRatio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const targetWordIndex = Math.min(ttsState.totalWords - 1, Math.floor(clickRatio * ttsState.totalWords));
+    seekToWord(targetWordIndex);
   };
 
   return (
@@ -117,10 +125,36 @@ export const AudioDock: React.FC = () => {
         <span>{ttsState.playbackRate}x</span>
       </button>
 
+      {/* Engine Indicator Pill */}
+      {ttsState.activeEngine && ttsState.activeEngine !== 'none' && (
+        <span 
+          className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white/10 text-[#FBBF24] border border-white/10 hidden sm:inline-block shrink-0"
+          title={ttsState.activeEngine === 'neural' ? 'High-Fidelity Server Audio' : 'Local Device Voice'}
+        >
+          {ttsState.activeEngine === 'neural' ? '🎙 Neural' : '🔊 Device'}
+        </span>
+      )}
+
       {/* Word reading metric indicator */}
       {ttsState.totalWords > 0 && (
         <div className="text-[11px] text-white/80 hidden sm:block pl-2 border-l border-white/15 truncate max-w-[120px]">
           Word {Math.max(1, ttsState.currentWordIndex + 1)} of {ttsState.totalWords}
+        </div>
+      )}
+
+      {/* Interactive Progress Scrubber Bar (Fix 17) */}
+      {ttsState.totalWords > 0 && (
+        <div 
+          onClick={handleProgressClick}
+          title="Click to seek speech to this word position"
+          className="group/scrubber absolute bottom-0 left-0 right-0 h-1.5 hover:h-2.5 bg-white/15 hover:bg-white/25 rounded-b-2xl overflow-hidden cursor-pointer transition-all"
+        >
+          <div 
+            className="h-full bg-[#D97706] group-hover/scrubber:bg-[#F59E0B] transition-all duration-150"
+            style={{ 
+              width: `${Math.min(100, Math.max(0, ((ttsState.currentWordIndex + 1) / ttsState.totalWords) * 100))}%` 
+            }}
+          />
         </div>
       )}
     </div>

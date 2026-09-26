@@ -2,14 +2,14 @@ import { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'AksharSetu — Dyslexia Reading Companion',
+    name: 'AksharSetu — Accessible Multisensory Reader',
     short_name: 'AksharSetu',
-    description: 'A personalized, multilingual reading companion for people with dyslexia and reading differences.',
+    description: 'Personalized multisensory accessible reader with dyslexia support, typography calibration, anti-glare color filters, and synchronized TTS.',
     start_url: '/',
     display: 'standalone',
     orientation: 'portrait-primary',
-    background_color: '#fbf9f8',
-    theme_color: '#064192',
+    background_color: '#FEF9EB',
+    theme_color: '#FEF9EB',
     categories: ['education', 'accessibility', 'books', 'productivity'],
     icons: [
       {
@@ -33,22 +33,22 @@ export default function manifest(): MetadataRoute.Manifest {
     ],
     shortcuts: [
       {
-        name: 'Read Document',
-        short_name: 'Read',
-        description: 'Open the personalized reader',
+        name: 'Open Reader',
+        short_name: 'Reader',
+        description: 'Open the personalized accessible reader',
         url: '/read',
       },
       {
-        name: 'Calibration Test',
+        name: 'Visual Calibration',
         short_name: 'Calibrate',
-        description: 'Tune your visual reading profile',
+        description: 'Run the 8-step visual comfort calibration test',
         url: '/calibrate',
       },
       {
-        name: 'Upload Document',
-        short_name: 'Upload',
-        description: 'Import a new PDF or text',
-        url: '/upload',
+        name: 'Document Library',
+        short_name: 'Library',
+        description: 'Browse, upload, and organize reading lessons',
+        url: '/library',
       },
     ],
   };

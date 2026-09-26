@@ -47,6 +47,7 @@ export interface AppContextType {
   refreshDocuments: () => Promise<void>;
   selectDocument: (id: string) => Promise<void>;
   deleteDocument: (id: string) => Promise<void>;
+  updateDocumentCategory: (docId: string, category: string) => Promise<void>;
   uploadAndDigitise: (file: File) => Promise<Document>;
   updateDocumentProgress: (docId: string, progress: number) => Promise<void>;
 
@@ -67,7 +68,7 @@ export interface AppContextType {
 
   // TTS & Read-Along State
   ttsState: TTSState;
-  startTTS: (textToSpeak?: string, wordOffset?: number) => void;
+  startTTS: (textToSpeak?: string, startWordOffset?: number) => void;
   pauseTTS: () => void;
   resumeTTS: () => void;
   stopTTS: () => void;
@@ -82,6 +83,7 @@ export interface AppContextType {
   isTranslating: boolean;
   changeReadingLanguage: (langCode: string) => Promise<void>;
   activeTranslatedText: string | null;
+  translationNotice: string | null;
 
   // Notifications
   notifications: AppNotification[];
@@ -104,15 +106,7 @@ export interface AppContextType {
 }
 
 const AppContext = createContext<AppContextType | null>(null);
-
-const DEFAULT_USER: User = {
-  id: 'user_alex',
-  name: 'Alex Rivera',
-  email: 'alex.rivera@edu.org',
-  avatar: 'AR',
-  role: 'student',
-  createdAt: '2026-01-15'
-};
+const USER_STORAGE_KEY = 'aksharsetu_user_v1';
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Navigation
@@ -121,7 +115,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isControlsDrawerOpen, setIsControlsDrawerOpen] = useState<boolean>(false);
 
   // User
-  const [currentUser, setCurrentUser] = useState<User | null>(DEFAULT_USER);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   // Documents
   const [documents, setDocuments] = useState<Document[]>([]);
@@ -150,6 +144,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [currentLanguage, setCurrentLanguage] = useState<string>('en-IN');
   const [isTranslating, setIsTranslating] = useState<boolean>(false);
   const [activeTranslatedText, setActiveTranslatedText] = useState<string | null>(null);
+  const [translationNotice, setTranslationNotice] = useState<string | null>(null);
 
   // Notifications
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
@@ -224,6 +219,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Initial Load
   useEffect(() => {
     async function init() {
+      try {
+        const storedUser = localStorage.getItem(USER_STORAGE_KEY);
+        if (storedUser) {
+          setCurrentUser(JSON.parse(storedUser));
+        }
+      } catch (e) {
+        console.warn('Failed to hydrate user from storage:', e);
+      }
+
       const docs = await documentService.getDocuments();
       setDocuments(docs);
       if (docs.length > 0) {
@@ -352,16 +356,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteDocument = useCallback(async (id: string) => {
     await documentService.deleteDocument(id);
-    await refreshDocuments();
-    if (activeDocument?.id === id) {
-      const remaining = documents.filter(d => d.id !== id);
-      if (remaining.length > 0) {
-        selectDocument(remaining[0].id);
-      } else {
-        setActiveDocument(null);
+    setDocuments(prev => {
+      const remaining = prev.filter(d => d.id !== id);
+      if (activeDocument?.id === id) {
+        if (remaining.length > 0) {
+          selectDocument(remaining[0].id);
+        } else {
+          setActiveDocument(null);
+        }
+      }
+      return remaining;
+    });
+  }, [activeDocument, selectDocument]);
+
+  const updateDocumentCategory = useCallback(async (docId: string, category: string) => {
+    const doc = documents.find(d => d.id === docId);
+    if (doc) {
+      const updated = { ...doc, category };
+      await documentService.saveDocument(updated);
+      setDocuments(prev => prev.map(d => d.id === docId ? updated : d));
+      if (activeDocument?.id === docId) {
+        setActiveDocument(updated);
       }
     }
-  }, [activeDocument, documents, refreshDocuments, selectDocument]);
+  }, [documents, activeDocument]);
 
   const uploadAndDigitise = useCallback(async (file: File): Promise<Document> => {
     const newDoc = await documentService.digitise(file);
@@ -381,11 +399,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Auth
   const loginUser = useCallback((user: User) => {
     setCurrentUser(user);
+    try {
+      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+    } catch (e) {
+      console.warn('Failed to persist user session:', e);
+    }
     setCurrentRoute('library');
   }, [setCurrentRoute]);
 
   const logoutUser = useCallback(() => {
     setCurrentUser(null);
+    try {
+      localStorage.removeItem(USER_STORAGE_KEY);
+    } catch (e) {
+      console.warn('Failed to clear user session:', e);
+    }
     setCurrentRoute('landing');
   }, [setCurrentRoute]);
 
@@ -397,19 +425,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return page?.content || '';
   }, [activeDocument, activePageNumber, activeTranslatedText]);
 
-  const startTTS = useCallback((textToSpeak?: string, wordOffset = 0) => {
-    const fullContent = getCurrentPageText();
-    const content = textToSpeak || fullContent;
+  const startTTS = useCallback((textToSpeak?: string, startWordOffset = 0) => {
+    const fullPageContent = getCurrentPageText();
+    const content = textToSpeak || fullPageContent;
     if (!content) return;
 
-    const allWords = fullContent.match(/\S+/g) || [];
-    const words = content.match(/\S+/g) || [];
+    const allPageWords = fullPageContent.match(/\S+/g) || [];
     setTtsState(prev => ({
       ...prev,
       isPlaying: true,
       isPaused: false,
-      currentWordIndex: wordOffset,
-      totalWords: allWords.length,
+      currentWordIndex: startWordOffset,
+      totalWords: allPageWords.length > 0 ? allPageWords.length : (content.match(/\S+/g) || []).length,
       playbackRate: preferences.ttsSpeed
     }));
 
@@ -417,18 +444,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       rate: preferences.ttsSpeed,
       lang: preferences.audioLanguage || currentLanguage || 'en-IN',
       voiceName: preferences.ttsVoice,
-      wordOffset: wordOffset,
+      onEngineDetermined: (engine) => {
+        setTtsState(prev => ({ ...prev, activeEngine: engine }));
+      },
       onWordBoundary: (wordIdx, _, word) => {
+        const absoluteWordIndex = startWordOffset + wordIdx;
         setTtsState(prev => ({
           ...prev,
-          currentWordIndex: wordIdx,
+          currentWordIndex: absoluteWordIndex,
           activeWordText: word
         }));
         readingService.recordWordRead(1);
 
         // Auto-scroll handler if active
         if (preferences.autoScroll) {
-          const activeEl = document.getElementById(`word-span-${wordIdx}`);
+          const activeEl = document.getElementById(`word-span-${absoluteWordIndex}`);
           if (activeEl) {
             activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
           }
@@ -440,7 +470,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           isPlaying: false,
           isPaused: false,
           currentWordIndex: -1,
-          activeWordText: ''
+          activeWordText: '',
+          activeEngine: 'none'
         }));
       },
       onError: (err) => {
@@ -448,7 +479,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setTtsState(prev => ({
           ...prev,
           isPlaying: false,
-          isPaused: false
+          isPaused: false,
+          activeEngine: 'none'
         }));
       }
     });
@@ -466,8 +498,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const stopTTS = useCallback(() => {
     ttsService.stop();
-    setTtsState(prev => ({ ...prev, isPlaying: false, isPaused: false, currentWordIndex: -1, activeWordText: '' }));
+    setTtsState(prev => ({ 
+      ...prev, 
+      isPlaying: false, 
+      isPaused: false, 
+      currentWordIndex: -1, 
+      activeWordText: '',
+      activeEngine: 'none'
+    }));
   }, []);
+
+  // Stop TTS automatically whenever page changes
+  useEffect(() => {
+    if (ttsState.isPlaying) {
+      stopTTS();
+    }
+  }, [activePageNumber]);
 
   const setTTSSpeed = useCallback((speed: number) => {
     updatePreferences({ ttsSpeed: speed });
@@ -530,19 +576,40 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       if (targetLang === activeDocument.language) {
         setActiveTranslatedText(null);
+        setTranslationNotice(null);
       } else if (page.translations && page.translations[targetLang]) {
         // Cached instant translation
         setActiveTranslatedText(page.translations[targetLang]);
+        setTranslationNotice(null);
       } else {
         const res = await translationService.translate(page.content, activeDocument.language, targetLang);
-        setActiveTranslatedText(res.translatedText);
+        if (res.translatedText && res.translatedText.trim() !== page.content.trim()) {
+          setActiveTranslatedText(res.translatedText);
+          setTranslationNotice(null);
+        } else {
+          setActiveTranslatedText(null);
+          setTranslationNotice('Translation unavailable for this page — showing original text');
+        }
       }
     } catch (e) {
       console.warn('Translation failed:', e);
+      setActiveTranslatedText(null);
+      setTranslationNotice('Translation unavailable — showing original text');
     } finally {
       setIsTranslating(false);
     }
   }, [activeDocument, activePageNumber, updatePreferences]);
+
+  // Retrigger translation on page change when a non-native language is active
+  useEffect(() => {
+    if (!activeDocument) return;
+    if (currentLanguage && currentLanguage !== activeDocument.language) {
+      changeReadingLanguage(currentLanguage);
+    } else {
+      setActiveTranslatedText(null);
+      setTranslationNotice(null);
+    }
+  }, [activePageNumber, activeDocument?.id, currentLanguage, changeReadingLanguage]);
 
   const value = useMemo(() => ({
     currentRoute,
@@ -564,6 +631,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     refreshDocuments,
     selectDocument,
     deleteDocument,
+    updateDocumentCategory,
     uploadAndDigitise,
     updateDocumentProgress,
     preferences,
@@ -589,6 +657,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     isTranslating,
     changeReadingLanguage,
     activeTranslatedText,
+    translationNotice,
     isUploadModalOpen,
     setIsUploadModalOpen,
     isAssessmentModalOpen,
@@ -620,6 +689,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     refreshDocuments,
     selectDocument,
     deleteDocument,
+    updateDocumentCategory,
     uploadAndDigitise,
     updateDocumentProgress,
     preferences,
@@ -645,6 +715,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     isTranslating,
     changeReadingLanguage,
     activeTranslatedText,
+    translationNotice,
     isUploadModalOpen,
     isAssessmentModalOpen,
     isSimplificationModalOpen,

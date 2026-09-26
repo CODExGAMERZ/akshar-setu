@@ -5,12 +5,13 @@ import { Header } from '@/components/layout/Header';
 import { HowItWorksModal } from '@/components/landing/HowItWorksModal';
 import { DocumentUploaderModal } from '@/components/documents/DocumentUploaderModal';
 import { AssessmentUploadModal } from '@/components/documents/AssessmentUploadModal';
-import { SpeechDictationModal } from '@/components/reader/SpeechDictationModal';
+import { PWARegistrar } from '@/components/common/PWARegistrar';
 
 export const metadata: Metadata = {
   title: 'AksharSetu — Personalized Multisensory Reading Assistant',
   description: 'Accessible dyslexia-support reading assistant with personalized typography, color overlays, read-aloud synchronization, and focus modes.',
   applicationName: 'AksharSetu',
+  manifest: '/manifest.webmanifest',
 };
 
 
@@ -48,13 +49,13 @@ export default function RootLayout({
       <body className="min-h-screen bg-[#FEF9EB] text-[#26231E] flex flex-col font-sans selection:bg-[#FDE047] selection:text-[#1E1B18] antialiased">
         <AppProvider>
           <Header />
-          <main className="flex-1 flex flex-col pt-[65px]">
+          <main className="flex-1 flex flex-col min-h-0">
             {children}
           </main>
           <HowItWorksModal />
           <DocumentUploaderModal />
           <AssessmentUploadModal />
-          <SpeechDictationModal />
+          <PWARegistrar />
         </AppProvider>
       </body>
     </html>

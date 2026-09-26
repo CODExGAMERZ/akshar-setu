@@ -70,15 +70,19 @@ export const ReadingContent: React.FC<ReadingContentProps> = ({
         isConfusable = true;
       } else if (activePairs.includes('n/u') && (lower === 'n' || lower === 'u')) {
         isConfusable = true;
+      } else if (activePairs.includes('s/z') && (lower === 's' || lower === 'z')) {
+        isConfusable = true;
       }
 
       if (!isConfusable) return char;
+
+      const isFirstOfPair = lower === 'b' || lower === 'p' || lower === 'm' || lower === 'n' || lower === 's';
 
       if (style === 'weight') {
         return (
           <span 
             key={cIdx} 
-            className={`font-black ${lower === 'b' || lower === 'p' || lower === 'm' ? 'text-[#B45309]' : 'text-[#047857]'}`}
+            className={`font-black ${isFirstOfPair ? 'text-[#B45309]' : 'text-[#047857]'}`}
             title={`Confusable letter: ${char}`}
           >
             {char}
@@ -88,7 +92,7 @@ export const ReadingContent: React.FC<ReadingContentProps> = ({
         return (
           <span 
             key={cIdx} 
-            className={`px-0.5 rounded ${lower === 'b' || lower === 'p' || lower === 'm' ? 'bg-[#FED7AA]/50 text-[#9A3412]' : 'bg-[#BBF7D0]/50 text-[#166534]'}`}
+            className={`px-0.5 rounded ${isFirstOfPair ? 'bg-[#FED7AA]/50 text-[#9A3412]' : 'bg-[#BBF7D0]/50 text-[#166534]'}`}
           >
             {char}
           </span>
@@ -155,23 +159,24 @@ export const ReadingContent: React.FC<ReadingContentProps> = ({
         }}
       >
         {tokenizedParagraphs.map(({ pIdx, elements }) => {
-          const paraWordIndices = elements.filter(e => !e.isSpace && e.wordIndex !== undefined).map(e => e.wordIndex!);
-          const isParagraphActive = ttsState.isPlaying && paraWordIndices.includes(ttsState.currentWordIndex);
-          const isDimmedInFocus = preferences.focusMode && ttsState.isPlaying && !isParagraphActive;
+          const paragraphWordIndices = elements
+            .filter(e => !e.isSpace && e.wordIndex !== undefined)
+            .map(e => e.wordIndex as number);
+          const isParagraphContainingActiveWord = ttsState.isPlaying && 
+            preferences.highlightMode === 'line' && 
+            paragraphWordIndices.includes(ttsState.currentWordIndex);
 
           return (
             <p
               key={pIdx}
-              id={`reading-para-${pIdx}`}
-              className={`transition-all rounded-xl p-3 -m-3 ${
-                isDimmedInFocus ? 'opacity-30 blur-[0.3px] hover:opacity-100 transition-opacity' : 'opacity-100'
-              } ${
-                isParagraphActive && preferences.highlightMode === 'line'
-                  ? 'bg-[#FAF1DA]/80 shadow-xs border-l-4 border-[#D97706] pl-4'
-                  : ''
+              className={`transition-all rounded-xl p-2 -m-2 ${
+                isParagraphContainingActiveWord ? 'ring-2 ring-[#D97706]/40 shadow-xs' : ''
               }`}
               style={{
-                marginBottom: `${preferences.paragraphSpacing}rem`
+                marginBottom: `${preferences.paragraphSpacing}rem`,
+                backgroundColor: isParagraphContainingActiveWord 
+                  ? `${preferences.highlightColor}33`
+                  : undefined
               }}
             >
               {elements.map((elem, eIdx) => {
@@ -185,7 +190,6 @@ export const ReadingContent: React.FC<ReadingContentProps> = ({
                   preferences.highlightMode === 'phrase' && 
                   wordIdx >= ttsState.currentWordIndex - 2 && 
                   wordIdx <= ttsState.currentWordIndex + 2;
-                const isCurrentSpokenLine = ttsState.isPlaying && preferences.highlightMode === 'line' && isParagraphActive;
 
                 let highlightClass = '';
                 if (isCurrentSpokenWord && preferences.highlightMode === 'word') {
@@ -200,28 +204,25 @@ export const ReadingContent: React.FC<ReadingContentProps> = ({
                   <span
                     key={eIdx}
                     id={`word-span-${wordIdx}`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onWordClick && onWordClick(wordIdx, elem.text);
-                    }}
+                    onClick={() => onWordClick && onWordClick(wordIdx, elem.text)}
                     className={`cursor-pointer transition-colors duration-100 ${highlightClass}`}
-                    style={{
-                      backgroundColor: isCurrentSpokenWord && preferences.highlightMode === 'word' 
-                        ? preferences.highlightColor 
-                        : undefined,
-                      color: isCurrentSpokenWord && preferences.highlightMode === 'word' 
-                        ? '#111827' 
-                        : undefined
-                    }}
-                    title="Click to start speech from this word"
-                  >
-                    {formatWordContent(elem.text)}
-                  </span>
-                );
-              })}
-            </p>
-          );
-        })}
+                  style={{
+                    backgroundColor: isCurrentSpokenWord && preferences.highlightMode === 'word' 
+                      ? preferences.highlightColor 
+                      : undefined,
+                    color: isCurrentSpokenWord && preferences.highlightMode === 'word' 
+                      ? '#111827' 
+                      : undefined
+                  }}
+                  title="Click to start speech from this word"
+                >
+                  {formatWordContent(elem.text)}
+                </span>
+              );
+            })}
+          </p>
+        );
+      })}
 
         {/* Key Educational Terms Glossary in Reader */}
         {page.keyTerms && page.keyTerms.length > 0 && !translatedText && (

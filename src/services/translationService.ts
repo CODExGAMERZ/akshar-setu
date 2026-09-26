@@ -32,7 +32,7 @@ class TranslationService {
       };
     }
 
-    const cacheKey = `${normalizedTarget}_${text.length}_${text.slice(0, 40)}`;
+    const cacheKey = `${normalizedTarget}_${text.length}_${text.slice(0, 100)}`;
     if (this.cache.has(cacheKey)) {
       return {
         translatedText: this.cache.get(cacheKey)!,
@@ -53,9 +53,14 @@ class TranslationService {
         })
       });
 
-      if (res.ok) {
+      if (res.ok && res.status !== 206) {
         const data = await res.json();
-        if (data.translatedText && data.translatedText.trim().length > 0) {
+        if (
+          data.translatedText && 
+          data.translatedText.trim().length > 0 &&
+          data.translatedText.trim() !== text.trim() &&
+          data.status !== 'untranslated'
+        ) {
           this.cache.set(cacheKey, data.translatedText);
           return {
             translatedText: data.translatedText,
