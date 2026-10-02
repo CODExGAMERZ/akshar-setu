@@ -11,43 +11,44 @@ import { LanguageSelector } from './LanguageSelector';
 import { SimplificationModal } from './SimplificationModal';
 import { ReadingSessionSummaryModal } from './ReadingSessionSummaryModal';
 import { Button } from '../common/Button';
-import { 
-  Sliders, 
-  Sparkles, 
-  BookOpen, 
-  ChevronLeft, 
-  ChevronRight, 
-  Maximize2, 
-  Minimize2, 
-  PanelLeftClose, 
-  PanelLeftOpen, 
+import {
+  Sliders,
+  Sparkles,
+  BookOpen,
+  ChevronLeft,
+  ChevronRight,
+  Maximize2,
+  Minimize2,
+  PanelLeftClose,
+  PanelLeftOpen,
   BarChart2,
-  SplitSquareVertical
+  SplitSquareVertical,
+  FileText
 } from 'lucide-react';
 
 export const ReaderView: React.FC = () => {
-  const { 
-    activeDocument, 
-    activePageNumber, 
-    setActivePageNumber, 
-    viewMode, 
-    setViewMode, 
-    preferences, 
-    updatePreferences, 
-    ttsState, 
-    seekToWord, 
-    activeTranslatedText, 
-    setIsSimplificationModalOpen, 
-    setIsSessionSummaryOpen, 
-    documents, 
-    selectDocument, 
+  const {
+    activeDocument,
+    activePageNumber,
+    setActivePageNumber,
+    viewMode,
+    setViewMode,
+    preferences,
+    updatePreferences,
+    ttsState,
+    seekToWord,
+    activeTranslatedText,
+    setIsSimplificationModalOpen,
+    setIsSessionSummaryOpen,
+    documents,
+    selectDocument,
     navigateToReader,
     updateDocumentProgress,
     currentLanguage
   } = useApp();
 
-  const [isLeftNavOpen, setIsLeftNavOpen] = useState<boolean>(true);
-  const [isRightControlsOpen, setIsRightControlsOpen] = useState<boolean>(true);
+  const [isLeftNavOpen, setIsLeftNavOpen] = useState<boolean>(false);
+  const [isRightControlsOpen, setIsRightControlsOpen] = useState<boolean>(false);
   const canvasContainerRef = useRef<HTMLElement | null>(null);
 
   const { setIsUploadModalOpen, setCurrentRoute } = useApp();
@@ -109,132 +110,128 @@ export const ReaderView: React.FC = () => {
 
   return (
     <div className="relative h-[calc(100dvh-65px)] bg-[#FEF9EB] text-[#26231E] flex flex-col overflow-hidden">
-      {/* Top Reader Utility Bar */}
-      <div className="bg-[#FAF3E0] border-b border-[#E7DFCA] px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 shrink-0 z-20 transition-colors">
-        {/* Left: Left nav toggle & document title */}
-        <div className="flex items-center gap-2">
+      {/* Top Reader Utility Bar — single row, never wraps */}
+      <div className="bg-[#FAF3E0] border-b border-[#E7DFCA] px-2 sm:px-4 py-1.5 sm:py-2 flex items-center gap-1.5 sm:gap-2 shrink-0 z-20 transition-colors overflow-x-auto">
+        {/* Left: Nav toggle + title */}
+        <div className="flex items-center gap-1.5 shrink-0 min-w-0">
           {!preferences.focusMode && (
             <button
               id="reader-toggle-left-nav"
               onClick={() => setIsLeftNavOpen(!isLeftNavOpen)}
               title={isLeftNavOpen ? "Hide document navigator" : "Show document navigator"}
-              className="p-1.5 rounded-lg text-[#706655] hover:text-[#1E1B18] hover:bg-[#EFE8D6] transition-colors flex items-center"
+              className="p-1.5 rounded-lg text-[#706655] hover:text-[#1E1B18] hover:bg-[#EFE8D6] transition-colors shrink-0"
             >
               {isLeftNavOpen ? <PanelLeftClose className="w-4 h-4" /> : <PanelLeftOpen className="w-4 h-4" />}
             </button>
           )}
 
-          <div className="overflow-hidden">
-            <h2 className="text-xs sm:text-sm font-bold text-[#1E1B18] truncate max-w-[220px] sm:max-w-md">
+          <div className="hidden sm:block overflow-hidden min-w-0">
+            <h2 className="text-xs font-bold text-[#1E1B18] truncate max-w-[140px] md:max-w-[220px] lg:max-w-md">
               {activeDocument.title}
             </h2>
-            <span className="text-[10px] text-[#706655] block">
-              Page {activePageNumber} of {totalPages} • {activeDocument.category}
+            <span className="text-[10px] text-[#706655] block truncate">
+              Page {activePageNumber}/{totalPages} • {activeDocument.category}
             </span>
           </div>
         </div>
 
-        {/* Center: View Mode Toggle (Original vs Reflowed) */}
-        <div className="flex items-center gap-2">
-          {/* Original vs Personalized Toggle */}
-          <div className="flex items-center bg-[#FEF9EB] p-1 rounded-xl border border-[#D8CEB9] shadow-2xs">
-            <button
-              id="reader-view-original-btn"
-              onClick={() => setViewMode('original')}
-              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-                viewMode === 'original'
-                  ? 'bg-[#26231E] text-[#FEF9EB] shadow-xs'
-                  : 'text-[#524B40] hover:text-[#1E1B18]'
+        {/* Center: View toggle (ultra-compact on mobile) */}
+        <div className="flex items-center bg-[#FEF9EB] p-0.5 sm:p-1 rounded-lg sm:rounded-xl border border-[#D8CEB9] shadow-2xs shrink-0">
+          <button
+            id="reader-view-original-btn"
+            onClick={() => setViewMode('original')}
+            title="Original View"
+            className={`px-2 sm:px-3 py-1 rounded-md sm:rounded-lg text-[11px] sm:text-xs font-bold transition-all flex items-center gap-1 ${viewMode === 'original'
+                ? 'bg-[#26231E] text-[#FEF9EB] shadow-xs'
+                : 'text-[#524B40] hover:text-[#1E1B18]'
               }`}
-            >
-              Original View
-            </button>
-            <button
-              id="reader-view-personalized-btn"
-              onClick={() => setViewMode('personalized')}
-              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                viewMode === 'personalized'
-                  ? 'bg-[#D97706] text-white shadow-xs'
-                  : 'text-[#524B40] hover:text-[#1E1B18]'
+          >
+            <FileText className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Original</span>
+          </button>
+          <button
+            id="reader-view-personalized-btn"
+            onClick={() => setViewMode('personalized')}
+            title="Personalized View"
+            className={`px-2 sm:px-3 py-1 rounded-md sm:rounded-lg text-[11px] sm:text-xs font-bold transition-all flex items-center gap-1 ${viewMode === 'personalized'
+                ? 'bg-[#D97706] text-white shadow-xs'
+                : 'text-[#524B40] hover:text-[#1E1B18]'
               }`}
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              Personalized View
-            </button>
-          </div>
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Personalized</span>
+          </button>
+        </div>
 
-          {/* Multilingual Selector */}
+        {/* Language Selector — hidden on small screens, in Settings instead */}
+        <div className="hidden md:block shrink-0">
           <LanguageSelector />
         </div>
 
-        {/* Right: Actions (Focus mode, Simplify, Metrics, Controls Drawer) */}
-        <div className="flex items-center gap-2">
-          {/* Simplify Button */}
-          <Button
-            id="reader-simplify-btn"
-            variant="outline"
-            size="sm"
-            icon={<Sparkles className="w-3.5 h-3.5 text-[#D97706]" />}
-            onClick={() => setIsSimplificationModalOpen(true)}
-          >
-            <span className="hidden md:inline">Simplify Text</span>
-          </Button>
+        {/* Spacer pushes action buttons to the right */}
+        <div className="flex-1" />
 
-          {/* Focus Mode Toggle */}
+        {/* Right: Action buttons — icon-only on mobile */}
+        <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+          {/* Simplify */}
+          <button
+            id="reader-simplify-btn"
+            onClick={() => setIsSimplificationModalOpen(true)}
+            title="Simplify Text"
+            className="w-8 h-8 sm:w-auto sm:h-auto p-1.5 sm:p-2 rounded-lg text-[#706655] hover:text-[#1E1B18] hover:bg-[#EFE8D6] border border-[#E7DFCA] transition-colors flex items-center justify-center shrink-0"
+          >
+            <Sparkles className="w-4 h-4 text-[#D97706]" />
+          </button>
+
+          {/* Focus Mode */}
           <button
             id="reader-focus-mode-btn"
             onClick={() => updatePreferences({ focusMode: !preferences.focusMode })}
-            title={preferences.focusMode ? "Exit Focus Mode" : "Enter Distraction-Free Focus Mode"}
-            className={`p-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all border ${
-              preferences.focusMode 
-                ? 'bg-[#26231E] text-[#FEF9EB] border-[#26231E]' 
-                : 'bg-[#FEF9EB] text-[#524B40] border-[#E7DFCA] hover:bg-[#EFE8D6]'
-            }`}
+            title={preferences.focusMode ? "Exit Focus Mode" : "Focus Mode"}
+            className={`w-8 h-8 sm:w-auto sm:h-auto p-1.5 sm:p-2 rounded-lg transition-all border flex items-center justify-center shrink-0 ${preferences.focusMode
+                ? 'bg-[#26231E] text-[#FEF9EB] border-[#26231E]'
+                : 'text-[#524B40] border-[#E7DFCA] hover:bg-[#EFE8D6]'
+              }`}
           >
             {preferences.focusMode ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-            <span className="hidden sm:inline">
-              {preferences.focusMode ? 'Exit Focus' : 'Focus Mode'}
-            </span>
           </button>
 
-          {/* Quick Reading Ruler Guide Toggle Button */}
+          {/* Ruler */}
           <button
             id="reader-ruler-quick-toggle-btn"
             onClick={() => updatePreferences({ readingRuler: !preferences.readingRuler })}
-            title={preferences.readingRuler ? "Turn off Reading Ruler" : "Turn on Reading Ruler"}
-            className={`p-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all border ${
-              preferences.readingRuler 
-                ? 'bg-[#D97706] text-white border-[#D97706] shadow-sm ring-2 ring-[#D97706]/30' 
-                : 'bg-[#FEF9EB] text-[#524B40] border-[#E7DFCA] hover:bg-[#EFE8D6]'
-            }`}
+            title={preferences.readingRuler ? "Ruler: ON" : "Reading Ruler"}
+            className={`w-8 h-8 sm:w-auto sm:h-auto p-1.5 sm:p-2 rounded-lg transition-all border flex items-center justify-center shrink-0 ${preferences.readingRuler
+                ? 'bg-[#D97706] text-white border-[#D97706] shadow-sm'
+                : 'text-[#524B40] border-[#E7DFCA] hover:bg-[#EFE8D6]'
+              }`}
           >
             <SplitSquareVertical className="w-4 h-4" />
-            <span className="hidden sm:inline">
-              {preferences.readingRuler ? 'Ruler: ON' : 'Ruler'}
-            </span>
           </button>
 
-          {/* Reading Session Summary */}
+          {/* Session Metrics */}
           <button
             id="reader-session-metrics-btn"
             onClick={() => setIsSessionSummaryOpen(true)}
-            title="View reading pace and session metrics"
-            className="p-2 rounded-xl text-[#706655] hover:text-[#1E1B18] hover:bg-[#EFE8D6] border border-[#E7DFCA] transition-colors"
+            title="Session Metrics"
+            className="hidden sm:flex w-8 h-8 sm:w-auto sm:h-auto p-1.5 sm:p-2 rounded-lg text-[#706655] hover:text-[#1E1B18] hover:bg-[#EFE8D6] border border-[#E7DFCA] transition-colors items-center justify-center shrink-0"
           >
             <BarChart2 className="w-4 h-4 text-[#047857]" />
           </button>
 
-          {/* Controls Toggle (Right Sidebar) */}
+          {/* Settings */}
           {!preferences.focusMode && (
-            <Button
+            <button
               id="reader-toggle-controls-btn"
-              variant={isRightControlsOpen ? 'primary' : 'outline'}
-              size="sm"
-              icon={<Sliders className="w-3.5 h-3.5" />}
               onClick={() => setIsRightControlsOpen(!isRightControlsOpen)}
+              title="Settings"
+              className={`w-8 h-8 sm:w-auto sm:h-auto p-1.5 sm:p-2 rounded-lg transition-all border flex items-center justify-center shrink-0 ${isRightControlsOpen
+                  ? 'bg-[#26231E] text-[#FEF9EB] border-[#26231E]'
+                  : 'text-[#524B40] border-[#E7DFCA] hover:bg-[#EFE8D6]'
+                }`}
             >
-              <span className="hidden lg:inline">Settings</span>
-            </Button>
+              <Sliders className="w-4 h-4" />
+            </button>
           )}
         </div>
       </div>
@@ -260,11 +257,10 @@ export const ReaderView: React.FC = () => {
                   <button
                     key={p.pageNumber}
                     onClick={() => setActivePageNumber(p.pageNumber)}
-                    className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between transition-all ${
-                      activePageNumber === p.pageNumber
+                    className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between transition-all ${activePageNumber === p.pageNumber
                         ? 'bg-[#26231E] text-[#FEF9EB] shadow-2xs'
                         : 'text-[#524B40] hover:bg-[#EFE8D6]'
-                    }`}
+                      }`}
                   >
                     <span>Page {p.pageNumber}</span>
                     <span className="text-[10px] opacity-70">
@@ -284,11 +280,10 @@ export const ReaderView: React.FC = () => {
                     <button
                       key={doc.id}
                       onClick={() => navigateToReader(doc.id)}
-                      className={`w-full text-left p-2 rounded-lg text-xs truncate transition-colors ${
-                        doc.id === activeDocument.id
+                      className={`w-full text-left p-2 rounded-lg text-xs truncate transition-colors ${doc.id === activeDocument.id
                           ? 'font-bold text-[#D97706] bg-[#FEF9EB] border border-[#E7DFCA]'
                           : 'text-[#524B40] hover:bg-[#EFE8D6]'
-                      }`}
+                        }`}
                     >
                       {doc.title}
                     </button>
@@ -306,7 +301,7 @@ export const ReaderView: React.FC = () => {
         )}
 
         {/* CENTER COLUMN: Reading Canvas Area (Dominant) */}
-        <main 
+        <main
           id="reading-canvas-container"
           ref={canvasContainerRef as React.RefObject<HTMLDivElement>}
           className="flex-1 overflow-y-auto min-h-0 px-4 sm:px-8 lg:px-12 py-8 flex flex-col items-center justify-start transition-colors relative"
@@ -382,7 +377,7 @@ export const ReaderView: React.FC = () => {
       {/* Mobile Settings Drawer (< lg) (Fix 11) */}
       {!preferences.focusMode && isRightControlsOpen && (
         <div className="lg:hidden fixed inset-0 z-50 flex justify-end animate-in fade-in duration-200">
-          <div 
+          <div
             className="fixed inset-0 bg-black/40 backdrop-blur-xs transition-opacity"
             onClick={() => setIsRightControlsOpen(false)}
           />
@@ -395,14 +390,14 @@ export const ReaderView: React.FC = () => {
       {/* Mobile Navigator Drawer (< lg) */}
       {!preferences.focusMode && isLeftNavOpen && (
         <div className="lg:hidden fixed inset-0 z-50 flex justify-start animate-in fade-in duration-200">
-          <div 
+          <div
             className="fixed inset-0 bg-black/40 backdrop-blur-xs transition-opacity"
             onClick={() => setIsLeftNavOpen(false)}
           />
           <div className="relative w-72 h-full bg-[#FAF3E0] shadow-2xl z-10 flex flex-col p-4 overflow-y-auto animate-in slide-in-from-left duration-200">
             <div className="flex items-center justify-between pb-3 border-b border-[#E7DFCA]">
               <span className="text-xs font-bold text-[#1E1B18]">Lesson Navigator</span>
-              <button 
+              <button
                 onClick={() => setIsLeftNavOpen(false)}
                 className="p-1 rounded-lg hover:bg-[#EFE8D6] text-xs font-bold"
               >
@@ -417,11 +412,10 @@ export const ReaderView: React.FC = () => {
                     setActivePageNumber(p.pageNumber);
                     setIsLeftNavOpen(false);
                   }}
-                  className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between transition-all ${
-                    activePageNumber === p.pageNumber
+                  className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between transition-all ${activePageNumber === p.pageNumber
                       ? 'bg-[#26231E] text-[#FEF9EB] shadow-2xs'
                       : 'text-[#524B40] hover:bg-[#EFE8D6]'
-                  }`}
+                    }`}
                 >
                   <span>Page {p.pageNumber}</span>
                   <span className="text-[10px] opacity-70">

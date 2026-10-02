@@ -28,8 +28,13 @@ const SARVAM_LANG_CODES: Record<string, string> = {
   'pa-in': 'pa-IN',
 };
 
-// Valid Sarvam Bulbul speaker voices
-const VALID_SARVAM_SPEAKERS = new Set(['meera', 'pavithra', 'maitreyi', 'arvind', 'amartya']);
+// Valid Sarvam Bulbul v3 speaker voices
+const VALID_SARVAM_SPEAKERS = new Set([
+  'priya', 'aditya', 'ritu', 'ashutosh', 'neha', 'rahul', 'pooja', 'rohan', 'simran',
+  'kavya', 'amit', 'dev', 'ishita', 'shreya', 'ratan', 'varun', 'manan', 'sumit',
+  'roopa', 'kabir', 'aayan', 'shubh', 'advait', 'anand', 'tanya', 'tarun', 'sunny',
+  'mani', 'gokul', 'vijay', 'shruti', 'suhani', 'mohit', 'kavitha', 'rehan', 'soham', 'rupali'
+]);
 
 // Language code mappings for Google Translate Server TTS
 const GOOGLE_LANG_CODES: Record<string, string> = {
@@ -127,7 +132,7 @@ export async function POST(req: NextRequest) {
       text, 
       lang = 'en', 
       rate = 1.0, 
-      speaker = 'meera', 
+      speaker = 'priya', 
       voiceName, 
       apiKey, 
       provider 
@@ -153,7 +158,7 @@ export async function POST(req: NextRequest) {
       ? voiceName.toLowerCase()
       : (speaker && VALID_SARVAM_SPEAKERS.has(speaker.toLowerCase()))
       ? speaker.toLowerCase()
-      : 'meera';
+      : 'priya';
 
     const cacheKey = `tts_${normalizedLang}_${rate}_${chosenSpeaker}_${cleanText.length}_${cleanText.slice(0, 60)}`;
     if (audioCache.has(cacheKey)) {
@@ -196,7 +201,7 @@ export async function POST(req: NextRequest) {
                   loudness: 1.5,
                   speech_sample_rate: 22050,
                   enable_preprocessing: true,
-                  model: 'bulbul:v1',
+                  model: 'bulbul:v3',
                 }),
               });
               if (res.ok) {

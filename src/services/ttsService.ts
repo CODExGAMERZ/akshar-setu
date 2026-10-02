@@ -262,7 +262,21 @@ class TTSService {
       if (explicit) utterance.voice = explicit;
     } else if (voices.length > 0) {
       const primaryLangCode = targetLang.split('-')[0].toLowerCase();
-      const matched = voices.find(v => v.lang.toLowerCase().replace('_', '-').startsWith(primaryLangCode));
+      // Filter for matching language
+      const langVoices = voices.filter(v =>
+        v.lang.toLowerCase().replace('_', '-').startsWith(primaryLangCode)
+      );
+
+      // Prioritize modern, high-quality neural/natural voices over old legacy desktop voices
+      const naturalVoice = langVoices.find(v => {
+        const name = v.name.toLowerCase();
+        return name.includes('natural') || name.includes('online') || name.includes('neural') || name.includes('google');
+      });
+
+      // Avoid legacy robotic desktop voices (e.g. "David Desktop", "Zira Desktop") if a modern one exists
+      const nonDesktopVoice = langVoices.find(v => !v.name.toLowerCase().includes('desktop'));
+
+      const matched = naturalVoice || nonDesktopVoice || langVoices[0] || voices[0];
       if (matched) utterance.voice = matched;
     }
 

@@ -2,12 +2,12 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { 
-  BookOpen, 
-  Sliders, 
-  Sparkles, 
-  UploadCloud, 
-  User as UserIcon, 
+import {
+  BookOpen,
+  Sliders,
+  Sparkles,
+  UploadCloud,
+  User as UserIcon,
   HelpCircle,
   FileText,
   Volume2,
@@ -18,11 +18,11 @@ import { useApp } from '../../context/AppContext';
 import { Button } from '../common/Button';
 
 export const Header: React.FC = () => {
-  const { 
-    currentRoute, 
-    setCurrentRoute, 
-    activeDocument, 
-    currentUser, 
+  const {
+    currentRoute,
+    setCurrentRoute,
+    activeDocument,
+    currentUser,
     setIsUploadModalOpen,
     setIsHowItWorksOpen,
     ttsState,
@@ -33,46 +33,45 @@ export const Header: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <header 
+    <header
       id="main-app-header"
       className="sticky top-0 z-40 bg-[#FEF9EB]/90 backdrop-blur-md border-b border-[#E7DFCA] px-4 lg:px-8 py-3 transition-colors"
     >
       <div className="max-w-7xl mx-auto">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center justify-between gap-2 sm:gap-3 lg:gap-4 overflow-hidden">
           {/* Brand & Logo */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 shrink">
             <Link
               id="brand-logo-btn"
               href="/"
-              className="flex items-center gap-2.5 group text-left focus:outline-none"
+              className="flex items-center gap-2 sm:gap-2.5 group text-left focus:outline-none shrink-0"
             >
-              <div className="w-10 h-10 rounded-xl bg-[#26231E] text-[#FEF9EB] flex items-center justify-center font-bold text-lg shadow-xs group-hover:scale-105 transition-transform">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#26231E] text-[#FEF9EB] flex items-center justify-center font-bold text-base sm:text-lg shadow-xs group-hover:scale-105 transition-transform shrink-0">
                 <span className="font-serif">A</span>
               </div>
-              <div>
+              <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <span className="font-bold text-lg text-[#26231E] tracking-tight">AksharSetu</span>
-                  <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-[#FAF1DA] text-[#8C6D23] border border-[#E4D5AD]">
+                  <span className="font-bold text-base sm:text-lg text-[#26231E] tracking-tight truncate">AksharSetu</span>
+                  <span className="hidden sm:inline text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-[#FAF1DA] text-[#8C6D23] border border-[#E4D5AD] shrink-0">
                     Ivory
                   </span>
                 </div>
-                <p className="text-[11px] text-[#786E5E] hidden sm:block">
+                <p className="text-[11px] text-[#786E5E] hidden lg:block truncate">
                   Accessible Multisensory Reader
                 </p>
               </div>
             </Link>
           </div>
 
-          {/* Navigation Links (Desktop) */}
-          <nav className="hidden md:flex items-center gap-1 bg-[#FAF3E0] p-1 rounded-xl border border-[#E7DFCA]">
+          {/* Navigation Links (Desktop — visible on lg+ screens only to avoid tablet overflow) */}
+          <nav className="hidden lg:flex items-center gap-1 bg-[#FAF3E0] p-1 rounded-xl border border-[#E7DFCA] shrink-0">
             <Link
               id="nav-home-btn"
               href="/"
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                currentRoute === 'landing' 
-                  ? 'bg-[#26231E] text-[#FEF9EB] shadow-xs' 
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${currentRoute === 'landing'
+                  ? 'bg-[#26231E] text-[#FEF9EB] shadow-xs'
                   : 'text-[#4A4338] hover:text-[#26231E] hover:bg-[#EFE8D6]'
-              }`}
+                }`}
             >
               Overview
             </Link>
@@ -80,11 +79,10 @@ export const Header: React.FC = () => {
             <Link
               id="nav-library-btn"
               href="/library"
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
-                currentRoute === 'library' 
-                  ? 'bg-[#26231E] text-[#FEF9EB] shadow-xs' 
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${currentRoute === 'library'
+                  ? 'bg-[#26231E] text-[#FEF9EB] shadow-xs'
                   : 'text-[#4A4338] hover:text-[#26231E] hover:bg-[#EFE8D6]'
-              }`}
+                }`}
             >
               <BookOpen className="w-3.5 h-3.5" />
               Library
@@ -94,11 +92,10 @@ export const Header: React.FC = () => {
               <Link
                 id="nav-reader-btn"
                 href={`/read/${activeDocument.id}`}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
-                  currentRoute === 'reader' 
-                    ? 'bg-[#26231E] text-[#FEF9EB] shadow-xs' 
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${currentRoute === 'reader'
+                    ? 'bg-[#26231E] text-[#FEF9EB] shadow-xs'
                     : 'text-[#4A4338] hover:text-[#26231E] hover:bg-[#EFE8D6]'
-                }`}
+                  }`}
               >
                 <FileText className="w-3.5 h-3.5" />
                 Reader
@@ -108,11 +105,10 @@ export const Header: React.FC = () => {
             <Link
               id="nav-calibration-btn"
               href="/calibrate"
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
-                currentRoute === 'calibration' 
-                  ? 'bg-[#26231E] text-[#FEF9EB] shadow-xs' 
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${currentRoute === 'calibration'
+                  ? 'bg-[#26231E] text-[#FEF9EB] shadow-xs'
                   : 'text-[#4A4338] hover:text-[#26231E] hover:bg-[#EFE8D6]'
-              }`}
+                }`}
             >
               <Sparkles className="w-3.5 h-3.5 text-[#D97706]" />
               Calibration
@@ -121,11 +117,10 @@ export const Header: React.FC = () => {
             <Link
               id="nav-profile-btn"
               href="/profile"
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
-                currentRoute === 'profile' 
-                  ? 'bg-[#26231E] text-[#FEF9EB] shadow-xs' 
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${currentRoute === 'profile'
+                  ? 'bg-[#26231E] text-[#FEF9EB] shadow-xs'
                   : 'text-[#4A4338] hover:text-[#26231E] hover:bg-[#EFE8D6]'
-              }`}
+                }`}
             >
               <Sliders className="w-3.5 h-3.5" />
               Profile
@@ -133,7 +128,7 @@ export const Header: React.FC = () => {
           </nav>
 
           {/* Action Controls */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             {/* Quick TTS Button when on reader */}
             {currentRoute === 'reader' && (
               <Button
@@ -149,7 +144,7 @@ export const Header: React.FC = () => {
                   }
                 }}
               >
-                <span className="hidden sm:inline">
+                <span className="hidden md:inline">
                   {ttsState.isPlaying ? 'Speaking...' : 'Read Aloud'}
                 </span>
               </Button>
@@ -163,7 +158,7 @@ export const Header: React.FC = () => {
               icon={<UploadCloud className="w-4 h-4 text-[#D97706]" />}
               onClick={() => setIsUploadModalOpen(true)}
             >
-              <span className="hidden sm:inline">Upload Doc</span>
+              <span className="hidden sm:inline">Upload</span>
             </Button>
 
             {/* How It Works Button */}
@@ -171,7 +166,7 @@ export const Header: React.FC = () => {
               id="header-help-btn"
               aria-label="How AksharSetu works"
               onClick={() => setIsHowItWorksOpen(true)}
-              className="p-2 rounded-xl text-[#786E5E] hover:text-[#26231E] hover:bg-[#FAF3E0] transition-colors border border-transparent hover:border-[#E7DFCA]"
+              className="hidden sm:flex p-2 rounded-xl text-[#786E5E] hover:text-[#26231E] hover:bg-[#FAF3E0] transition-colors border border-transparent hover:border-[#E7DFCA]"
             >
               <HelpCircle className="w-4 h-4" />
             </button>
@@ -181,12 +176,12 @@ export const Header: React.FC = () => {
               <button
                 id="header-user-btn"
                 onClick={() => setCurrentRoute('profile')}
-                className="flex items-center gap-2 p-1.5 pr-2.5 rounded-xl bg-[#FAF3E0] hover:bg-[#EFE8D6] border border-[#E7DFCA] transition-colors"
+                className="flex items-center gap-1.5 sm:gap-2 p-1.5 sm:pr-2.5 rounded-xl bg-[#FAF3E0] hover:bg-[#EFE8D6] border border-[#E7DFCA] transition-colors shrink-0"
               >
-                <div className="w-6 h-6 rounded-lg bg-[#26231E] text-[#FEF9EB] text-[10px] font-bold flex items-center justify-center">
+                <div className="w-6 h-6 rounded-lg bg-[#26231E] text-[#FEF9EB] text-[10px] font-bold flex items-center justify-center shrink-0">
                   {currentUser.avatar}
                 </div>
-                <span className="text-xs font-semibold text-[#26231E] hidden md:inline">
+                <span className="text-xs font-semibold text-[#26231E] hidden xl:inline truncate max-w-[100px]">
                   {currentUser.name}
                 </span>
               </button>
@@ -198,38 +193,37 @@ export const Header: React.FC = () => {
                 icon={<UserIcon className="w-3.5 h-3.5" />}
                 onClick={() => setCurrentRoute('login')}
               >
-                Login
+                <span className="hidden xs:inline">Login</span>
               </Button>
             )}
 
-            {/* Mobile Menu Toggle (< md only) */}
+            {/* Mobile Menu Toggle (< lg only) */}
             <button
               id="mobile-menu-toggle-btn"
               aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
               aria-expanded={mobileMenuOpen}
               onClick={() => setMobileMenuOpen(prev => !prev)}
-              className="md:hidden p-2 rounded-xl text-[#786E5E] hover:text-[#26231E] hover:bg-[#FAF3E0] transition-colors border border-transparent hover:border-[#E7DFCA]"
+              className="lg:hidden p-2 rounded-xl text-[#786E5E] hover:text-[#26231E] hover:bg-[#FAF3E0] transition-colors border border-transparent hover:border-[#E7DFCA] shrink-0"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
         </div>
 
-        {/* Mobile Navigation Links (< md only) */}
+        {/* Mobile Navigation Links (< lg only) */}
         {mobileMenuOpen && (
-          <nav 
+          <nav
             id="mobile-navigation-menu"
-            className="md:hidden pt-3 pb-2 border-t border-[#E7DFCA] mt-3 space-y-1.5 animate-in slide-in-from-top-2 duration-150"
+            className="lg:hidden pt-3 pb-2 border-t border-[#E7DFCA] mt-3 space-y-1.5 animate-in slide-in-from-top-2 duration-150"
           >
             <Link
               id="mobile-nav-home-btn"
               href="/"
               onClick={() => setMobileMenuOpen(false)}
-              className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2.5 transition-all ${
-                currentRoute === 'landing' 
-                  ? 'bg-[#26231E] text-[#FEF9EB] shadow-xs' 
+              className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2.5 transition-all ${currentRoute === 'landing'
+                  ? 'bg-[#26231E] text-[#FEF9EB] shadow-xs'
                   : 'text-[#4A4338] hover:text-[#26231E] hover:bg-[#FAF3E0]'
-              }`}
+                }`}
             >
               Overview
             </Link>
@@ -238,11 +232,10 @@ export const Header: React.FC = () => {
               id="mobile-nav-library-btn"
               href="/library"
               onClick={() => setMobileMenuOpen(false)}
-              className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2.5 transition-all ${
-                currentRoute === 'library' 
-                  ? 'bg-[#26231E] text-[#FEF9EB] shadow-xs' 
+              className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2.5 transition-all ${currentRoute === 'library'
+                  ? 'bg-[#26231E] text-[#FEF9EB] shadow-xs'
                   : 'text-[#4A4338] hover:text-[#26231E] hover:bg-[#FAF3E0]'
-              }`}
+                }`}
             >
               <BookOpen className="w-4 h-4" />
               Library
@@ -253,11 +246,10 @@ export const Header: React.FC = () => {
                 id="mobile-nav-reader-btn"
                 href={`/read/${activeDocument.id}`}
                 onClick={() => setMobileMenuOpen(false)}
-                className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2.5 transition-all ${
-                  currentRoute === 'reader' 
-                    ? 'bg-[#26231E] text-[#FEF9EB] shadow-xs' 
+                className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2.5 transition-all ${currentRoute === 'reader'
+                    ? 'bg-[#26231E] text-[#FEF9EB] shadow-xs'
                     : 'text-[#4A4338] hover:text-[#26231E] hover:bg-[#FAF3E0]'
-                }`}
+                  }`}
               >
                 <FileText className="w-4 h-4" />
                 Reader
@@ -268,11 +260,10 @@ export const Header: React.FC = () => {
               id="mobile-nav-calibration-btn"
               href="/calibrate"
               onClick={() => setMobileMenuOpen(false)}
-              className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2.5 transition-all ${
-                currentRoute === 'calibration' 
-                  ? 'bg-[#26231E] text-[#FEF9EB] shadow-xs' 
+              className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2.5 transition-all ${currentRoute === 'calibration'
+                  ? 'bg-[#26231E] text-[#FEF9EB] shadow-xs'
                   : 'text-[#4A4338] hover:text-[#26231E] hover:bg-[#FAF3E0]'
-              }`}
+                }`}
             >
               <Sparkles className="w-4 h-4 text-[#D97706]" />
               Calibration
@@ -282,11 +273,10 @@ export const Header: React.FC = () => {
               id="mobile-nav-profile-btn"
               href="/profile"
               onClick={() => setMobileMenuOpen(false)}
-              className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2.5 transition-all ${
-                currentRoute === 'profile' 
-                  ? 'bg-[#26231E] text-[#FEF9EB] shadow-xs' 
+              className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2.5 transition-all ${currentRoute === 'profile'
+                  ? 'bg-[#26231E] text-[#FEF9EB] shadow-xs'
                   : 'text-[#4A4338] hover:text-[#26231E] hover:bg-[#FAF3E0]'
-              }`}
+                }`}
             >
               <Sliders className="w-4 h-4" />
               Profile
