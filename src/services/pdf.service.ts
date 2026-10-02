@@ -321,16 +321,7 @@ export class PDFService {
   }
 
   public static detectLanguage(text: string): SupportedLanguage {
-    const sample = text.slice(0, 500);
-    if (/[\u0900-\u097F]/.test(sample)) {
-      // Alternation (not a character class) so whole words are matched, not individual letters.
-      if (/(ळ|आणि|आहे|नाही)/.test(sample)) return 'mr';
-      return 'hi';
-    }
-    if (/[\u0980-\u09FF]/.test(sample)) return 'bn';
-    if (/[\u0B00-\u0B7F]/.test(sample)) return 'or';
-    if (/[\u0B80-\u0BFF]/.test(sample)) return 'ta';
-    if (/[\u0C00-\u0C7F]/.test(sample)) return 'te';
-    return 'en';
+    const { detectLanguageFromText } = require('@/lib/text');
+    return detectLanguageFromText(text) as SupportedLanguage;
   }
 }

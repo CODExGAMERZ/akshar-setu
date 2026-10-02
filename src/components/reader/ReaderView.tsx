@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import { ReadingContent } from './ReadingContent';
 import { OriginalDocumentView } from './OriginalDocumentView';
@@ -21,7 +21,8 @@ import {
   Minimize2, 
   PanelLeftClose, 
   PanelLeftOpen, 
-  BarChart2
+  BarChart2,
+  SplitSquareVertical
 } from 'lucide-react';
 
 export const ReaderView: React.FC = () => {
@@ -40,12 +41,14 @@ export const ReaderView: React.FC = () => {
     setIsSessionSummaryOpen, 
     documents, 
     selectDocument, 
+    navigateToReader,
     updateDocumentProgress,
     currentLanguage
   } = useApp();
 
   const [isLeftNavOpen, setIsLeftNavOpen] = useState<boolean>(true);
   const [isRightControlsOpen, setIsRightControlsOpen] = useState<boolean>(true);
+  const canvasContainerRef = useRef<HTMLElement | null>(null);
 
   const { setIsUploadModalOpen, setCurrentRoute } = useApp();
 
@@ -106,9 +109,6 @@ export const ReaderView: React.FC = () => {
 
   return (
     <div className="relative h-[calc(100dvh-65px)] bg-[#FEF9EB] text-[#26231E] flex flex-col overflow-hidden">
-      {/* Visual reading ruler / mask overlay if active */}
-      <FocusModeOverlay />
-
       {/* Top Reader Utility Bar */}
       <div className="bg-[#FAF3E0] border-b border-[#E7DFCA] px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 shrink-0 z-20 transition-colors">
         {/* Left: Left nav toggle & document title */}
@@ -197,6 +197,23 @@ export const ReaderView: React.FC = () => {
             </span>
           </button>
 
+          {/* Quick Reading Ruler Guide Toggle Button */}
+          <button
+            id="reader-ruler-quick-toggle-btn"
+            onClick={() => updatePreferences({ readingRuler: !preferences.readingRuler })}
+            title={preferences.readingRuler ? "Turn off Reading Ruler" : "Turn on Reading Ruler"}
+            className={`p-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all border ${
+              preferences.readingRuler 
+                ? 'bg-[#D97706] text-white border-[#D97706] shadow-sm ring-2 ring-[#D97706]/30' 
+                : 'bg-[#FEF9EB] text-[#524B40] border-[#E7DFCA] hover:bg-[#EFE8D6]'
+            }`}
+          >
+            <SplitSquareVertical className="w-4 h-4" />
+            <span className="hidden sm:inline">
+              {preferences.readingRuler ? 'Ruler: ON' : 'Ruler'}
+            </span>
+          </button>
+
           {/* Reading Session Summary */}
           <button
             id="reader-session-metrics-btn"
@@ -262,11 +279,11 @@ export const ReaderView: React.FC = () => {
                 <span className="text-[10px] font-bold uppercase tracking-wider text-[#706655]">
                   Switch Document
                 </span>
-                <div className="space-y-1">
-                  {documents.slice(0, 4).map(doc => (
+                <div className="space-y-1 max-h-56 overflow-y-auto pr-1">
+                  {documents.map(doc => (
                     <button
                       key={doc.id}
-                      onClick={() => selectDocument(doc.id)}
+                      onClick={() => navigateToReader(doc.id)}
                       className={`w-full text-left p-2 rounded-lg text-xs truncate transition-colors ${
                         doc.id === activeDocument.id
                           ? 'font-bold text-[#D97706] bg-[#FEF9EB] border border-[#E7DFCA]'
@@ -290,11 +307,16 @@ export const ReaderView: React.FC = () => {
 
         {/* CENTER COLUMN: Reading Canvas Area (Dominant) */}
         <main 
-          className="flex-1 overflow-y-auto min-h-0 px-4 sm:px-8 lg:px-12 py-8 flex flex-col items-center justify-start transition-colors"
+          id="reading-canvas-container"
+          ref={canvasContainerRef as React.RefObject<HTMLDivElement>}
+          className="flex-1 overflow-y-auto min-h-0 px-4 sm:px-8 lg:px-12 py-8 flex flex-col items-center justify-start transition-colors relative"
           style={{
             backgroundColor: viewMode === 'personalized' ? preferences.backgroundColor : '#F1F5F9'
           }}
         >
+          {/* Visual reading ruler / mask overlay strictly scoped to the reading canvas */}
+          <FocusModeOverlay containerRef={canvasContainerRef} />
+
           <div className="w-full max-w-4xl space-y-8 pb-32">
             {/* View Mode Switch Notification Bar if in Original View */}
             {viewMode === 'original' ? (
@@ -306,6 +328,7 @@ export const ReaderView: React.FC = () => {
               />
             ) : (
               <ReadingContent
+                key={activeDocument.id}
                 page={currentPage}
                 preferences={preferences}
                 ttsState={ttsState}

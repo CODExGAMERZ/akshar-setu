@@ -4,6 +4,8 @@ import React, { useMemo, useState } from 'react';
 import { DocumentPage, ReadingPreferences, ConfusablePair, TTSState } from '../../types';
 import { getFontFamilyCSS } from '../../lib/utils';
 import { getConfusablesForLanguage } from '../../data/confusablePairs';
+import { detectScript, normalizeNFC } from '../../lib/text';
+import { getLanguage } from '../../data/languages';
 import { Info } from 'lucide-react';
 
 export interface ReadingContentProps {
@@ -24,6 +26,17 @@ export const ReadingContent: React.FC<ReadingContentProps> = ({
   onWordClick
 }) => {
   const [selectedTerm, setSelectedTerm] = useState<{ term: string; definition: string } | null>(null);
+
+  // Content to render (either translated or original text paragraphs)
+  const rawText = useMemo(() => {
+    return normalizeNFC(translatedText || page.content || '');
+  }, [translatedText, page.content]);
+
+  const dominantScript = useMemo(() => {
+    return detectScript(rawText);
+  }, [rawText]);
+
+  const isIndic = dominantScript !== 'Latin';
 
   // Resolve confusable pairs for the active language
   const languageConfusables = useMemo(() => {
@@ -54,8 +67,6 @@ export const ReadingContent: React.FC<ReadingContentProps> = ({
     return lookup;
   }, [languageConfusables, preferences.confusableLetterSettings]);
 
-  // Content to render (either translated or original text paragraphs)
-  const rawText = translatedText || page.content;
   const paragraphs = useMemo(() => {
     return rawText.split(/\n\s*\n/).filter(p => p.trim().length > 0);
   }, [rawText]);
@@ -81,9 +92,17 @@ export const ReadingContent: React.FC<ReadingContentProps> = ({
     });
   }, [paragraphs]);
 
-  // Confusable letters renderer helper
+  // Confusable letters renderer helper: strictly preserves Indic aksharas as whole units
   const renderConfusableCharacters = (word: string) => {
     if (!preferences.confusableLetterSettings.enabled || !confusableLookup || confusableLookup.size === 0) {
+      return word;
+    }
+
+    // Check if the word is Latin. In Indic scripts (Devanagari, Odia, Bengali, Tamil, etc.),
+    // character-by-character splitting causes browser text shapers to detach combining matras
+    // and render dotted circles (◌).
+    const isLatinWord = /^[A-Za-z0-9\s.,\/#!$%\^&\*;:{}=\-_`~()?"']+$/.test(word);
+    if (!isLatinWord) {
       return word;
     }
 
@@ -137,9 +156,11 @@ export const ReadingContent: React.FC<ReadingContentProps> = ({
     });
   };
 
-  // Bionic fixation helper
+  // Bionic fixation helper: applied strictly to Latin words to protect Indic conjuncts
   const formatWordContent = (word: string) => {
-    if (preferences.bionicReading && word.length > 2) {
+    const isLatinWord = /^[A-Za-z0-9\s.,\/#!$%\^&\*;:{}=\-_`~()?"']+$/.test(word);
+
+    if (isLatinWord && preferences.bionicReading && word.length > 2) {
       const mid = Math.ceil(word.length / 2);
       const head = word.slice(0, mid);
       const tail = word.slice(mid);
@@ -153,7 +174,8 @@ export const ReadingContent: React.FC<ReadingContentProps> = ({
     return renderConfusableCharacters(word);
   };
 
-  const fontFamily = getFontFamilyCSS(preferences.font);
+  const langDef = useMemo(() => getLanguage(currentLanguage), [currentLanguage]);
+  const fontFamily = `${getFontFamilyCSS(preferences.font)}, ${langDef.fontStack}`;
 
   return (
     <div
@@ -165,7 +187,7 @@ export const ReadingContent: React.FC<ReadingContentProps> = ({
         fontFamily: fontFamily,
         fontSize: `${preferences.fontSize}px`,
         fontWeight: preferences.boldness,
-        letterSpacing: `${preferences.letterSpacing}em`,
+        letterSpacing: isIndic ? '0em' : `${preferences.letterSpacing}em`,
         wordSpacing: `${preferences.wordSpacing}em`,
         lineHeight: preferences.lineSpacing,
         textAlign: preferences.alignment

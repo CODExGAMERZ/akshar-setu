@@ -99,18 +99,4 @@ export const DEFAULT_READING_PREFERENCES: ReadingPreferences = {
   bionicReading: false
 };
 
-export const SUPPORTED_LANGUAGES = [
-  { code: 'en-IN', name: 'English (Indian)', nativeName: 'English (India)' },
-  { code: 'hi-IN', name: 'Hindi', nativeName: 'हिन्दी' },
-  { code: 'mr-IN', name: 'Marathi', nativeName: 'मराठी' },
-  { code: 'ta-IN', name: 'Tamil', nativeName: 'தமிழ்' },
-  { code: 'te-IN', name: 'Telugu', nativeName: 'తెలుగు' },
-  { code: 'bn-IN', name: 'Bengali', nativeName: 'বাংলা' },
-  { code: 'gu-IN', name: 'Gujarati', nativeName: 'ગુજરાતી' },
-  { code: 'kn-IN', name: 'Kannada', nativeName: 'ಕನ್ನಡ' },
-  { code: 'ml-IN', name: 'Malayalam', nativeName: 'മലയാളം' },
-  { code: 'pa-IN', name: 'Punjabi', nativeName: 'ਪੰਜਾਬੀ' },
-  { code: 'or-IN', name: 'Odia', nativeName: 'ଓଡ଼ିଆ' },
-  { code: 'es-ES', name: 'Spanish', nativeName: 'Español' },
-  { code: 'fr-FR', name: 'French', nativeName: 'Français' },
-];
+export { SUPPORTED_LANGUAGES } from './languages';

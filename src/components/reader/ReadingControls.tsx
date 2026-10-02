@@ -445,6 +445,59 @@ export const ReadingControls: React.FC<ReadingControlsProps> = ({ onClose }) => 
               onChange={(checked) => updatePreferences({ readingRuler: checked })}
             />
 
+            {preferences.readingRuler && (
+              <div className="p-3.5 rounded-xl bg-[#FEF9EB] border border-[#E7DFCA] space-y-3.5 animate-in fade-in slide-in-from-top-2">
+                <Slider
+                  label="Ruler Window Height"
+                  value={preferences.rulerHeight || 80}
+                  min={40}
+                  max={160}
+                  step={5}
+                  unit="px"
+                  onChange={(val) => updatePreferences({ rulerHeight: val })}
+                />
+
+                <Slider
+                  label="Surrounding Dimming"
+                  value={Math.round((preferences.spotlightDim ?? 0.35) * 100)}
+                  min={10}
+                  max={80}
+                  step={5}
+                  unit="%"
+                  onChange={(val) => updatePreferences({ spotlightDim: val / 100 })}
+                />
+
+                <div className="space-y-1.5">
+                  <span className="text-xs font-semibold text-[#26231E] block">
+                    Ruler Guide Tint
+                  </span>
+                  <div className="flex items-center gap-2.5">
+                    {[
+                      { id: 'amber', label: 'Warm Amber', color: 'rgba(217, 119, 6, 0.14)', bg: '#D97706' },
+                      { id: 'yellow', label: 'Solar Yellow', color: 'rgba(251, 191, 36, 0.20)', bg: '#FBBF24' },
+                      { id: 'sage', label: 'Calm Sage', color: 'rgba(16, 185, 129, 0.15)', bg: '#10B981' },
+                      { id: 'blue', label: 'Slate Blue', color: 'rgba(59, 130, 246, 0.15)', bg: '#3B82F6' },
+                      { id: 'violet', label: 'Soft Violet', color: 'rgba(168, 85, 247, 0.15)', bg: '#A855F7' }
+                    ].map(c => {
+                      const isSelected = (preferences.rulerColor || 'rgba(217, 119, 6, 0.12)') === c.color;
+                      return (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => updatePreferences({ rulerColor: c.color })}
+                          title={c.label}
+                          className={`w-6 h-6 rounded-full border-2 transition-transform ${
+                            isSelected ? 'scale-125 border-[#26231E] shadow-sm' : 'border-white hover:scale-110'
+                          }`}
+                          style={{ backgroundColor: c.bg }}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+
             <ToggleSwitch
               label="Distraction-Free Focus Mode"
               checked={preferences.focusMode}

@@ -47,6 +47,7 @@ export interface ReadingPreferences {
   readingRuler: boolean;
   rulerHeight: number; // in px (40 - 160)
   spotlightDim: number; // opacity (0.2 - 0.8)
+  rulerColor?: string; // custom ruler highlight tint
   
   // Confusable Letters
   confusableLetterSettings: ConfusableSettings;

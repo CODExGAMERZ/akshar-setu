@@ -18,10 +18,7 @@ export const CalibrationView: React.FC = () => {
     2: 'spacing_balanced',
     3: 'theme_warm_cream',
     4: 'highlight_word',
-    5: 'confusable_weight',
-    6: 'audio_balanced',
-    7: 'density_balanced',
-    8: 'calibrated_choice'
+    5: 'confusable_weight'
   });
   const [isCompleted, setIsCompleted] = useState<boolean>(false);
   const [calibratedResult, setCalibratedResult] = useState<ReadingPreferences | null>(null);
